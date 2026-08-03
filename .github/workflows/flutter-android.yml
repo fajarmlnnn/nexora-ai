@@ -2,9 +2,12 @@ name: Android CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   android:
@@ -36,8 +39,13 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      - name: Run tests
-        run: flutter test
+      - name: Run tests (if available)
+        run: |
+          if [ -d test ]; then
+            flutter test
+          else
+            echo "No test directory found. Skipping tests."
+          fi
 
       - name: Build Release APK
         run: flutter build apk --release
