@@ -1,0 +1,163 @@
+#!/bin/bash
+
+PROJECT="/storage/emulated/0/Projects/nexora-ai"
+
+case "$1" in
+
+home)
+    cd "$PROJECT"
+    exec bash
+    ;;
+
+frontend)
+    cd "$PROJECT/apps/frontend"
+    exec bash
+    ;;
+
+backend)
+    cd "$PROJECT/apps/backend"
+    exec bash
+    ;;
+
+docs)
+    cd "$PROJECT/docs"
+    exec bash
+    ;;
+
+design)
+    cd "$PROJECT/design"
+    exec bash
+    ;;
+
+assets)
+    cd "$PROJECT/assets"
+    exec bash
+    ;;
+
+run)
+    cd "$PROJECT/apps/frontend"
+    flutter run
+    ;;
+
+get)
+    cd "$PROJECT/apps/frontend"
+    flutter pub get
+    ;;
+
+clean)
+    cd "$PROJECT/apps/frontend"
+    flutter clean
+    ;;
+
+analyze)
+    cd "$PROJECT/apps/frontend"
+    flutter analyze
+    ;;
+
+serve)
+    cd "$PROJECT/apps/backend"
+    php artisan serve
+    ;;
+
+migrate)
+    cd "$PROJECT/apps/backend"
+    php artisan migrate
+    ;;
+
+status)
+    cd "$PROJECT"
+    git status
+    ;;
+
+pull)
+    cd "$PROJECT"
+    git pull
+    ;;
+
+push)
+    shift
+
+    cd "$PROJECT"
+
+    git add .
+
+    git commit -m "$*"
+
+    git push
+    ;;
+
+tree)
+    cd "$PROJECT"
+    tree -L 2
+    ;;
+
+doctor)
+    echo ""
+    echo "========= NEXORA AI ========="
+    echo ""
+
+    flutter doctor
+
+    echo ""
+
+    php --version
+
+    echo ""
+
+    git --version
+
+    ;;
+
+*)
+
+echo ""
+
+echo "NEXORA AI CLI"
+
+echo ""
+
+echo "Commands"
+
+echo " nx home"
+
+echo " nx frontend"
+
+echo " nx backend"
+
+echo " nx docs"
+
+echo " nx assets"
+
+echo " nx design"
+
+echo ""
+
+echo " nx run"
+
+echo " nx get"
+
+echo " nx clean"
+
+echo " nx analyze"
+
+echo ""
+
+echo " nx serve"
+
+echo " nx migrate"
+
+echo ""
+
+echo " nx status"
+
+echo " nx tree"
+
+echo " nx doctor"
+
+echo ""
+
+echo ' nx push "commit message" '
+
+;;
+
+esac

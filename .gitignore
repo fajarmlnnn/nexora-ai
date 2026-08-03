@@ -1,0 +1,22 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Env
+.env
+.env.*
+
+# Flutter
+apps/frontend/build/
+apps/frontend/.dart_tool/
+
+# Laravel
+apps/backend/vendor/
+apps/backend/node_modules/
