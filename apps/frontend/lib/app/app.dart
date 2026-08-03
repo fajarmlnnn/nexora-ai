@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 
 class NexoraApp extends StatelessWidget {
   const NexoraApp({super.key});
@@ -10,23 +11,15 @@ class NexoraApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Nexora AI',
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: 'Poppins',
-        scaffoldBackgroundColor: AppColors.background,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-          brightness: Brightness.dark,
-        ),
-      ),
+      theme: AppTheme.dark,
       home: const Scaffold(
         body: Center(
           child: Text(
             'NEXORA AI',
             style: TextStyle(
+              color: AppColors.textPrimary,
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
             ),
           ),
         ),
