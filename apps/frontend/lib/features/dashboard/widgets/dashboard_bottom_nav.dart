@@ -70,8 +70,6 @@ class _NavItem extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int>? onTap;
 
-  final IconData _unused = Icons.abc; // ignore: unused_field
-
   bool get selected => index == currentIndex;
 
   @override

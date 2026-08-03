@@ -12,6 +12,7 @@ import '../widgets/dashboard_bottom_nav.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/recent_transaction_card.dart';
 import '../widgets/stat_card.dart';
+import 'package:go_router/go_router.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -92,7 +93,22 @@ class DashboardPage extends ConsumerWidget {
 
                   AppSpacing.gapLG,
 
-                  const DashboardBottomNav(),
+                  DashboardBottomNav(
+                    currentIndex: 0,
+                    onTap: (index) {
+                      switch (index) {
+                        case 0:
+                          context.go('/');
+                          break;
+                        case 1:
+                          context.go('/transactions');
+                          break;
+                        case 3:
+                          context.go('/profile');
+                          break;
+                      }
+                    },
+                  ),
                 ],
               ),
             );
