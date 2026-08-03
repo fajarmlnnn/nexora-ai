@@ -33,7 +33,15 @@ class StatCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: iconColor, size: 26),
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: .12),
+                borderRadius: AppRadius.radiusLG,
+              ),
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
 
             AppSpacing.gapMD,
 

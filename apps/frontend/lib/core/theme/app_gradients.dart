@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
-/// Nexora AI Design System
+/// Nexora AI Gradient System
 abstract final class AppGradients {
   AppGradients._();
+
+  // ===========================
+  // Primary
+  // ===========================
 
   static const LinearGradient primary = LinearGradient(
     begin: Alignment.topLeft,
@@ -12,11 +16,40 @@ abstract final class AppGradients {
     colors: [AppColors.primaryLight, AppColors.primary, AppColors.primaryDark],
   );
 
+  // ===========================
+  // Balance Card
+  // ===========================
+
   static const LinearGradient balanceCard = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF9D7BFF), Color(0xFF7C4DFF), Color(0xFF5B35D5)],
+    colors: [AppColors.primaryLight, AppColors.primary, AppColors.primaryDark],
+    stops: [0.0, 0.55, 1.0],
   );
+
+  // ===========================
+  // AI Card
+  // ===========================
+
+  static const LinearGradient aiCard = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [AppColors.aiAccent, AppColors.primary],
+  );
+
+  // ===========================
+  // Button
+  // ===========================
+
+  static const LinearGradient button = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [AppColors.primary, AppColors.primaryLight],
+  );
+
+  // ===========================
+  // Background
+  // ===========================
 
   static const LinearGradient background = LinearGradient(
     begin: Alignment.topCenter,
@@ -24,15 +57,35 @@ abstract final class AppGradients {
     colors: [AppColors.background, AppColors.surface],
   );
 
+  // ===========================
+  // Status
+  // ===========================
+
   static const LinearGradient success = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF34D399), AppColors.success],
+    colors: [AppColors.successLight, AppColors.success],
+  );
+
+  static const LinearGradient warning = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [AppColors.warningLight, AppColors.warning],
   );
 
   static const LinearGradient danger = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFF87171), AppColors.danger],
+    colors: [AppColors.dangerLight, AppColors.danger],
+  );
+
+  // ===========================
+  // Glass
+  // ===========================
+
+  static const LinearGradient glass = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0x22FFFFFF), Color(0x08FFFFFF)],
   );
 }

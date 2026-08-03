@@ -1,71 +1,102 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../controllers/dashboard_controller.dart';
 import '../widgets/ai_insight_card.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/budget_summary_card.dart';
-import '../widgets/dashboard_header.dart';
-import '../widgets/stat_card.dart';
-import '../widgets/recent_transaction_card.dart';
 import '../widgets/dashboard_bottom_nav.dart';
+import '../widgets/dashboard_header.dart';
+import '../widgets/recent_transaction_card.dart';
+import '../widgets/stat_card.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final summaryAsync = ref.watch(dashboardSummaryProvider);
+
+    final budgetAsync = ref.watch(budgetItemsProvider);
+
+    final transactionsAsync = ref.watch(recentTransactionsProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: AppSpacing.screen,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const DashboardHeader(),
+        child: summaryAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
 
-              AppSpacing.gapXL,
+          error: (error, stackTrace) => Center(child: Text(error.toString())),
 
-              const BalanceCard(),
-
-              AppSpacing.gapLG,
-
-              const Row(
+          data: (summary) {
+            return SingleChildScrollView(
+              padding: AppSpacing.screen,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  StatCard(
-                    title: 'Income',
-                    amount: '\$8,240',
-                    icon: Icons.south_west_rounded,
-                    iconColor: AppColors.success,
+                  const DashboardHeader(),
+
+                  AppSpacing.gapXL,
+
+                  BalanceCard(summary: summary),
+
+                  AppSpacing.gapLG,
+
+                  Row(
+                    children: [
+                      StatCard(
+                        title: 'Income',
+                        amount: '\$${summary.monthlyIncome.toStringAsFixed(0)}',
+                        icon: LucideIcons.arrowDownLeft,
+                        iconColor: AppColors.success,
+                      ),
+
+                      AppSpacing.hGapMD,
+
+                      StatCard(
+                        title: 'Expense',
+                        amount:
+                            '\$${summary.monthlyExpense.toStringAsFixed(0)}',
+                        icon: LucideIcons.arrowUpRight,
+                        iconColor: AppColors.danger,
+                      ),
+                    ],
                   ),
-                  AppSpacing.hGapMD,
-                  StatCard(
-                    title: 'Expense',
-                    amount: '\$2,150',
-                    icon: Icons.north_east_rounded,
-                    iconColor: AppColors.danger,
+
+                  AppSpacing.gapLG,
+
+                  budgetAsync.when(
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (error, stackTrace) => Text(error.toString()),
+                    data: (items) => BudgetSummaryCard(items: items),
                   ),
+
+                  AppSpacing.gapLG,
+
+                  const AIInsightCard(),
+
+                  AppSpacing.gapLG,
+
+                  transactionsAsync.when(
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (error, stackTrace) => Text(error.toString()),
+                    data: (transactions) =>
+                        RecentTransactionCard(transactions: transactions),
+                  ),
+
+                  AppSpacing.gapLG,
+
+                  const DashboardBottomNav(),
                 ],
               ),
-
-              AppSpacing.gapLG,
-
-              const BudgetSummaryCard(),
-
-              AppSpacing.gapLG,
-
-              const AIInsightCard(),
-
-              AppSpacing.gapLG,
-
-              const RecentTransactionCard(),
-
-              AppSpacing.gapLG,
-
-              const DashboardBottomNav(),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../models/dashboard_summary.dart';
 import 'balance_chart.dart';
 
 class BalanceCard extends StatelessWidget {
-  const BalanceCard({super.key});
+  const BalanceCard({super.key, required this.summary});
+
+  final DashboardSummary summary;
 
   @override
   Widget build(BuildContext context) {
+    final currency = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+
     return Container(
-      height: 210,
+      height: 240,
       width: double.infinity,
       padding: AppSpacing.card,
       decoration: BoxDecoration(
@@ -21,61 +28,83 @@ class BalanceCard extends StatelessWidget {
         borderRadius: AppRadius.radiusXL,
         boxShadow: AppShadows.glow,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Row(
+          Positioned(
+            right: -30,
+            top: -30,
+            child: Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: .06),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  Text(
+                    'Total Balance',
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: Colors.white70,
+                    ),
+                  ),
+
+                  const Spacer(),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .15),
+                      borderRadius: AppRadius.radiusLG,
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          LucideIcons.trendingUp,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          '+12.5%',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              AppSpacing.gapSM,
+
               Text(
-                'Total Balance',
-                style: AppTypography.bodyMedium.copyWith(color: Colors.white70),
+                currency.format(summary.totalBalance),
+                style: AppTypography.balance,
               ),
+
+              Text(
+                'Updated just now',
+                style: AppTypography.bodySmall.copyWith(color: Colors.white60),
+              ),
+
               const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .15),
-                  borderRadius: AppRadius.radiusLG,
-                ),
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.trending_up_rounded,
-                      color: Colors.white,
-                      size: 14,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      '12.5%',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+
+              const BalanceChart(),
             ],
           ),
-
-          AppSpacing.gapMD,
-
-          const Text('\$24,250.00', style: AppTypography.balance),
-
-          AppSpacing.gapSM,
-
-          Text(
-            'Updated just now',
-            style: AppTypography.bodySmall.copyWith(color: Colors.white60),
-          ),
-
-          const Spacer(),
-
-          const BalanceChart(),
         ],
       ),
     );

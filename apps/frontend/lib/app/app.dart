@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_theme.dart';
-import '../features/dashboard/presentation/dashboard_page.dart';
+import 'router.dart';
 
 class NexoraApp extends StatelessWidget {
   const NexoraApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Nexora AI',
       theme: AppTheme.dark,
-      home: const DashboardPage(),
+      routerConfig: appRouter,
     );
   }
 }

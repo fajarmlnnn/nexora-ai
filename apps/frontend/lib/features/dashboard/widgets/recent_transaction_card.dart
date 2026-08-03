@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../models/transaction_model.dart';
 
 class RecentTransactionCard extends StatelessWidget {
-  const RecentTransactionCard({super.key});
+  const RecentTransactionCard({super.key, required this.transactions});
+
+  final List<TransactionModel> transactions;
 
   @override
   Widget build(BuildContext context) {
+    final currency = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+
     return Container(
       padding: AppSpacing.card,
       decoration: BoxDecoration(
@@ -25,53 +32,59 @@ class RecentTransactionCard extends StatelessWidget {
 
           AppSpacing.gapLG,
 
-          const _Item(
-            icon: Icons.fastfood_rounded,
-            title: 'McDonald\'s',
-            subtitle: 'Food',
-            amount: '- \$24.50',
-            color: AppColors.warning,
-          ),
-
-          AppSpacing.gapMD,
-
-          const _Item(
-            icon: Icons.shopping_bag_rounded,
-            title: 'Uniqlo',
-            subtitle: 'Shopping',
-            amount: '- \$89.00',
-            color: AppColors.primary,
-          ),
-
-          AppSpacing.gapMD,
-
-          const _Item(
-            icon: Icons.account_balance_wallet_rounded,
-            title: 'Salary',
-            subtitle: 'Income',
-            amount: '+ \$3,250',
-            color: AppColors.success,
-          ),
+          for (int i = 0; i < transactions.length; i++) ...[
+            _TransactionTile(transaction: transactions[i], currency: currency),
+            if (i != transactions.length - 1) AppSpacing.gapMD,
+          ],
         ],
       ),
     );
   }
 }
 
-class _Item extends StatelessWidget {
-  const _Item({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.amount,
-    required this.color,
-  });
+class _TransactionTile extends StatelessWidget {
+  const _TransactionTile({required this.transaction, required this.currency});
 
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String amount;
-  final Color color;
+  final TransactionModel transaction;
+  final NumberFormat currency;
+
+  IconData get icon {
+    switch (transaction.category) {
+      case TransactionCategory.food:
+        return LucideIcons.utensils;
+
+      case TransactionCategory.shopping:
+        return LucideIcons.shoppingBag;
+
+      case TransactionCategory.salary:
+        return LucideIcons.wallet;
+
+      case TransactionCategory.transport:
+        return LucideIcons.car;
+
+      case TransactionCategory.investment:
+        return LucideIcons.chartColumn;
+
+      case TransactionCategory.health:
+        return LucideIcons.heartPulse;
+
+      case TransactionCategory.education:
+        return LucideIcons.graduationCap;
+
+      case TransactionCategory.bills:
+        return LucideIcons.receipt;
+
+      case TransactionCategory.entertainment:
+        return LucideIcons.film;
+
+      case TransactionCategory.other:
+        return LucideIcons.circleDollarSign;
+    }
+  }
+
+  Color get color {
+    return transaction.isIncome ? AppColors.success : AppColors.primary;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +97,7 @@ class _Item extends StatelessWidget {
             color: color.withValues(alpha: .15),
             borderRadius: AppRadius.radiusLG,
           ),
-          child: Icon(icon, color: color),
+          child: Icon(icon, color: color, size: 22),
         ),
 
         AppSpacing.hGapMD,
@@ -93,13 +106,16 @@ class _Item extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: AppTypography.bodyLarge),
-              Text(subtitle, style: AppTypography.bodySmall),
+              Text(transaction.title, style: AppTypography.bodyLarge),
+              Text(transaction.category.name, style: AppTypography.bodySmall),
             ],
           ),
         ),
 
-        Text(amount, style: AppTypography.labelLarge),
+        Text(
+          '${transaction.isIncome ? '+' : '-'}${currency.format(transaction.amount)}',
+          style: AppTypography.labelLarge.copyWith(color: color),
+        ),
       ],
     );
   }
