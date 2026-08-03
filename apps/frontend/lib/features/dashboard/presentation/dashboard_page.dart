@@ -25,6 +25,8 @@ class DashboardPage extends ConsumerWidget {
 
     final transactionsAsync = ref.watch(recentTransactionsProvider);
 
+    final aiInsightAsync = ref.watch(aiInsightProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -79,7 +81,12 @@ class DashboardPage extends ConsumerWidget {
 
                   AppSpacing.gapLG,
 
-                  const AIInsightCard(),
+                  aiInsightAsync.when(
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (error, stackTrace) => Text(error.toString()),
+                    data: (insight) => AIInsightCard(insight: insight),
+                  ),
 
                   AppSpacing.gapLG,
 
