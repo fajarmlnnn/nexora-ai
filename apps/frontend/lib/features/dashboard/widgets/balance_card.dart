@@ -5,6 +5,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import 'balance_chart.dart';
 
 class BalanceCard extends StatelessWidget {
   const BalanceCard({super.key});
@@ -12,6 +13,7 @@ class BalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 210,
       width: double.infinity,
       padding: AppSpacing.card,
       decoration: BoxDecoration(
@@ -22,19 +24,13 @@ class BalanceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Total Balance',
-            style: AppTypography.bodyMedium.copyWith(color: Colors.white70),
-          ),
-
-          AppSpacing.gapSM,
-
-          const Text('\$24,250.00', style: AppTypography.balance),
-
-          AppSpacing.gapLG,
-
           Row(
             children: [
+              Text(
+                'Total Balance',
+                style: AppTypography.bodyMedium.copyWith(color: Colors.white70),
+              ),
+              const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -46,24 +42,40 @@ class BalanceCard extends StatelessWidget {
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.trending_up, color: Colors.white, size: 16),
+                    Icon(
+                      Icons.trending_up_rounded,
+                      color: Colors.white,
+                      size: 14,
+                    ),
                     SizedBox(width: 4),
                     Text(
-                      '+12.5%',
+                      '12.5%',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
+                        fontSize: 12,
                       ),
                     ),
                   ],
                 ),
               ),
-
-              const Spacer(),
-
-              const Icon(Icons.show_chart, color: Colors.white70, size: 42),
             ],
           ),
+
+          AppSpacing.gapMD,
+
+          const Text('\$24,250.00', style: AppTypography.balance),
+
+          AppSpacing.gapSM,
+
+          Text(
+            'Updated just now',
+            style: AppTypography.bodySmall.copyWith(color: Colors.white60),
+          ),
+
+          const Spacer(),
+
+          const BalanceChart(),
         ],
       ),
     );
