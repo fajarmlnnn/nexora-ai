@@ -123,7 +123,7 @@ class _GoalsPageState extends State<GoalsPage>
                 child: TabBarView(
                   controller: _controller,
                   children: [
-                    _GoalList(goals: goals),
+                    _GoalList(goals: goals, showCelebration: true),
                     _GoalList(
                       goals: goals.where((g) => g.type == 'Wishlist').toList(),
                     ),
@@ -145,16 +145,52 @@ class _GoalsPageState extends State<GoalsPage>
 
 
 class _GoalList extends StatelessWidget {
-  const _GoalList({required this.goals});
+  const _GoalList({required this.goals, this.showCelebration = false});
   final List<_GoalData> goals;
+  final bool showCelebration;
 
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
       padding: const EdgeInsets.only(bottom: 120),
-      itemCount: goals.length,
+      itemCount: goals.length + (showCelebration ? 1 : 0),
       separatorBuilder: (_, _) => AppSpacing.gapMD,
-      itemBuilder: (context, index) => _GoalCard(goal: goals[index]),
+      itemBuilder: (context, index) {
+        if (showCelebration && index == goals.length) {
+          return const _CelebrationCard();
+        }
+        return _GoalCard(goal: goals[index]);
+      },
+    );
+  }
+}
+
+
+class _CelebrationCard extends StatelessWidget {
+  const _CelebrationCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return PremiumCard(
+      child: Row(
+        children: [
+          const NexoraRobot(size: 86),
+          AppSpacing.hGapMD,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Kamu Hebat! 🎉', style: AppTypography.heading3),
+                AppSpacing.gapXS,
+                Text(
+                  'Tabunganmu bulan ini naik 18% dibanding bulan lalu. Pertahankan ritmenya.',
+                  style: AppTypography.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -212,6 +248,11 @@ class _GoalCard extends StatelessWidget {
                   '${rupiah(goal.saved)} / ${rupiah(goal.target)}',
                   style: AppTypography.caption,
                 ),
+                AppSpacing.gapXS,
+                Text(
+                  'AI: ${goal.suggestion}',
+                  style: AppTypography.caption.copyWith(color: AppColors.primaryLight),
+                ),
               ],
             ),
           ),
@@ -237,5 +278,10 @@ class _GoalData {
   final double saved;
   final double target;
   final IconData icon;
+  String get suggestion {
+    final monthly = ((target - saved) / 8).round();
+    return 'kontribusi ${rupiah(monthly)}/bulan, estimasi selesai Feb 2027';
+  }
+
   final Color color;
 }

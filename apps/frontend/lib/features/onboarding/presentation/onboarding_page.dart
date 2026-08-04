@@ -23,19 +23,19 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   static const _pages = [
     _OnboardingData(
-      title: 'Smart Finance',
-      message: 'AI membaca cashflow, budget, dan goals secara privat.',
+      title: 'Halo, Fajar! 👋',
+      message: 'Aku Nexora AI, siap membantumu mengelola keuanganmu setiap hari.',
       icon: LucideIcons.sparkles,
     ),
     _OnboardingData(
-      title: 'Budget Tracking',
-      message: 'Pantau tiap kategori dengan progress real-time.',
-      icon: LucideIcons.walletCards,
+      title: 'AI yang bekerja untuk keuanganmu',
+      message: 'Nexora AI menganalisis transaksi, menemukan pola, dan memberi insight terbaik untukmu.',
+      icon: LucideIcons.chartNoAxesCombined,
     ),
     _OnboardingData(
-      title: 'Raih Masa Depan',
-      message: 'Kelola dana darurat, wishlist, dan cicilan.',
-      icon: LucideIcons.rocket,
+      title: 'Aman & Privasi Terjamin',
+      message: 'Data keuanganmu aman dengan enkripsi tingkat tinggi dan hanya kamu yang memiliki akses.',
+      icon: LucideIcons.shieldCheck,
     ),
   ];
 
@@ -127,15 +127,27 @@ class _OnboardingSlide extends StatelessWidget {
         key: ValueKey(data.title),
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 190,
-            height: 190,
-            decoration: BoxDecoration(
-              gradient: AppGradients.primary,
-              borderRadius: AppRadius.radiusXXL,
-              boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .35), blurRadius: 60)],
-            ),
-            child: Icon(data.icon, size: 92, color: Colors.white),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 230,
+                height: 230,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .35), blurRadius: 80, spreadRadius: 8)],
+                ),
+              ),
+              if (data.icon == LucideIcons.sparkles)
+                const NexoraRobot(size: 218)
+              else
+                Container(
+                  width: 210,
+                  height: 210,
+                  decoration: BoxDecoration(gradient: AppGradients.primary, borderRadius: AppRadius.radiusXXL),
+                  child: Icon(data.icon, size: 96, color: Colors.white),
+                ),
+            ],
           ),
           AppSpacing.gapLG,
           Text(data.title, style: AppTypography.heading1, textAlign: TextAlign.center),

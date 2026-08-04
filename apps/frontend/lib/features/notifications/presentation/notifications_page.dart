@@ -125,7 +125,18 @@ class _NotificationTile extends StatelessWidget {
                 ],
               ),
             ),
-            Text(time, style: AppTypography.caption),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(time, style: AppTypography.caption),
+                const SizedBox(height: 8),
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                ),
+              ],
+            ),
           ],
         ),
       ),

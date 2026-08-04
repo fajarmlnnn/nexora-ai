@@ -95,9 +95,17 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
               AppSpacing.gapLG,
               Expanded(
                 child: transactions.when(
-                  loading: () =>
-                      const ShimmerSkeleton(height: 360),
-                  error: (error, _) => Center(child: Text(error.toString())),
+                  loading: () => ListView.separated(
+                    itemCount: 6,
+                    separatorBuilder: (_, _) => AppSpacing.gapMD,
+                    itemBuilder: (_, _) => const ShimmerSkeleton(height: 76),
+                  ),
+                  error: (error, _) => EmptyStateCard(
+                    icon: LucideIcons.triangleAlert,
+                    title: 'Transaksi belum tersedia',
+                    message: error.toString(),
+                    action: 'Coba Lagi',
+                  ),
                   data: (items) {
                     final expanded = [...items, ..._extraTransactions()]
                         .where((item) => filter == null || item.type == filter)
@@ -191,8 +199,24 @@ class _TransactionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = item.isIncome ? AppColors.success : AppColors.danger;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Dismissible(
+        key: ValueKey(item.id),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          decoration: BoxDecoration(
+            color: AppColors.danger.withValues(alpha: .18),
+            borderRadius: AppRadius.radiusXL,
+          ),
+          child: const Icon(LucideIcons.trash2, color: AppColors.danger),
+        ),
+        confirmDismiss: (_) async => false,
+        child: PremiumCard(
+          borderRadius: AppRadius.radiusXL,
+          padding: const EdgeInsets.all(14),
+          child: Row(
         children: [
           Container(
             width: 54,
@@ -230,6 +254,8 @@ class _TransactionTile extends StatelessWidget {
             ],
           ),
         ],
+          ),
+        ),
       ),
     );
   }
