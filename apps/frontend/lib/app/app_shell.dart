@@ -145,6 +145,17 @@ class _NavItem extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 240),
+                width: selected ? 18 : 4,
+                height: 3,
+                margin: const EdgeInsets.only(bottom: 4),
+                decoration: BoxDecoration(
+                  gradient: selected ? AppGradients.button : null,
+                  color: selected ? null : Colors.transparent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
               Icon(
                 icon,
                 size: 23,

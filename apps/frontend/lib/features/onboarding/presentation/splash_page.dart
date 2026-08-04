@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/premium_widgets.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -17,7 +18,7 @@ class SplashPage extends StatefulWidget {
 class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(seconds: 2),
+    duration: const Duration(milliseconds: 2400),
   )..forward();
 
   @override
@@ -27,7 +28,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   }
 
   Future<void> _completeSplash() async {
-    await Future<void>.delayed(const Duration(seconds: 2));
+    await Future<void>.delayed(const Duration(milliseconds: 2500));
     final prefs = await SharedPreferences.getInstance();
     final onboarded = prefs.getBool('nexora_onboarded') ?? false;
     if (mounted) context.go(onboarded ? '/' : '/onboarding');
@@ -74,24 +75,17 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 118,
-                            height: 118,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: .65),
-                                  blurRadius: 80,
-                                  spreadRadius: 18,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(Icons.hexagon, color: Colors.white, size: 92),
-                          ),
+                          const NexoraRobot(size: 178),
+                          const SizedBox(height: 18),
+                          Text('NEXORA', style: AppTypography.heading1.copyWith(fontSize: 38, letterSpacing: 9)),
+                          const SizedBox(height: 8),
+                          Text('YOUR PERSONAL FINANCE AI', style: AppTypography.caption.copyWith(letterSpacing: 3, color: Colors.white70)),
                           const SizedBox(height: 22),
-                          Text('NEXORA', style: AppTypography.heading1.copyWith(fontSize: 36, letterSpacing: 2)),
-                          Text('Your Personal Finance AI', style: AppTypography.bodyMedium),
+                          Text(
+                            'AI yang memahami keuanganmu.\nBukan hanya mencatatnya.',
+                            textAlign: TextAlign.center,
+                            style: AppTypography.bodyMedium.copyWith(color: Colors.white70),
+                          ),
                         ],
                       ),
                     ),

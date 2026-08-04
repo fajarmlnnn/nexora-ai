@@ -32,7 +32,7 @@ class AIPage extends StatelessWidget {
             gradient: AppGradients.primary,
             child: Column(
               children: [
-                const Icon(LucideIcons.bot, size: 76, color: Colors.white),
+                const NexoraRobot(size: 142),
                 AppSpacing.gapSM,
                 Text('Hai, Fajar! 👋', style: AppTypography.heading2),
                 Text(
@@ -57,6 +57,12 @@ class AIPage extends StatelessWidget {
             ],
           ),
           AppSpacing.gapLG,
+          const SectionHeader('Financial coaching'),
+          AppSpacing.gapMD,
+          const _CoachCard(icon: LucideIcons.piggyBank, title: 'Saving tip', message: 'Sisihkan Rp 25.000 setiap hari kerja untuk mencapai tambahan Rp 550.000 bulan ini.', color: AppColors.success),
+          const _CoachCard(icon: LucideIcons.utensils, title: 'Budget recommendation', message: 'Kurangi 2x pesan makanan online minggu ini agar budget makan tetap aman.', color: AppColors.warning),
+          const _CoachCard(icon: LucideIcons.trendingUp, title: 'Spending analysis', message: 'Transportasi naik 12% karena 4 perjalanan ride-hailing tambahan.', color: AppColors.info),
+          AppSpacing.gapLG,
           const SectionHeader('Conversation history'),
           AppSpacing.gapMD,
           const _Bubble(
@@ -74,6 +80,7 @@ class AIPage extends StatelessWidget {
             icon: LucideIcons.shieldCheck,
             color: AppColors.success,
           ),
+          const _TypingBubble(),
           AppSpacing.gapMD,
           PremiumCard(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -96,6 +103,43 @@ class AIPage extends StatelessWidget {
   }
 }
 
+
+class _CoachCard extends StatelessWidget {
+  const _CoachCard({required this.icon, required this.title, required this.message, required this.color});
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: PremiumCard(
+        borderRadius: AppRadius.radiusXL,
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            PremiumIconBadge(icon: icon, color: color, size: 42),
+            AppSpacing.hGapMD,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: AppTypography.labelLarge),
+                  AppSpacing.gapXXS,
+                  Text(message, style: AppTypography.bodySmall),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _PromptChip extends StatelessWidget {
   const _PromptChip(this.label);
 
@@ -108,6 +152,30 @@ class _PromptChip extends StatelessWidget {
       backgroundColor: AppColors.card,
       labelStyle: AppTypography.caption.copyWith(color: AppColors.textPrimary),
       side: const BorderSide(color: AppColors.border),
+    );
+  }
+}
+
+
+class _TypingBubble extends StatelessWidget {
+  const _TypingBubble();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: PremiumCard(
+        borderRadius: AppRadius.radiusXL,
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PremiumIconBadge(icon: LucideIcons.bot, color: AppColors.primaryLight, size: 42),
+            AppSpacing.hGapMD,
+            const TypingDots(),
+          ],
+        ),
+      ),
     );
   }
 }

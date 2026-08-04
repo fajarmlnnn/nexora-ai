@@ -88,8 +88,8 @@ class BalanceCard extends StatelessWidget {
 
               AppSpacing.gapSM,
 
-              Text(
-                rupiah(summary.totalBalance),
+              AnimatedMoneyText(
+                value: summary.totalBalance,
                 style: AppTypography.balance,
               ),
 

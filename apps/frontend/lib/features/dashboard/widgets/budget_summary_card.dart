@@ -52,11 +52,16 @@ class BudgetSummaryCard extends StatelessWidget {
                         Row(
                           children: [
                             Expanded(child: Text(item.name, style: AppTypography.labelMedium)),
-                            Text(
-                              '${(item.progress * 100).round()}%',
-                              style: AppTypography.caption.copyWith(
-                                color: item.color,
-                                fontWeight: FontWeight.w700,
+                            TweenAnimationBuilder<double>(
+                              tween: Tween(begin: 0, end: item.progress),
+                              duration: const Duration(milliseconds: 850),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, value, child) => Text(
+                                '${(value * 100).round()}%',
+                                style: AppTypography.caption.copyWith(
+                                  color: item.color,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ],
@@ -64,7 +69,17 @@ class BudgetSummaryCard extends StatelessWidget {
                         AppSpacing.gapXS,
                         AnimatedProgressBar(value: item.progress, color: item.color),
                         AppSpacing.gapXXS,
-                        Text('${rupiah(item.spent)} / ${rupiah(item.limit)}', style: AppTypography.caption),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text('${rupiah(item.spent)} / ${rupiah(item.limit)}', style: AppTypography.caption),
+                            ),
+                            Text(
+                              'Sisa ${rupiah(item.limit - item.spent)}',
+                              style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/premium_widgets.dart';
 import '../models/ai_insight.dart';
 
 class AIInsightCard extends StatelessWidget {
@@ -32,14 +34,38 @@ class AIInsightCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: .15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: Colors.white, size: 28),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 82,
+                height: 82,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .10),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: .14),
+                      blurRadius: 24,
+                    ),
+                  ],
+                ),
+              ),
+              const NexoraRobot(size: 78),
+              Positioned(
+                right: 2,
+                top: 2,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: AppColors.background.withValues(alpha: .72),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 15),
+                ),
+              ),
+            ],
           ),
 
           AppSpacing.hGapMD,
@@ -67,7 +93,7 @@ class AIInsightCard extends StatelessWidget {
                 Row(
                   children: [
                     const Text(
-                      'View analysis',
+                      'Lihat analisis',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,

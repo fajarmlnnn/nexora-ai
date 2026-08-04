@@ -45,6 +45,15 @@ class ReportPage extends StatelessWidget {
               ),
             ],
           ),
+
+          AppSpacing.gapLG,
+          const Row(
+            children: [
+              Expanded(child: MetricPill(icon: LucideIcons.sparkles, label: 'Financial Score', value: '76 / 100', color: AppColors.primaryLight)),
+              SizedBox(width: 12),
+              Expanded(child: MetricPill(icon: LucideIcons.badgeCheck, label: 'Net Cashflow', value: '+Rp 12,5Jt', color: AppColors.success)),
+            ],
+          ),
           AppSpacing.gapLG,
           PremiumCard(
             child: Column(
@@ -103,11 +112,76 @@ class ReportPage extends StatelessWidget {
               ],
             ),
           ),
+
+
+          AppSpacing.gapLG,
+          PremiumCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SectionHeader('Spending Heatmap'),
+                AppSpacing.gapMD,
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final value in _heatmap)
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: .12 + value * .42),
+                          borderRadius: AppRadius.radiusMD,
+                          border: Border.all(color: AppColors.border.withValues(alpha: .35)),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          AppSpacing.gapLG,
+          PremiumCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                SectionHeader('Top Spending'),
+                SizedBox(height: 14),
+                _SpendingRow(label: 'Makan & Minuman', value: 'Rp 2.400.000', progress: .72, color: AppColors.chartPurple),
+                _SpendingRow(label: 'Transportasi', value: 'Rp 890.000', progress: .42, color: AppColors.chartBlue),
+                _SpendingRow(label: 'Belanja', value: 'Rp 760.000', progress: .36, color: AppColors.chartOrange),
+              ],
+            ),
+          ),
+          AppSpacing.gapLG,
+          PremiumCard(
+            child: Row(
+              children: [
+                const NexoraRobot(size: 92, waving: false),
+                AppSpacing.hGapMD,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('AI Analysis', style: AppTypography.heading3),
+                      AppSpacing.gapXS,
+                      Text(
+                        'Pengeluaran makan naik 18%, tetapi cashflow masih sehat. Jaga batas harian Rp 120.000 minggu ini.',
+                        style: AppTypography.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 }
+
+const _heatmap = [.12, .28, .52, .18, .35, .72, .42, .22, .64, .30, .46, .88, .24, .58, .40, .18, .76, .34, .20, .50, .62];
 
 const _bars = [
   (98.0, 42.0, '1-7'),
@@ -158,6 +232,49 @@ class _Legend extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(child: Text(label, style: AppTypography.caption)),
           Text(value, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _SpendingRow extends StatelessWidget {
+  const _SpendingRow({
+    required this.label,
+    required this.value,
+    required this.progress,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final double progress;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        children: [
+          PremiumIconBadge(icon: LucideIcons.circleDollarSign, color: color, size: 38),
+          AppSpacing.hGapMD,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: Text(label, style: AppTypography.labelMedium)),
+                    Text(value, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                  ],
+                ),
+                AppSpacing.gapXS,
+                AnimatedProgressBar(value: progress, color: color),
+              ],
+            ),
+          ),
         ],
       ),
     );
