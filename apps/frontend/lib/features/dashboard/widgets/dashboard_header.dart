@@ -36,7 +36,7 @@ class DashboardHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Good Evening 👋', style: AppTypography.bodySmall),
+              Text('Halo, Fajar', style: AppTypography.bodySmall),
               AppSpacing.gapXXS,
               Text('Fajar Maulana', style: AppTypography.heading2),
             ],

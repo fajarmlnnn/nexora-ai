@@ -15,7 +15,11 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = const [
       (LucideIcons.userRound, 'Account', 'Personal information'),
-      (LucideIcons.slidersHorizontal, 'Preferences', 'Theme, currency, language'),
+      (
+        LucideIcons.slidersHorizontal,
+        'Preferences',
+        'Theme, currency, language',
+      ),
       (LucideIcons.cloudUpload, 'Backup', 'Sync and restore data'),
       (LucideIcons.download, 'Export', 'CSV and report export'),
       (LucideIcons.info, 'About', 'Nexora AI version and policies'),
@@ -31,19 +35,69 @@ class ProfilePage extends StatelessWidget {
             AppSpacing.gapLG,
             Container(
               padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadius.radiusXXL, boxShadow: AppShadows.card),
-              child: Row(children: [
-                Container(width: 72, height: 72, decoration: BoxDecoration(gradient: AppGradients.primary, borderRadius: AppRadius.radiusXXL), child: const Icon(LucideIcons.userRound, color: Colors.white, size: 34)),
-                AppSpacing.hGapMD,
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Fajar Maulana', style: AppTypography.heading3), Text('fajar@nexora.ai', style: AppTypography.bodySmall), AppSpacing.gapXS, Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(gradient: AppGradients.primary, borderRadius: AppRadius.radiusLG), child: const Text('Premium', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)))])),
-              ]),
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: AppRadius.radiusXXL,
+                boxShadow: AppShadows.card,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      gradient: AppGradients.primary,
+                      borderRadius: AppRadius.radiusXXL,
+                    ),
+                    child: const Icon(
+                      LucideIcons.userRound,
+                      color: Colors.white,
+                      size: 34,
+                    ),
+                  ),
+                  AppSpacing.hGapMD,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Fajar Maulana', style: AppTypography.heading3),
+                        Text('fajar@nexora.ai', style: AppTypography.bodySmall),
+                        AppSpacing.gapXS,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: AppGradients.primary,
+                            borderRadius: AppRadius.radiusLG,
+                          ),
+                          child: const Text(
+                            'Premium',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
             AppSpacing.gapLG,
-            for (final item in items) _SettingTile(icon: item.$1, title: item.$2, subtitle: item.$3),
+            for (final item in items)
+              _SettingTile(icon: item.$1, title: item.$2, subtitle: item.$3),
             AppSpacing.gapMD,
             OutlinedButton.icon(
               onPressed: () {},
-              style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger, side: const BorderSide(color: AppColors.danger), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXL)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.danger,
+                side: const BorderSide(color: AppColors.danger),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXL),
+              ),
               icon: const Icon(LucideIcons.logOut),
               label: const Text('Logout'),
             ),
@@ -55,7 +109,11 @@ class ProfilePage extends StatelessWidget {
 }
 
 class _SettingTile extends StatelessWidget {
-  const _SettingTile({required this.icon, required this.title, required this.subtitle});
+  const _SettingTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
   final IconData icon;
   final String title;
   final String subtitle;
@@ -63,7 +121,34 @@ class _SettingTile extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(bottom: 12),
     padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadius.radiusXL, border: Border.all(color: AppColors.border.withValues(alpha: .45))),
-    child: Row(children: [Container(width: 42, height: 42, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .14), borderRadius: AppRadius.radiusLG), child: Icon(icon, color: AppColors.primaryLight, size: 21)), AppSpacing.hGapMD, Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: AppTypography.labelLarge), Text(subtitle, style: AppTypography.caption)])), const Icon(LucideIcons.chevronRight, color: AppColors.textMuted)]),
+    decoration: BoxDecoration(
+      color: AppColors.card,
+      borderRadius: AppRadius.radiusXL,
+      border: Border.all(color: AppColors.border.withValues(alpha: .45)),
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: .14),
+            borderRadius: AppRadius.radiusLG,
+          ),
+          child: Icon(icon, color: AppColors.primaryLight, size: 21),
+        ),
+        AppSpacing.hGapMD,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: AppTypography.labelLarge),
+              Text(subtitle, style: AppTypography.caption),
+            ],
+          ),
+        ),
+        const Icon(LucideIcons.chevronRight, color: AppColors.textMuted),
+      ],
+    ),
   );
 }

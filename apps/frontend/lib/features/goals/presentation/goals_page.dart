@@ -15,14 +15,47 @@ class GoalsPage extends StatefulWidget {
   State<GoalsPage> createState() => _GoalsPageState();
 }
 
-class _GoalsPageState extends State<GoalsPage> with SingleTickerProviderStateMixin {
+class _GoalsPageState extends State<GoalsPage>
+    with SingleTickerProviderStateMixin {
   late final TabController _controller = TabController(length: 4, vsync: this);
 
   final goals = const [
-    _GoalData('MacBook Pro', 'Wishlist', 0.62, 1550, 2500, LucideIcons.laptop, AppColors.primary),
-    _GoalData('Emergency Fund', 'Saving', 0.78, 7800, 10000, LucideIcons.shieldCheck, AppColors.success),
-    _GoalData('Credit Card', 'Debt', 0.44, 2200, 5000, LucideIcons.creditCard, AppColors.danger),
-    _GoalData('Japan Trip', 'Wishlist', 0.36, 1800, 5000, LucideIcons.plane, AppColors.info),
+    _GoalData(
+      'MacBook Pro',
+      'Wishlist',
+      0.62,
+      1550,
+      2500,
+      LucideIcons.laptop,
+      AppColors.primary,
+    ),
+    _GoalData(
+      'Emergency Fund',
+      'Saving',
+      0.78,
+      7800,
+      10000,
+      LucideIcons.shieldCheck,
+      AppColors.success,
+    ),
+    _GoalData(
+      'Credit Card',
+      'Debt',
+      0.44,
+      2200,
+      5000,
+      LucideIcons.creditCard,
+      AppColors.danger,
+    ),
+    _GoalData(
+      'Japan Trip',
+      'Wishlist',
+      0.36,
+      1800,
+      5000,
+      LucideIcons.plane,
+      AppColors.info,
+    ),
   ];
 
   @override
@@ -53,20 +86,37 @@ class _GoalsPageState extends State<GoalsPage> with SingleTickerProviderStateMix
             children: [
               Text('Goals', style: AppTypography.heading1),
               AppSpacing.gapXS,
-              Text('Track dreams, savings, and debt in one place.', style: AppTypography.bodyMedium),
+              Text(
+                'Track dreams, savings, and debt in one place.',
+                style: AppTypography.bodyMedium,
+              ),
               AppSpacing.gapLG,
               Container(
                 height: 52,
                 padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadius.radiusXL),
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: AppRadius.radiusXL,
+                ),
                 child: TabBar(
                   controller: _controller,
-                  indicator: BoxDecoration(gradient: AppGradients.primary, borderRadius: AppRadius.radiusLG),
+                  indicator: BoxDecoration(
+                    gradient: AppGradients.primary,
+                    borderRadius: AppRadius.radiusLG,
+                  ),
                   indicatorSize: TabBarIndicatorSize.tab,
                   dividerColor: Colors.transparent,
-                  labelStyle: AppTypography.labelMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                  labelStyle: AppTypography.labelMedium.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
                   unselectedLabelColor: AppColors.textSecondary,
-                  tabs: const [Tab(text: 'All'), Tab(text: 'Wishlist'), Tab(text: 'Saving'), Tab(text: 'Debt')],
+                  tabs: const [
+                    Tab(text: 'All'),
+                    Tab(text: 'Wishlist'),
+                    Tab(text: 'Saving'),
+                    Tab(text: 'Debt'),
+                  ],
                 ),
               ),
               AppSpacing.gapLG,
@@ -75,9 +125,15 @@ class _GoalsPageState extends State<GoalsPage> with SingleTickerProviderStateMix
                   controller: _controller,
                   children: [
                     _GoalList(goals: goals),
-                    _GoalList(goals: goals.where((g) => g.type == 'Wishlist').toList()),
-                    _GoalList(goals: goals.where((g) => g.type == 'Saving').toList()),
-                    _GoalList(goals: goals.where((g) => g.type == 'Debt').toList()),
+                    _GoalList(
+                      goals: goals.where((g) => g.type == 'Wishlist').toList(),
+                    ),
+                    _GoalList(
+                      goals: goals.where((g) => g.type == 'Saving').toList(),
+                    ),
+                    _GoalList(
+                      goals: goals.where((g) => g.type == 'Debt').toList(),
+                    ),
                   ],
                 ),
               ),
@@ -98,7 +154,7 @@ class _GoalList extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.only(bottom: 120),
       itemCount: goals.length,
-      separatorBuilder: (_, __) => AppSpacing.gapMD,
+      separatorBuilder: (_, _) => AppSpacing.gapMD,
       itemBuilder: (context, index) => _GoalCard(goal: goals[index]),
     );
   }
@@ -113,21 +169,60 @@ class _GoalCard extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 260),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadius.radiusXL, border: Border.all(color: AppColors.border.withValues(alpha: .55)), boxShadow: AppShadows.card),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: AppRadius.radiusXL,
+        border: Border.all(color: AppColors.border.withValues(alpha: .55)),
+        boxShadow: AppShadows.card,
+      ),
       child: Row(
         children: [
-          Container(width: 62, height: 62, decoration: BoxDecoration(color: goal.color.withValues(alpha: .16), borderRadius: AppRadius.radiusXL), child: Icon(goal.icon, color: goal.color, size: 30)),
+          Container(
+            width: 62,
+            height: 62,
+            decoration: BoxDecoration(
+              color: goal.color.withValues(alpha: .16),
+              borderRadius: AppRadius.radiusXL,
+            ),
+            child: Icon(goal.icon, color: goal.color, size: 30),
+          ),
           AppSpacing.hGapMD,
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [Expanded(child: Text(goal.title, style: AppTypography.labelLarge)), Text('${(goal.progress * 100).round()}%', style: AppTypography.labelMedium.copyWith(color: goal.color))]),
-              AppSpacing.gapXXS,
-              Text(goal.type, style: AppTypography.bodySmall),
-              AppSpacing.gapSM,
-              ClipRRect(borderRadius: AppRadius.radiusLG, child: LinearProgressIndicator(value: goal.progress, minHeight: 8, color: goal.color, backgroundColor: AppColors.divider)),
-              AppSpacing.gapXS,
-              Text('\$${goal.saved.toStringAsFixed(0)} saved of \$${goal.target.toStringAsFixed(0)}', style: AppTypography.caption),
-            ]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(goal.title, style: AppTypography.labelLarge),
+                    ),
+                    Text(
+                      '${(goal.progress * 100).round()}%',
+                      style: AppTypography.labelMedium.copyWith(
+                        color: goal.color,
+                      ),
+                    ),
+                  ],
+                ),
+                AppSpacing.gapXXS,
+                Text(goal.type, style: AppTypography.bodySmall),
+                AppSpacing.gapSM,
+                ClipRRect(
+                  borderRadius: AppRadius.radiusLG,
+                  child: LinearProgressIndicator(
+                    value: goal.progress,
+                    minHeight: 8,
+                    color: goal.color,
+                    backgroundColor: AppColors.divider,
+                  ),
+                ),
+                AppSpacing.gapXS,
+                Text(
+                  '\$${goal.saved.toStringAsFixed(0)} saved of \$${goal.target.toStringAsFixed(0)}',
+                  style: AppTypography.caption,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -136,7 +231,15 @@ class _GoalCard extends StatelessWidget {
 }
 
 class _GoalData {
-  const _GoalData(this.title, this.type, this.progress, this.saved, this.target, this.icon, this.color);
+  const _GoalData(
+    this.title,
+    this.type,
+    this.progress,
+    this.saved,
+    this.target,
+    this.icon,
+    this.color,
+  );
   final String title;
   final String type;
   final double progress;

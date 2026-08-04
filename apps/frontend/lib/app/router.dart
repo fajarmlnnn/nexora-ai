@@ -41,10 +41,8 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/goals',
-              pageBuilder: (context, state) => _buildTransitionPage(
-                state: state,
-                child: const GoalsPage(),
-              ),
+              pageBuilder: (context, state) =>
+                  _buildTransitionPage(state: state, child: const GoalsPage()),
             ),
           ],
         ),
@@ -63,10 +61,8 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/ai',
-      pageBuilder: (context, state) => _buildTransitionPage(
-        state: state,
-        child: const AIPage(),
-      ),
+      pageBuilder: (context, state) =>
+          _buildTransitionPage(state: state, child: const AIPage()),
     ),
   ],
   errorBuilder: (context, state) {
