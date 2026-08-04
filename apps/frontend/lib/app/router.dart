@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/ai/presentation/ai_page.dart';
 import '../features/dashboard/presentation/dashboard_page.dart';
+import '../features/goals/presentation/goals_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/transaction/presentation/transaction_page.dart';
 import 'app_shell.dart';
@@ -39,11 +40,9 @@ final appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/ai',
-              pageBuilder: (context, state) => _buildTransitionPage(
-                state: state,
-                child: const AIPage(),
-              ),
+              path: '/goals',
+              pageBuilder: (context, state) =>
+                  _buildTransitionPage(state: state, child: const GoalsPage()),
             ),
           ],
         ),
@@ -59,6 +58,11 @@ final appRouter = GoRouter(
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: '/ai',
+      pageBuilder: (context, state) =>
+          _buildTransitionPage(state: state, child: const AIPage()),
     ),
   ],
   errorBuilder: (context, state) {

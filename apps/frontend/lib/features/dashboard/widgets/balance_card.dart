@@ -17,10 +17,10 @@ class BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+    final currency = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
 
     return Container(
-      height: 240,
+      height: 206,
       width: double.infinity,
       padding: AppSpacing.card,
       decoration: BoxDecoration(
@@ -96,7 +96,7 @@ class BalanceCard extends StatelessWidget {
               ),
 
               Text(
-                'Updated just now',
+                'vs last month',
                 style: AppTypography.bodySmall.copyWith(color: Colors.white60),
               ),
 

@@ -24,7 +24,7 @@ class StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: AppSpacing.card,
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.card,
           borderRadius: AppRadius.radiusXL,
@@ -34,8 +34,8 @@ class StatCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
                 color: iconColor.withValues(alpha: .12),
                 borderRadius: AppRadius.radiusLG,
@@ -43,7 +43,7 @@ class StatCard extends StatelessWidget {
               child: Icon(icon, color: iconColor, size: 22),
             ),
 
-            AppSpacing.gapMD,
+            AppSpacing.gapSM,
 
             Text(title, style: AppTypography.bodySmall),
 

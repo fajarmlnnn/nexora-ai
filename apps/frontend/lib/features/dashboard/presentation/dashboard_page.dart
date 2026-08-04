@@ -5,7 +5,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../controllers/dashboard_controller.dart';
-import '../widgets/ai_insight_card.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/budget_summary_card.dart';
 import '../widgets/dashboard_header.dart';
@@ -23,8 +22,6 @@ class DashboardPage extends ConsumerWidget {
 
     final transactionsAsync = ref.watch(recentTransactionsProvider);
 
-    final aiInsightAsync = ref.watch(aiInsightProvider);
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -41,7 +38,7 @@ class DashboardPage extends ConsumerWidget {
                 children: [
                   const DashboardHeader(),
 
-                  AppSpacing.gapXL,
+                  AppSpacing.gapLG,
 
                   BalanceCard(summary: summary),
 
@@ -77,16 +74,7 @@ class DashboardPage extends ConsumerWidget {
                     data: (items) => BudgetSummaryCard(items: items),
                   ),
 
-                  AppSpacing.gapLG,
-
-                  aiInsightAsync.when(
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (error, stackTrace) => Text(error.toString()),
-                    data: (insight) => AIInsightCard(insight: insight),
-                  ),
-
-                  AppSpacing.gapLG,
+                  AppSpacing.gapMD,
 
                   transactionsAsync.when(
                     loading: () =>
