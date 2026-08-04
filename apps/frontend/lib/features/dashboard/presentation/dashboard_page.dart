@@ -8,11 +8,9 @@ import '../controllers/dashboard_controller.dart';
 import '../widgets/ai_insight_card.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/budget_summary_card.dart';
-import '../widgets/dashboard_bottom_nav.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/recent_transaction_card.dart';
 import '../widgets/stat_card.dart';
-import 'package:go_router/go_router.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -96,25 +94,6 @@ class DashboardPage extends ConsumerWidget {
                     error: (error, stackTrace) => Text(error.toString()),
                     data: (transactions) =>
                         RecentTransactionCard(transactions: transactions),
-                  ),
-
-                  AppSpacing.gapLG,
-
-                  DashboardBottomNav(
-                    currentIndex: 0,
-                    onTap: (index) {
-                      switch (index) {
-                        case 0:
-                          context.go('/');
-                          break;
-                        case 1:
-                          context.go('/transactions');
-                          break;
-                        case 3:
-                          context.go('/profile');
-                          break;
-                      }
-                    },
                   ),
                 ],
               ),
