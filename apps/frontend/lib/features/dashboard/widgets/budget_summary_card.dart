@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../models/budget_item.dart';
@@ -15,68 +14,65 @@ class BudgetSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
-
-    return Container(
-      width: double.infinity,
-      padding: AppSpacing.card,
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: AppRadius.radiusXL,
-        boxShadow: AppShadows.card,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Budget Summary', style: AppTypography.heading3),
-
-          AppSpacing.gapLG,
-
-          for (int i = 0; i < items.length; i++) ...[
-            _BudgetItemTile(item: items[i], currency: currency),
-            if (i != items.length - 1) AppSpacing.gapMD,
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _BudgetItemTile extends StatelessWidget {
-  const _BudgetItemTile({required this.item, required this.currency});
-
-  final BudgetItem item;
-  final NumberFormat currency;
-
-  @override
-  Widget build(BuildContext context) {
+    final categories = [
+      ...items,
+      const BudgetItem(id: 'entertainment', name: 'Fun', spent: 270, limit: 1000, color: AppColors.danger),
+      const BudgetItem(id: 'other', name: 'Other', spent: 150, limit: 1000, color: AppColors.textMuted),
+    ];
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(item.name, style: AppTypography.bodyLarge),
-
-            const Spacer(),
-
-            Text(
-              '${currency.format(item.spent)} / ${currency.format(item.limit)}',
-              style: AppTypography.bodySmall,
-            ),
-          ],
-        ),
-
-        AppSpacing.gapXS,
-
-        ClipRRect(
-          borderRadius: AppRadius.radiusLG,
-          child: LinearProgressIndicator(
-            value: item.progress,
-            minHeight: 8,
-            color: item.color,
-            backgroundColor: AppColors.divider,
+        Row(children: [Text('Budget Summary', style: AppTypography.heading3), const Spacer(), Text('See All', style: AppTypography.bodySmall)]),
+        AppSpacing.gapMD,
+        SizedBox(
+          height: 104,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: categories.length,
+            separatorBuilder: (_, __) => AppSpacing.hGapMD,
+            itemBuilder: (context, index) => _BudgetCircle(item: categories[index]),
           ),
         ),
       ],
     );
   }
 }
+
+class _BudgetCircle extends StatelessWidget {
+  const _BudgetCircle({required this.item});
+
+  final BudgetItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 72,
+      child: Column(
+        children: [
+          SizedBox(
+            width: 56,
+            height: 56,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CircularProgressIndicator(value: item.progress, strokeWidth: 6, color: item.color, backgroundColor: AppColors.divider),
+                Center(child: Container(width: 38, height: 38, decoration: BoxDecoration(color: item.color.withValues(alpha: .14), shape: BoxShape.circle), child: Icon(_icon(item.id), color: item.color, size: 18))),
+              ],
+            ),
+          ),
+          AppSpacing.gapXS,
+          Text(item.name, style: AppTypography.caption.copyWith(color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text('${(item.progress * 100).round()}%', style: AppTypography.caption.copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+}
+
+IconData _icon(String id) => switch (id) {
+  'food' => LucideIcons.utensils,
+  'transport' => LucideIcons.car,
+  'shopping' => LucideIcons.shoppingBag,
+  'entertainment' => LucideIcons.gamepad2,
+  _ => LucideIcons.circleDollarSign,
+};

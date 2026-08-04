@@ -41,7 +41,7 @@ class DashboardPage extends ConsumerWidget {
                 children: [
                   const DashboardHeader(),
 
-                  AppSpacing.gapXL,
+                  AppSpacing.gapLG,
 
                   BalanceCard(summary: summary),
 
@@ -77,7 +77,7 @@ class DashboardPage extends ConsumerWidget {
                     data: (items) => BudgetSummaryCard(items: items),
                   ),
 
-                  AppSpacing.gapLG,
+                  AppSpacing.gapMD,
 
                   aiInsightAsync.when(
                     loading: () =>
@@ -86,7 +86,7 @@ class DashboardPage extends ConsumerWidget {
                     data: (insight) => AIInsightCard(insight: insight),
                   ),
 
-                  AppSpacing.gapLG,
+                  AppSpacing.gapMD,
 
                   transactionsAsync.when(
                     loading: () =>
