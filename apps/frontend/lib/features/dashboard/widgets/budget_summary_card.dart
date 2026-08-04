@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/premium_widgets.dart';
 import '../models/budget_item.dart';
 
 class BudgetSummaryCard extends StatelessWidget {
@@ -17,98 +19,59 @@ class BudgetSummaryCard extends StatelessWidget {
       ...items,
       const BudgetItem(
         id: 'entertainment',
-        name: 'Fun',
-        spent: 270,
-        limit: 1000,
+        name: 'Hiburan',
+        spent: 80000,
+        limit: 300000,
         color: AppColors.danger,
       ),
       const BudgetItem(
-        id: 'other',
-        name: 'Other',
-        spent: 150,
-        limit: 1000,
-        color: AppColors.textMuted,
+        id: 'health',
+        name: 'Kesehatan',
+        spent: 50000,
+        limit: 200000,
+        color: AppColors.success,
       ),
     ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text('Budget Summary', style: AppTypography.heading3),
-            const Spacer(),
-            Text('See All', style: AppTypography.bodySmall),
-          ],
-        ),
-        AppSpacing.gapMD,
-        SizedBox(
-          height: 104,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: categories.length,
-            separatorBuilder: (_, _) => AppSpacing.hGapMD,
-            itemBuilder: (context, index) =>
-                _BudgetCircle(item: categories[index]),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
-class _BudgetCircle extends StatelessWidget {
-  const _BudgetCircle({required this.item});
-
-  final BudgetItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 72,
+    return PremiumCard(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 56,
-            height: 56,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CircularProgressIndicator(
-                  value: item.progress,
-                  strokeWidth: 6,
-                  color: item.color,
-                  backgroundColor: AppColors.divider,
-                ),
-                Center(
-                  child: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: item.color.withValues(alpha: .14),
-                      shape: BoxShape.circle,
+          const SectionHeader('Budget Summary', action: 'Lihat Semua'),
+          AppSpacing.gapMD,
+          for (final item in categories)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Row(
+                children: [
+                  PremiumIconBadge(icon: _icon(item.id), color: item.color, size: 40),
+                  AppSpacing.hGapMD,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(child: Text(item.name, style: AppTypography.labelMedium)),
+                            Text(
+                              '${(item.progress * 100).round()}%',
+                              style: AppTypography.caption.copyWith(
+                                color: item.color,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        AppSpacing.gapXS,
+                        AnimatedProgressBar(value: item.progress, color: item.color),
+                        AppSpacing.gapXXS,
+                        Text('${rupiah(item.spent)} / ${rupiah(item.limit)}', style: AppTypography.caption),
+                      ],
                     ),
-                    child: Icon(_icon(item.id), color: item.color, size: 18),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          AppSpacing.gapXS,
-          Text(
-            item.name,
-            style: AppTypography.caption.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            '${(item.progress * 100).round()}%',
-            style: AppTypography.caption.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
         ],
       ),
     );
@@ -120,5 +83,6 @@ IconData _icon(String id) => switch (id) {
   'transport' => LucideIcons.car,
   'shopping' => LucideIcons.shoppingBag,
   'entertainment' => LucideIcons.gamepad2,
+  'health' => LucideIcons.heartPulse,
   _ => LucideIcons.circleDollarSign,
 };

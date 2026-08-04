@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_gradients.dart';
@@ -7,6 +6,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/premium_widgets.dart';
 import '../models/dashboard_summary.dart';
 import 'balance_chart.dart';
 
@@ -17,8 +17,6 @@ class BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
-
     return Container(
       height: 206,
       width: double.infinity,
@@ -91,12 +89,12 @@ class BalanceCard extends StatelessWidget {
               AppSpacing.gapSM,
 
               Text(
-                currency.format(summary.totalBalance),
+                rupiah(summary.totalBalance),
                 style: AppTypography.balance,
               ),
 
               Text(
-                'vs last month',
+                'vs bulan lalu',
                 style: AppTypography.bodySmall.copyWith(color: Colors.white60),
               ),
 

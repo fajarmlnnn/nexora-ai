@@ -229,15 +229,30 @@ class _CreateActionSheet extends StatelessWidget {
           const SizedBox(height: 18),
           _SheetAction(
             icon: LucideIcons.receiptText,
-            title: 'Add Transaction',
-            subtitle: 'Record income or expense',
-            onTap: () => Navigator.pop(context),
+            title: 'Add Income',
+            subtitle: 'Catat gaji, bonus, atau pemasukan lain',
+            onTap: () {
+              Navigator.pop(context);
+              context.push('/add-income');
+            },
+          ),
+          _SheetAction(
+            icon: LucideIcons.receiptText,
+            title: 'Add Expense',
+            subtitle: 'Catat makan, transportasi, dan tagihan',
+            onTap: () {
+              Navigator.pop(context);
+              context.push('/add-expense');
+            },
           ),
           _SheetAction(
             icon: LucideIcons.target,
             title: 'Add Goal',
             subtitle: 'Create a saving, debt, or wishlist goal',
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              Navigator.pop(context);
+              context.go('/goals');
+            },
           ),
           _SheetAction(
             icon: LucideIcons.sparkles,

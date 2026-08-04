@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/premium_widgets.dart';
 import '../models/transaction_model.dart';
 
 class RecentTransactionCard extends StatelessWidget {
@@ -70,11 +71,6 @@ class _TransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(
-      symbol: '\$',
-      decimalDigits: transaction.amount >= 100 ? 0 : 2,
-    );
-
     return Row(
       children: [
         Container(
@@ -100,7 +96,7 @@ class _TransactionTile extends StatelessWidget {
             children: [
               Text(transaction.title, style: AppTypography.labelLarge),
               Text(
-                transaction.isIncome ? 'Income' : 'Expense',
+                transaction.isIncome ? 'Pemasukan' : 'Pengeluaran',
                 style: AppTypography.labelMedium.copyWith(color: color),
               ),
             ],
@@ -110,7 +106,7 @@ class _TransactionTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              '${transaction.isIncome ? '+' : '-'}${currency.format(transaction.amount)}',
+              '${transaction.isIncome ? '+' : '-'}${rupiah(transaction.amount)}',
               style: AppTypography.labelLarge.copyWith(color: color),
             ),
             Text(
