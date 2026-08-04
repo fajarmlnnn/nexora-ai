@@ -7,6 +7,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/premium_widgets.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -21,14 +22,14 @@ class ProfilePage extends StatelessWidget {
         'Theme, currency, language',
       ),
       (LucideIcons.cloudUpload, 'Backup', 'Sync and restore data'),
-      (LucideIcons.download, 'Export', 'CSV and report export'),
+      (LucideIcons.download, 'Export Data', 'CSV and report export'),
+      (LucideIcons.chartPie, 'Reports', 'Income, expense, and cashflow'),
+      (LucideIcons.creditCard, 'Installments', 'Cicilan dan tagihan aktif'),
       (LucideIcons.info, 'About', 'Nexora AI version and policies'),
       (LucideIcons.circleHelp, 'Help', 'Support center'),
     ];
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: ListView(
+    return PremiumScaffold(
+      child: ListView(
           padding: AppSpacing.screen.copyWith(bottom: 120),
           children: [
             Text('Profile', style: AppTypography.heading1),
@@ -102,7 +103,6 @@ class ProfilePage extends StatelessWidget {
               label: const Text('Logout'),
             ),
           ],
-        ),
       ),
     );
   }

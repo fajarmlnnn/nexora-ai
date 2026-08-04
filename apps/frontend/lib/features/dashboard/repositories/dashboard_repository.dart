@@ -12,12 +12,12 @@ class DashboardRepository {
     await Future.delayed(const Duration(milliseconds: 300));
 
     return DashboardSummary(
-      totalBalance: 24250,
-      monthlyIncome: 8240,
-      monthlyExpense: 2150,
-      monthlyBudget: 5000,
-      budgetUsed: 3380,
-      currency: 'USD',
+      totalBalance: 12500000,
+      monthlyIncome: 18500000,
+      monthlyExpense: 6000000,
+      monthlyBudget: 5000000,
+      budgetUsed: 3900000,
+      currency: 'IDR',
       lastUpdated: DateTime.now(),
     );
   }
@@ -28,24 +28,24 @@ class DashboardRepository {
     return [
       TransactionModel(
         id: '1',
-        title: 'Salary',
-        amount: 3250,
+        title: 'Gaji Bulan Mei',
+        amount: 15000000,
         type: TransactionType.income,
         category: TransactionCategory.salary,
         date: DateTime.now(),
       ),
       TransactionModel(
         id: '2',
-        title: 'McDonald\'s',
-        amount: 24.5,
+        title: 'Makan Siang',
+        amount: 35000,
         type: TransactionType.expense,
         category: TransactionCategory.food,
         date: DateTime.now(),
       ),
       TransactionModel(
         id: '3',
-        title: 'Uniqlo',
-        amount: 89,
+        title: 'Kopi Kenangan',
+        amount: 18000,
         type: TransactionType.expense,
         category: TransactionCategory.shopping,
         date: DateTime.now(),
@@ -59,23 +59,23 @@ class DashboardRepository {
     return const [
       BudgetItem(
         id: 'food',
-        name: 'Food',
-        spent: 680,
-        limit: 900,
+        name: 'Makan',
+        spent: 120000,
+        limit: 500000,
         color: AppColors.success,
       ),
       BudgetItem(
         id: 'transport',
-        name: 'Transport',
-        spent: 420,
-        limit: 600,
+        name: 'Transportasi',
+        spent: 260000,
+        limit: 700000,
         color: AppColors.warning,
       ),
       BudgetItem(
         id: 'shopping',
-        name: 'Shopping',
-        spent: 930,
-        limit: 1000,
+        name: 'Belanja',
+        spent: 1200000,
+        limit: 1500000,
         color: AppColors.danger,
       ),
     ];
@@ -101,7 +101,7 @@ class DashboardRepository {
     return const AIInsight(
       title: 'Nexora AI Insight',
       message:
-          'Great job! Your spending decreased by 12% compared to last month.',
+          'Pengeluaran naik 20% dibanding bulan lalu. Nexora menyarankan kurangi makan di luar agar target dana darurat tetap aman.',
       level: InsightLevel.positive,
     );
   }

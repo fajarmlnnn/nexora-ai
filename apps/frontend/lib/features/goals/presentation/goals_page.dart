@@ -7,6 +7,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/premium_widgets.dart';
 
 class GoalsPage extends StatefulWidget {
   const GoalsPage({super.key});
@@ -21,38 +22,38 @@ class _GoalsPageState extends State<GoalsPage>
 
   final goals = const [
     _GoalData(
-      'MacBook Pro',
+      'Dana Darurat',
       'Wishlist',
       0.62,
-      1550,
-      2500,
+      10000000,
+      50000000,
       LucideIcons.laptop,
       AppColors.primary,
     ),
     _GoalData(
-      'Emergency Fund',
+      'Liburan ke Jepang',
       'Saving',
       0.78,
-      7800,
-      10000,
+      7000000,
+      20000000,
       LucideIcons.shieldCheck,
       AppColors.success,
     ),
     _GoalData(
-      'Credit Card',
+      'SPayLater',
       'Debt',
       0.44,
-      2200,
-      5000,
+      1250000,
+      2500000,
       LucideIcons.creditCard,
       AppColors.danger,
     ),
     _GoalData(
-      'Japan Trip',
+      'DP Rumah',
       'Wishlist',
       0.36,
-      1800,
-      5000,
+      18000000,
+      60000000,
       LucideIcons.plane,
       AppColors.info,
     ),
@@ -66,8 +67,7 @@ class _GoalsPageState extends State<GoalsPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return PremiumScaffold(
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 82),
         child: FloatingActionButton(
@@ -78,9 +78,8 @@ class _GoalsPageState extends State<GoalsPage>
           child: const Icon(LucideIcons.plus, color: Colors.white),
         ),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: AppSpacing.screen,
+      child: Padding(
+        padding: AppSpacing.screen,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -140,10 +139,10 @@ class _GoalsPageState extends State<GoalsPage>
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }
+
 
 class _GoalList extends StatelessWidget {
   const _GoalList({required this.goals});
@@ -207,18 +206,10 @@ class _GoalCard extends StatelessWidget {
                 AppSpacing.gapXXS,
                 Text(goal.type, style: AppTypography.bodySmall),
                 AppSpacing.gapSM,
-                ClipRRect(
-                  borderRadius: AppRadius.radiusLG,
-                  child: LinearProgressIndicator(
-                    value: goal.progress,
-                    minHeight: 8,
-                    color: goal.color,
-                    backgroundColor: AppColors.divider,
-                  ),
-                ),
+                AnimatedProgressBar(value: goal.progress, color: goal.color),
                 AppSpacing.gapXS,
                 Text(
-                  '\$${goal.saved.toStringAsFixed(0)} saved of \$${goal.target.toStringAsFixed(0)}',
+                  '${rupiah(goal.saved)} / ${rupiah(goal.target)}',
                   style: AppTypography.caption,
                 ),
               ],

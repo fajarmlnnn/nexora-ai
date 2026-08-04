@@ -8,6 +8,7 @@ import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/premium_widgets.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 import '../../dashboard/models/transaction_model.dart';
 
@@ -24,16 +25,14 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
   @override
   Widget build(BuildContext context) {
     final transactions = ref.watch(recentTransactionsProvider);
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: AppSpacing.screen,
+    return PremiumScaffold(
+      child: Padding(
+        padding: AppSpacing.screen,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
-                child: Text('Transactions', style: AppTypography.heading2),
+                child: Text('Transaksi', style: AppTypography.heading2),
               ),
               AppSpacing.gapLG,
               Container(
@@ -58,7 +57,7 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Search transactions',
+                        'Cari transaksi',
                         style: TextStyle(color: AppColors.textMuted),
                       ),
                     ),
@@ -73,20 +72,20 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
               Row(
                 children: [
                   _Chip(
-                    label: 'All',
+                    label: 'Semua',
                     selected: filter == null,
                     onTap: () => setState(() => filter = null),
                   ),
                   AppSpacing.hGapSM,
                   _Chip(
-                    label: 'Income',
+                    label: 'Pemasukan',
                     selected: filter == TransactionType.income,
                     onTap: () =>
                         setState(() => filter = TransactionType.income),
                   ),
                   AppSpacing.hGapSM,
                   _Chip(
-                    label: 'Expense',
+                    label: 'Pengeluaran',
                     selected: filter == TransactionType.expense,
                     onTap: () =>
                         setState(() => filter = TransactionType.expense),
@@ -97,7 +96,7 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
               Expanded(
                 child: transactions.when(
                   loading: () =>
-                      const Center(child: CircularProgressIndicator()),
+                      const ShimmerSkeleton(height: 360),
                   error: (error, _) => Center(child: Text(error.toString())),
                   data: (items) {
                     final expanded = [...items, ..._extraTransactions()]
@@ -110,15 +109,15 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
                         padding: const EdgeInsets.only(bottom: 110),
                         children: [
                           _Group(
-                            title: 'Today',
+                            title: 'Hari ini',
                             items: expanded.take(4).toList(),
                           ),
                           _Group(
-                            title: 'Yesterday',
+                            title: 'Kemarin',
                             items: expanded.skip(4).take(2).toList(),
                           ),
                           _Group(
-                            title: 'Earlier',
+                            title: 'Sebelumnya',
                             items: expanded.skip(6).toList(),
                           ),
                         ],
@@ -130,8 +129,7 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }
 
@@ -192,10 +190,6 @@ class _TransactionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = item.isIncome ? AppColors.success : AppColors.danger;
-    final currency = NumberFormat.currency(
-      symbol: '\$',
-      decimalDigits: item.amount >= 100 ? 0 : 2,
-    );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -226,7 +220,7 @@ class _TransactionTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${item.isIncome ? '+' : '-'}${currency.format(item.amount)}',
+                '${item.isIncome ? '+' : '-'}${rupiah(item.amount)}',
                 style: AppTypography.labelLarge.copyWith(color: color),
               ),
               Text(
@@ -258,7 +252,7 @@ List<TransactionModel> _extraTransactions() => [
   TransactionModel(
     id: '4',
     title: 'Grab Bike',
-    amount: 27,
+    amount: 27000,
     type: TransactionType.expense,
     category: TransactionCategory.transport,
     date: DateTime.now(),
@@ -266,7 +260,7 @@ List<TransactionModel> _extraTransactions() => [
   TransactionModel(
     id: '5',
     title: 'Coffee',
-    amount: 18,
+    amount: 18000,
     type: TransactionType.expense,
     category: TransactionCategory.food,
     date: DateTime.now().subtract(const Duration(days: 1)),
@@ -274,7 +268,7 @@ List<TransactionModel> _extraTransactions() => [
   TransactionModel(
     id: '6',
     title: 'Freelance Project',
-    amount: 3500,
+    amount: 3500000,
     type: TransactionType.income,
     category: TransactionCategory.investment,
     date: DateTime.now().subtract(const Duration(days: 1)),
@@ -282,7 +276,7 @@ List<TransactionModel> _extraTransactions() => [
   TransactionModel(
     id: '7',
     title: 'Monthly Groceries',
-    amount: 650,
+    amount: 650000,
     type: TransactionType.expense,
     category: TransactionCategory.shopping,
     date: DateTime.now().subtract(const Duration(days: 2)),
