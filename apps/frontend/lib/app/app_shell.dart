@@ -37,11 +37,11 @@ class AppShell extends StatelessWidget {
     );
   }
 
-  void _showCreateSheet(BuildContext context) {
+  void _showCreateSheet(BuildContext parentContext) {
     showModalBottomSheet<void>(
-      context: context,
+      context: parentContext,
       backgroundColor: Colors.transparent,
-      builder: (context) => const _CreateActionSheet(),
+      builder: (_) => _CreateActionSheet(parentContext: parentContext),
     );
   }
 }
@@ -214,7 +214,9 @@ class _CenterButton extends StatelessWidget {
 }
 
 class _CreateActionSheet extends StatelessWidget {
-  const _CreateActionSheet();
+  const _CreateActionSheet({required this.parentContext});
+
+  final BuildContext parentContext;
 
   @override
   Widget build(BuildContext context) {
@@ -243,8 +245,8 @@ class _CreateActionSheet extends StatelessWidget {
             title: 'Add Income',
             subtitle: 'Catat gaji, bonus, atau pemasukan lain',
             onTap: () {
-              Navigator.pop(context);
-              context.push('/add-income');
+              Navigator.pop(parentContext);
+              parentContext.push('/add-income');
             },
           ),
           _SheetAction(
@@ -252,8 +254,8 @@ class _CreateActionSheet extends StatelessWidget {
             title: 'Add Expense',
             subtitle: 'Catat makan, transportasi, dan tagihan',
             onTap: () {
-              Navigator.pop(context);
-              context.push('/add-expense');
+              Navigator.pop(parentContext);
+              parentContext.push('/add-expense');
             },
           ),
           _SheetAction(
@@ -261,8 +263,8 @@ class _CreateActionSheet extends StatelessWidget {
             title: 'Add Goal',
             subtitle: 'Create a saving, debt, or wishlist goal',
             onTap: () {
-              Navigator.pop(context);
-              context.go('/goals');
+              Navigator.pop(parentContext);
+              parentContext.go('/goals');
             },
           ),
           _SheetAction(
@@ -270,8 +272,8 @@ class _CreateActionSheet extends StatelessWidget {
             title: 'Ask Nexora AI',
             subtitle: 'Get personal money guidance',
             onTap: () {
-              Navigator.pop(context);
-              context.push('/ai');
+              Navigator.pop(parentContext);
+              parentContext.push('/ai');
             },
           ),
         ],
@@ -294,23 +296,42 @@ class _SheetAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: EdgeInsets.zero,
-      leading: Container(
-        width: 46,
-        height: 46,
-        decoration: BoxDecoration(
-          gradient: AppGradients.primary,
-          borderRadius: AppRadius.radiusLG,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: AppRadius.radiusLG,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  gradient: AppGradients.primary,
+                  borderRadius: AppRadius.radiusLG,
+                ),
+                child: Icon(icon, color: Colors.white),
+              ),
+
+              const SizedBox(width: 14),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: AppTypography.labelLarge),
+                    const SizedBox(height: 2),
+                    Text(subtitle, style: AppTypography.bodySmall),
+                  ],
+                ),
+              ),
+
+              const Icon(LucideIcons.chevronRight, color: AppColors.textMuted),
+            ],
+          ),
         ),
-        child: Icon(icon, color: Colors.white),
-      ),
-      title: Text(title, style: AppTypography.labelLarge),
-      subtitle: Text(subtitle, style: AppTypography.bodySmall),
-      trailing: const Icon(
-        LucideIcons.chevronRight,
-        color: AppColors.textMuted,
       ),
     );
   }
