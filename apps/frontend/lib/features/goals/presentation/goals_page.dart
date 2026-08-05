@@ -80,69 +80,68 @@ class _GoalsPageState extends State<GoalsPage>
       ),
       child: Padding(
         padding: AppSpacing.screen,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Goals', style: AppTypography.heading1),
-              AppSpacing.gapXS,
-              Text(
-                'Track dreams, savings, and debt in one place.',
-                style: AppTypography.bodyMedium,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Goals', style: AppTypography.heading1),
+            AppSpacing.gapXS,
+            Text(
+              'Track dreams, savings, and debt in one place.',
+              style: AppTypography.bodyMedium,
+            ),
+            AppSpacing.gapLG,
+            Container(
+              height: 52,
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: AppRadius.radiusXL,
               ),
-              AppSpacing.gapLG,
-              Container(
-                height: 52,
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: AppRadius.radiusXL,
+              child: TabBar(
+                controller: _controller,
+                indicator: BoxDecoration(
+                  gradient: AppGradients.primary,
+                  borderRadius: AppRadius.radiusLG,
                 ),
-                child: TabBar(
-                  controller: _controller,
-                  indicator: BoxDecoration(
-                    gradient: AppGradients.primary,
-                    borderRadius: AppRadius.radiusLG,
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                labelStyle: AppTypography.labelMedium.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+                unselectedLabelColor: AppColors.textSecondary,
+                tabs: const [
+                  Tab(text: 'All'),
+                  Tab(text: 'Wishlist'),
+                  Tab(text: 'Saving'),
+                  Tab(text: 'Debt'),
+                ],
+              ),
+            ),
+            AppSpacing.gapLG,
+            Expanded(
+              child: TabBarView(
+                controller: _controller,
+                children: [
+                  _GoalList(goals: goals, showCelebration: true),
+                  _GoalList(
+                    goals: goals.where((g) => g.type == 'Wishlist').toList(),
                   ),
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  dividerColor: Colors.transparent,
-                  labelStyle: AppTypography.labelMedium.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
+                  _GoalList(
+                    goals: goals.where((g) => g.type == 'Saving').toList(),
                   ),
-                  unselectedLabelColor: AppColors.textSecondary,
-                  tabs: const [
-                    Tab(text: 'All'),
-                    Tab(text: 'Wishlist'),
-                    Tab(text: 'Saving'),
-                    Tab(text: 'Debt'),
-                  ],
-                ),
+                  _GoalList(
+                    goals: goals.where((g) => g.type == 'Debt').toList(),
+                  ),
+                ],
               ),
-              AppSpacing.gapLG,
-              Expanded(
-                child: TabBarView(
-                  controller: _controller,
-                  children: [
-                    _GoalList(goals: goals, showCelebration: true),
-                    _GoalList(
-                      goals: goals.where((g) => g.type == 'Wishlist').toList(),
-                    ),
-                    _GoalList(
-                      goals: goals.where((g) => g.type == 'Saving').toList(),
-                    ),
-                    _GoalList(
-                      goals: goals.where((g) => g.type == 'Debt').toList(),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
+      ),
+    );
   }
 }
-
 
 class _GoalList extends StatelessWidget {
   const _GoalList({required this.goals, this.showCelebration = false});
@@ -164,7 +163,6 @@ class _GoalList extends StatelessWidget {
     );
   }
 }
-
 
 class _CelebrationCard extends StatelessWidget {
   const _CelebrationCard();
@@ -251,7 +249,9 @@ class _GoalCard extends StatelessWidget {
                 AppSpacing.gapXS,
                 Text(
                   'AI: ${goal.suggestion}',
-                  style: AppTypography.caption.copyWith(color: AppColors.primaryLight),
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.primaryLight,
+                  ),
                 ),
               ],
             ),

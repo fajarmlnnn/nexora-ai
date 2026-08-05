@@ -260,14 +260,22 @@ class EmptyStateCard extends StatelessWidget {
               Positioned(
                 right: 18,
                 top: 20,
-                child: PremiumIconBadge(icon: icon, color: AppColors.primaryLight, size: 34),
+                child: PremiumIconBadge(
+                  icon: icon,
+                  color: AppColors.primaryLight,
+                  size: 34,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Text(title, style: AppTypography.labelLarge),
           const SizedBox(height: 4),
-          Text(message, textAlign: TextAlign.center, style: AppTypography.bodySmall),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: AppTypography.bodySmall,
+          ),
           const SizedBox(height: 14),
           FilledButton(onPressed: onPressed ?? () {}, child: Text(action)),
         ],
@@ -346,7 +354,10 @@ class _DonutPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final total = segments.fold<double>(0, (sum, segment) => sum + segment.value);
+    final total = segments.fold<double>(
+      0,
+      (sum, segment) => sum + segment.value,
+    );
     if (total <= 0) return;
 
     final paint = Paint()
@@ -365,7 +376,8 @@ class _DonutPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DonutPainter oldDelegate) {
-    return oldDelegate.animationValue != animationValue || oldDelegate.segments != segments;
+    return oldDelegate.animationValue != animationValue ||
+        oldDelegate.segments != segments;
   }
 }
 
@@ -462,12 +474,21 @@ class PremiumEntrance extends StatelessWidget {
       builder: (context, value, child) {
         final safeValue = delay == Duration.zero
             ? value
-            : ((value * (620 + delay.inMilliseconds) - delay.inMilliseconds) / 620).clamp(0.0, 1.0).toDouble();
+            : ((value * (620 + delay.inMilliseconds) - delay.inMilliseconds) /
+                      620)
+                  .clamp(0.0, 1.0)
+                  .toDouble();
         return Opacity(
           opacity: safeValue,
           child: Transform.translate(
-            offset: Offset(offset.dx * 80 * (1 - safeValue), offset.dy * 80 * (1 - safeValue)),
-            child: Transform.scale(scale: .96 + (.04 * safeValue), child: child),
+            offset: Offset(
+              offset.dx * 80 * (1 - safeValue),
+              offset.dy * 80 * (1 - safeValue),
+            ),
+            child: Transform.scale(
+              scale: .96 + (.04 * safeValue),
+              child: child,
+            ),
           ),
         );
       },
@@ -486,7 +507,8 @@ class NexoraRobot extends StatefulWidget {
   State<NexoraRobot> createState() => _NexoraRobotState();
 }
 
-class _NexoraRobotState extends State<NexoraRobot> with SingleTickerProviderStateMixin {
+class _NexoraRobotState extends State<NexoraRobot>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2600),
@@ -503,7 +525,8 @@ class _NexoraRobotState extends State<NexoraRobot> with SingleTickerProviderStat
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final bob = math.sin(_controller.value * math.pi * 2) * widget.size * .025;
+        final bob =
+            math.sin(_controller.value * math.pi * 2) * widget.size * .025;
         final wave = math.sin(_controller.value * math.pi * 2) * .28;
         return Transform.translate(
           offset: Offset(0, bob),
@@ -528,38 +551,109 @@ class _NexoraRobotPainter extends CustomPainter {
     final glow = Paint()
       ..color = AppColors.primary.withValues(alpha: .22)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 26);
-    canvas.drawOval(Rect.fromCenter(center: Offset(s * .5, s * .88), width: s * .8, height: s * .16), glow);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(s * .5, s * .88),
+        width: s * .8,
+        height: s * .16,
+      ),
+      glow,
+    );
 
     final limb = Paint()
-      ..shader = const LinearGradient(colors: [Color(0xFFE9ECFF), Color(0xFF8A92B8)]).createShader(Offset.zero & size)
+      ..shader = const LinearGradient(
+        colors: [Color(0xFFE9ECFF), Color(0xFF8A92B8)],
+      ).createShader(Offset.zero & size)
       ..strokeWidth = s * .085
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(Offset(s * .31, s * .53), Offset(s * .18, s * .68), limb);
-    canvas.drawLine(Offset(s * .69, s * .53), Offset(s * (.84 + wave * .08), s * (.36 - wave * .08)), limb);
+    canvas.drawLine(
+      Offset(s * .69, s * .53),
+      Offset(s * (.84 + wave * .08), s * (.36 - wave * .08)),
+      limb,
+    );
     canvas.drawLine(Offset(s * .4, s * .72), Offset(s * .35, s * .86), limb);
     canvas.drawLine(Offset(s * .6, s * .72), Offset(s * .65, s * .86), limb);
 
-    final bodyRect = RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(s * .5, s * .62), width: s * .46, height: s * .38), Radius.circular(s * .16));
-    final bodyPaint = Paint()..shader = const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFFFFFFF), Color(0xFF8D93B8), Color(0xFF353B67)]).createShader(bodyRect.outerRect);
+    final bodyRect = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: Offset(s * .5, s * .62),
+        width: s * .46,
+        height: s * .38,
+      ),
+      Radius.circular(s * .16),
+    );
+    final bodyPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFFFFFFFF), Color(0xFF8D93B8), Color(0xFF353B67)],
+      ).createShader(bodyRect.outerRect);
     canvas.drawRRect(bodyRect, bodyPaint);
-    canvas.drawCircle(Offset(s * .5, s * .63), s * .105, Paint()..color = AppColors.primary.withValues(alpha: .9));
-    canvas.drawCircle(Offset(s * .5, s * .63), s * .055, Paint()..color = Colors.white.withValues(alpha: .85));
+    canvas.drawCircle(
+      Offset(s * .5, s * .63),
+      s * .105,
+      Paint()..color = AppColors.primary.withValues(alpha: .9),
+    );
+    canvas.drawCircle(
+      Offset(s * .5, s * .63),
+      s * .055,
+      Paint()..color = Colors.white.withValues(alpha: .85),
+    );
 
-    final head = RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(s * .5, s * .36), width: s * .62, height: s * .43), Radius.circular(s * .19));
-    canvas.drawRRect(head.inflate(s * .04), Paint()..color = Colors.white.withValues(alpha: .7));
-    canvas.drawRRect(head, Paint()..shader = const LinearGradient(colors: [Color(0xFFDEE3FF), Color(0xFF7F86AE)]).createShader(head.outerRect));
-    final face = RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(s * .5, s * .36), width: s * .46, height: s * .25), Radius.circular(s * .1));
+    final head = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: Offset(s * .5, s * .36),
+        width: s * .62,
+        height: s * .43,
+      ),
+      Radius.circular(s * .19),
+    );
+    canvas.drawRRect(
+      head.inflate(s * .04),
+      Paint()..color = Colors.white.withValues(alpha: .7),
+    );
+    canvas.drawRRect(
+      head,
+      Paint()
+        ..shader = const LinearGradient(
+          colors: [Color(0xFFDEE3FF), Color(0xFF7F86AE)],
+        ).createShader(head.outerRect),
+    );
+    final face = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: Offset(s * .5, s * .36),
+        width: s * .46,
+        height: s * .25,
+      ),
+      Radius.circular(s * .1),
+    );
     canvas.drawRRect(face, Paint()..color = const Color(0xFF070A18));
-    final eye = Paint()..color = AppColors.primaryLight..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+    final eye = Paint()
+      ..color = AppColors.primaryLight
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
     canvas.drawCircle(Offset(s * .42, s * .35), s * .035, eye);
     canvas.drawCircle(Offset(s * .58, s * .35), s * .035, eye);
-    canvas.drawArc(Rect.fromCenter(center: Offset(s * .5, s * .405), width: s * .18, height: s * .08), .2, math.pi - .4, false, Paint()..color = Colors.white70..style = PaintingStyle.stroke..strokeWidth = s * .01);
+    canvas.drawArc(
+      Rect.fromCenter(
+        center: Offset(s * .5, s * .405),
+        width: s * .18,
+        height: s * .08,
+      ),
+      .2,
+      math.pi - .4,
+      false,
+      Paint()
+        ..color = Colors.white70
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * .01,
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _NexoraRobotPainter oldDelegate) => oldDelegate.wave != wave;
+  bool shouldRepaint(covariant _NexoraRobotPainter oldDelegate) =>
+      oldDelegate.wave != wave;
 }
-
 
 class AnimatedMoneyText extends StatelessWidget {
   const AnimatedMoneyText({
@@ -600,7 +694,8 @@ class TypingDots extends StatefulWidget {
   State<TypingDots> createState() => _TypingDotsState();
 }
 
-class _TypingDotsState extends State<TypingDots> with SingleTickerProviderStateMixin {
+class _TypingDotsState extends State<TypingDots>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 900),
@@ -626,7 +721,14 @@ class _TypingDotsState extends State<TypingDots> with SingleTickerProviderStateM
                 height: 6,
                 margin: const EdgeInsets.symmetric(horizontal: 2),
                 decoration: BoxDecoration(
-                  color: widget.color.withValues(alpha: .35 + .65 * math.sin((_controller.value + index / 3) * math.pi).abs()),
+                  color: widget.color.withValues(
+                    alpha:
+                        .35 +
+                        .65 *
+                            math
+                                .sin((_controller.value + index / 3) * math.pi)
+                                .abs(),
+                  ),
                   shape: BoxShape.circle,
                 ),
               ),

@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_gradients.dart';
 
 class DashboardHeader extends StatelessWidget {
   const DashboardHeader({super.key});
+  static const String greeting = 'Good Morning';
+  static const String name = 'Fajar';
 
   @override
   Widget build(BuildContext context) {
@@ -18,13 +20,11 @@ class DashboardHeader extends StatelessWidget {
           height: 56,
           decoration: BoxDecoration(
             borderRadius: AppRadius.radiusXL,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF9D7BFF), Color(0xFF7C4DFF)],
-            ),
+            gradient: AppGradients.primary,
             boxShadow: AppShadows.glow,
           ),
           child: const Icon(
-            Icons.person_rounded,
+            Icons.auto_awesome_rounded,
             color: Colors.white,
             size: 30,
           ),
@@ -36,39 +36,28 @@ class DashboardHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Halo, Fajar', style: AppTypography.bodySmall),
+              Text(greeting, style: AppTypography.bodySmall),
               AppSpacing.gapXXS,
-              Text('Fajar Maulana', style: AppTypography.heading2),
+              Text(name, style: AppTypography.heading2),
             ],
           ),
         ),
 
-        Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: AppRadius.radiusXL,
-            boxShadow: AppShadows.soft,
-          ),
-          child: Stack(
-            children: [
-              const Center(
-                child: Icon(Icons.notifications_rounded, color: Colors.white),
-              ),
-              Positioned(
-                right: 12,
-                top: 12,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: const BoxDecoration(
-                    color: AppColors.danger,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
+        Hero(
+          tag: 'profile_avatar',
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              borderRadius: AppRadius.radiusXL,
+              gradient: AppGradients.primary,
+              boxShadow: AppShadows.glow,
+            ),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: Colors.white,
+              size: 30,
+            ),
           ),
         ),
       ],

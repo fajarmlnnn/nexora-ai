@@ -19,8 +19,17 @@ class NotificationsPage extends StatelessWidget {
         children: [
           Row(
             children: [
-              BackButton(color: Colors.white, onPressed: () => Navigator.pop(context)),
-              Expanded(child: Text('Notifikasi', textAlign: TextAlign.center, style: AppTypography.heading2)),
+              BackButton(
+                color: Colors.white,
+                onPressed: () => Navigator.pop(context),
+              ),
+              Expanded(
+                child: Text(
+                  'Notifikasi',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.heading2,
+                ),
+              ),
               const SizedBox(width: 48),
             ],
           ),
@@ -81,10 +90,20 @@ class _FilterTabs extends StatelessWidget {
                 color: AppColors.primary,
                 borderRadius: AppRadius.radiusLG,
               ),
-              child: Text('Semua', textAlign: TextAlign.center, style: AppTypography.labelMedium.copyWith(color: Colors.white)),
+              child: Text(
+                'Semua',
+                textAlign: TextAlign.center,
+                style: AppTypography.labelMedium.copyWith(color: Colors.white),
+              ),
             ),
           ),
-          Expanded(child: Text('Belum Dibaca', textAlign: TextAlign.center, style: AppTypography.labelMedium)),
+          Expanded(
+            child: Text(
+              'Belum Dibaca',
+              textAlign: TextAlign.center,
+              style: AppTypography.labelMedium,
+            ),
+          ),
         ],
       ),
     );
@@ -120,7 +139,12 @@ class _NotificationTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: AppTypography.labelMedium.copyWith(color: AppColors.textPrimary)),
+                  Text(
+                    title,
+                    style: AppTypography.labelMedium.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   Text(message, style: AppTypography.caption),
                 ],
               ),
@@ -133,7 +157,10 @@ class _NotificationTile extends StatelessWidget {
                 Container(
                   width: 7,
                   height: 7,
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ],
             ),

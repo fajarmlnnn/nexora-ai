@@ -94,7 +94,10 @@ class _InstallmentCard extends StatelessWidget {
                 borderRadius: AppRadius.radiusLG,
                 border: Border.all(color: color.withValues(alpha: .45)),
               ),
-              child: Text(status, style: AppTypography.caption.copyWith(color: color)),
+              child: Text(
+                status,
+                style: AppTypography.caption.copyWith(color: color),
+              ),
             ),
           ],
         ),

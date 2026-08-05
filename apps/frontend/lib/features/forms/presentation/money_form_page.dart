@@ -24,7 +24,10 @@ class MoneyFormPage extends StatelessWidget {
         children: [
           Align(
             alignment: Alignment.centerLeft,
-            child: BackButton(color: Colors.white, onPressed: () => Navigator.pop(context)),
+            child: BackButton(
+              color: Colors.white,
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
           Hero(
             tag: income ? 'income-action' : 'expense-action',
@@ -35,17 +38,32 @@ class MoneyFormPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          Text(title, textAlign: TextAlign.center, style: AppTypography.heading1),
           Text(
-            income ? 'Catat pemasukan agar cashflow selalu akurat.' : 'Catat pengeluaran sebelum budget bocor.',
+            title,
+            textAlign: TextAlign.center,
+            style: AppTypography.heading1,
+          ),
+          Text(
+            income
+                ? 'Catat pemasukan agar cashflow selalu akurat.'
+                : 'Catat pengeluaran sebelum budget bocor.',
             textAlign: TextAlign.center,
             style: AppTypography.bodySmall,
           ),
           AppSpacing.gapLG,
-          _FormFieldCard(label: 'Jumlah', value: income ? 'Rp 15.000.000' : 'Rp 35.000'),
-          _FormFieldCard(label: 'Kategori', value: income ? 'Gaji' : 'Makan & Minum'),
+          _FormFieldCard(
+            label: 'Jumlah',
+            value: income ? 'Rp 15.000.000' : 'Rp 35.000',
+          ),
+          _FormFieldCard(
+            label: 'Kategori',
+            value: income ? 'Gaji' : 'Makan & Minum',
+          ),
           const _FormFieldCard(label: 'Tanggal', value: '26 Mei 2024'),
-          const _FormFieldCard(label: 'Catatan (Opsional)', value: 'Tambahkan catatan'),
+          const _FormFieldCard(
+            label: 'Catatan (Opsional)',
+            value: 'Tambahkan catatan',
+          ),
           const _FormFieldCard(label: 'Metode', value: 'E-Wallet'),
           AppSpacing.gapMD,
           FilledButton(

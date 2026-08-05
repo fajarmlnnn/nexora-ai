@@ -20,20 +20,26 @@ final appRouter = GoRouter(
   routes: [
     GoRoute(
       path: '/splash',
-      pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const SplashPage()),
+      pageBuilder: (context, state) =>
+          _buildTransitionPage(state: state, child: const SplashPage()),
     ),
     GoRoute(
       path: '/onboarding',
-      pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const OnboardingPage()),
+      pageBuilder: (context, state) =>
+          _buildTransitionPage(state: state, child: const OnboardingPage()),
     ),
     StatefulShellRoute.indexedStack(
-      builder: (context, state, navigationShell) => AppShell(navigationShell: navigationShell),
+      builder: (context, state, navigationShell) =>
+          AppShell(navigationShell: navigationShell),
       branches: [
         StatefulShellBranch(
           routes: [
             GoRoute(
               path: '/',
-              pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const DashboardPage()),
+              pageBuilder: (context, state) => _buildTransitionPage(
+                state: state,
+                child: const DashboardPage(),
+              ),
             ),
           ],
         ),
@@ -41,7 +47,10 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/transactions',
-              pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const TransactionPage()),
+              pageBuilder: (context, state) => _buildTransitionPage(
+                state: state,
+                child: const TransactionPage(),
+              ),
             ),
           ],
         ),
@@ -49,7 +58,8 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/goals',
-              pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const GoalsPage()),
+              pageBuilder: (context, state) =>
+                  _buildTransitionPage(state: state, child: const GoalsPage()),
             ),
           ],
         ),
@@ -57,7 +67,10 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/profile',
-              pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const ProfilePage()),
+              pageBuilder: (context, state) => _buildTransitionPage(
+                state: state,
+                child: const ProfilePage(),
+              ),
             ),
           ],
         ),
@@ -65,36 +78,49 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/ai',
-      pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const AIPage()),
+      pageBuilder: (context, state) =>
+          _buildTransitionPage(state: state, child: const AIPage()),
     ),
     GoRoute(
       path: '/add-income',
-      pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const MoneyFormPage(income: true)),
+      pageBuilder: (context, state) => _buildTransitionPage(
+        state: state,
+        child: const MoneyFormPage(income: true),
+      ),
     ),
     GoRoute(
       path: '/add-expense',
-      pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const MoneyFormPage(income: false)),
+      pageBuilder: (context, state) => _buildTransitionPage(
+        state: state,
+        child: const MoneyFormPage(income: false),
+      ),
     ),
     GoRoute(
       path: '/budget',
-      pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const BudgetPage()),
+      pageBuilder: (context, state) =>
+          _buildTransitionPage(state: state, child: const BudgetPage()),
     ),
     GoRoute(
       path: '/installments',
-      pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const InstallmentPage()),
+      pageBuilder: (context, state) =>
+          _buildTransitionPage(state: state, child: const InstallmentPage()),
     ),
     GoRoute(
       path: '/reports',
-      pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const ReportPage()),
+      pageBuilder: (context, state) =>
+          _buildTransitionPage(state: state, child: const ReportPage()),
     ),
     GoRoute(
       path: '/notifications',
-      pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const NotificationsPage()),
+      pageBuilder: (context, state) =>
+          _buildTransitionPage(state: state, child: const NotificationsPage()),
     ),
   ],
   errorBuilder: (context, state) {
     return Scaffold(
-      body: Center(child: Text('404\n${state.uri}', textAlign: TextAlign.center)),
+      body: Center(
+        child: Text('404\n${state.uri}', textAlign: TextAlign.center),
+      ),
     );
   },
 );
@@ -118,7 +144,10 @@ CustomTransitionPage<void> _buildTransitionPage({
       return FadeTransition(
         opacity: curved,
         child: SlideTransition(
-          position: Tween<Offset>(begin: const Offset(0.04, .03), end: Offset.zero).animate(curved),
+          position: Tween<Offset>(
+            begin: const Offset(0.04, .03),
+            end: Offset.zero,
+          ).animate(curved),
           child: child,
         ),
       );

@@ -8,6 +8,9 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../models/transaction_model.dart';
+import '../../../core/widgets/card/n_card.dart';
+import '../../../core/widgets/layout/n_section_header.dart';
+import '../../../core/theme/app_shadows.dart';
 
 class RecentTransactionCard extends StatelessWidget {
   const RecentTransactionCard({super.key, required this.transactions});
@@ -16,22 +19,28 @@ class RecentTransactionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text('Recent Transactions', style: AppTypography.heading3),
-            const Spacer(),
-            Text('See All', style: AppTypography.bodySmall),
+    return NCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          NSectionHeader(
+            title: 'Recent Transactions',
+            actionLabel: 'See All',
+            onActionPressed: () {},
+          ),
+          AppSpacing.gapMD,
+          for (int i = 0; i < transactions.length; i++) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              child: _TransactionTile(transaction: transactions[i]),
+            ),
+            if (i != transactions.length - 1) ...[
+              const Divider(color: AppColors.divider),
+              AppSpacing.gapSM,
+            ],
           ],
-        ),
-        AppSpacing.gapMD,
-        for (int i = 0; i < transactions.length; i++) ...[
-          _TransactionTile(transaction: transactions[i]),
-          if (i != transactions.length - 1) AppSpacing.gapSM,
         ],
-      ],
+      ),
     );
   }
 }
@@ -45,22 +54,31 @@ class _TransactionTile extends StatelessWidget {
     switch (transaction.category) {
       case TransactionCategory.food:
         return LucideIcons.utensils;
+
       case TransactionCategory.shopping:
         return LucideIcons.shoppingBag;
+
       case TransactionCategory.salary:
-        return LucideIcons.car;
+        return LucideIcons.badgeDollarSign;
+
       case TransactionCategory.transport:
         return LucideIcons.car;
+
       case TransactionCategory.investment:
         return LucideIcons.chartColumn;
+
       case TransactionCategory.health:
         return LucideIcons.heartPulse;
+
       case TransactionCategory.education:
         return LucideIcons.graduationCap;
+
       case TransactionCategory.bills:
         return LucideIcons.receipt;
+
       case TransactionCategory.entertainment:
         return LucideIcons.film;
+
       case TransactionCategory.other:
         return LucideIcons.circleDollarSign;
     }
@@ -77,17 +95,11 @@ class _TransactionTile extends StatelessWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: color,
+            color: color.withValues(alpha: .12),
             borderRadius: AppRadius.radiusMD,
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: .28),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            boxShadow: AppShadows.soft,
           ),
-          child: Icon(icon, color: Colors.white, size: 22),
+          child: Icon(icon, color: color, size: 22),
         ),
         AppSpacing.hGapMD,
         Expanded(

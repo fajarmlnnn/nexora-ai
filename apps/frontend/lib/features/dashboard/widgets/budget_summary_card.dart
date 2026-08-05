@@ -6,6 +6,8 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../models/budget_item.dart';
+import '../../../core/widgets/card/n_card.dart';
+import '../../../core/widgets/layout/n_section_header.dart';
 
 class BudgetSummaryCard extends StatelessWidget {
   const BudgetSummaryCard({super.key, required this.items});
@@ -32,18 +34,26 @@ class BudgetSummaryCard extends StatelessWidget {
       ),
     ];
 
-    return PremiumCard(
+    return NCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader('Budget Summary', action: 'Lihat Semua'),
+          NSectionHeader(
+            title: 'Budget Summary',
+            actionLabel: 'Lihat Semua',
+            onActionPressed: () {},
+          ),
           AppSpacing.gapMD,
           for (final item in categories)
             Padding(
-              padding: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: Row(
                 children: [
-                  PremiumIconBadge(icon: _icon(item.id), color: item.color, size: 40),
+                  PremiumIconBadge(
+                    icon: _icon(item.id),
+                    color: item.color,
+                    size: 40,
+                  ),
                   AppSpacing.hGapMD,
                   Expanded(
                     child: Column(
@@ -51,7 +61,12 @@ class BudgetSummaryCard extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Expanded(child: Text(item.name, style: AppTypography.labelMedium)),
+                            Expanded(
+                              child: Text(
+                                item.name,
+                                style: AppTypography.labelMedium,
+                              ),
+                            ),
                             TweenAnimationBuilder<double>(
                               tween: Tween(begin: 0, end: item.progress),
                               duration: const Duration(milliseconds: 850),
@@ -67,16 +82,24 @@ class BudgetSummaryCard extends StatelessWidget {
                           ],
                         ),
                         AppSpacing.gapXS,
-                        AnimatedProgressBar(value: item.progress, color: item.color),
+                        AnimatedProgressBar(
+                          value: item.progress,
+                          color: item.color,
+                        ),
                         AppSpacing.gapXXS,
                         Row(
                           children: [
                             Expanded(
-                              child: Text('${rupiah(item.spent)} / ${rupiah(item.limit)}', style: AppTypography.caption),
+                              child: Text(
+                                '${rupiah(item.spent)} / ${rupiah(item.limit)}',
+                                style: AppTypography.caption,
+                              ),
                             ),
                             Text(
                               'Sisa ${rupiah(item.limit - item.spent)}',
-                              style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                           ],
                         ),

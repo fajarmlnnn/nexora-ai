@@ -30,79 +30,79 @@ class ProfilePage extends StatelessWidget {
     ];
     return PremiumScaffold(
       child: ListView(
-          padding: AppSpacing.screen.copyWith(bottom: 120),
-          children: [
-            Text('Profile', style: AppTypography.heading1),
-            AppSpacing.gapLG,
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: AppRadius.radiusXXL,
-                boxShadow: AppShadows.card,
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      gradient: AppGradients.primary,
-                      borderRadius: AppRadius.radiusXXL,
-                    ),
-                    child: const Icon(
-                      LucideIcons.userRound,
-                      color: Colors.white,
-                      size: 34,
-                    ),
+        padding: AppSpacing.screen.copyWith(bottom: 120),
+        children: [
+          Text('Profile', style: AppTypography.heading1),
+          AppSpacing.gapLG,
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: AppRadius.radiusXXL,
+              boxShadow: AppShadows.card,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.primary,
+                    borderRadius: AppRadius.radiusXXL,
                   ),
-                  AppSpacing.hGapMD,
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Fajar Maulana', style: AppTypography.heading3),
-                        Text('fajar@nexora.ai', style: AppTypography.bodySmall),
-                        AppSpacing.gapXS,
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: AppGradients.primary,
-                            borderRadius: AppRadius.radiusLG,
-                          ),
-                          child: const Text(
-                            'Premium',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
+                  child: const Icon(
+                    LucideIcons.userRound,
+                    color: Colors.white,
+                    size: 34,
+                  ),
+                ),
+                AppSpacing.hGapMD,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Fajar Maulana', style: AppTypography.heading3),
+                      Text('fajar@nexora.ai', style: AppTypography.bodySmall),
+                      AppSpacing.gapXS,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: AppGradients.primary,
+                          borderRadius: AppRadius.radiusLG,
+                        ),
+                        child: const Text(
+                          'Premium',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            AppSpacing.gapLG,
-            for (final item in items)
-              _SettingTile(icon: item.$1, title: item.$2, subtitle: item.$3),
-            AppSpacing.gapMD,
-            OutlinedButton.icon(
-              onPressed: () {},
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.danger,
-                side: const BorderSide(color: AppColors.danger),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXL),
-              ),
-              icon: const Icon(LucideIcons.logOut),
-              label: const Text('Logout'),
+          ),
+          AppSpacing.gapLG,
+          for (final item in items)
+            _SettingTile(icon: item.$1, title: item.$2, subtitle: item.$3),
+          AppSpacing.gapMD,
+          OutlinedButton.icon(
+            onPressed: () {},
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.danger,
+              side: const BorderSide(color: AppColors.danger),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXL),
             ),
-          ],
+            icon: const Icon(LucideIcons.logOut),
+            label: const Text('Logout'),
+          ),
+        ],
       ),
     );
   }

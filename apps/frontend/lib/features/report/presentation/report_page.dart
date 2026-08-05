@@ -49,9 +49,23 @@ class ReportPage extends StatelessWidget {
           AppSpacing.gapLG,
           const Row(
             children: [
-              Expanded(child: MetricPill(icon: LucideIcons.sparkles, label: 'Financial Score', value: '76 / 100', color: AppColors.primaryLight)),
+              Expanded(
+                child: MetricPill(
+                  icon: LucideIcons.sparkles,
+                  label: 'Financial Score',
+                  value: '76 / 100',
+                  color: AppColors.primaryLight,
+                ),
+              ),
               SizedBox(width: 12),
-              Expanded(child: MetricPill(icon: LucideIcons.badgeCheck, label: 'Net Cashflow', value: '+Rp 12,5Jt', color: AppColors.success)),
+              Expanded(
+                child: MetricPill(
+                  icon: LucideIcons.badgeCheck,
+                  label: 'Net Cashflow',
+                  value: '+Rp 12,5Jt',
+                  color: AppColors.success,
+                ),
+              ),
             ],
           ),
           AppSpacing.gapLG,
@@ -75,10 +89,26 @@ class ReportPage extends StatelessWidget {
                     const Expanded(
                       child: Column(
                         children: [
-                          _Legend(label: 'Makan', value: '25%', color: AppColors.chartPurple),
-                          _Legend(label: 'Transportasi', value: '20%', color: AppColors.chartBlue),
-                          _Legend(label: 'Belanja', value: '30%', color: AppColors.chartGreen),
-                          _Legend(label: 'Lainnya', value: '25%', color: AppColors.chartOrange),
+                          _Legend(
+                            label: 'Makan',
+                            value: '25%',
+                            color: AppColors.chartPurple,
+                          ),
+                          _Legend(
+                            label: 'Transportasi',
+                            value: '20%',
+                            color: AppColors.chartBlue,
+                          ),
+                          _Legend(
+                            label: 'Belanja',
+                            value: '30%',
+                            color: AppColors.chartGreen,
+                          ),
+                          _Legend(
+                            label: 'Lainnya',
+                            value: '25%',
+                            color: AppColors.chartOrange,
+                          ),
                         ],
                       ),
                     ),
@@ -103,7 +133,11 @@ class ReportPage extends StatelessWidget {
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 5),
-                            child: _CashflowBar(income: bar.$1, expense: bar.$2, label: bar.$3),
+                            child: _CashflowBar(
+                              income: bar.$1,
+                              expense: bar.$2,
+                              label: bar.$3,
+                            ),
                           ),
                         ),
                     ],
@@ -112,7 +146,6 @@ class ReportPage extends StatelessWidget {
               ],
             ),
           ),
-
 
           AppSpacing.gapLG,
           PremiumCard(
@@ -130,9 +163,13 @@ class ReportPage extends StatelessWidget {
                         width: 34,
                         height: 34,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: .12 + value * .42),
+                          color: AppColors.primary.withValues(
+                            alpha: .12 + value * .42,
+                          ),
                           borderRadius: AppRadius.radiusMD,
-                          border: Border.all(color: AppColors.border.withValues(alpha: .35)),
+                          border: Border.all(
+                            color: AppColors.border.withValues(alpha: .35),
+                          ),
                         ),
                       ),
                   ],
@@ -147,9 +184,24 @@ class ReportPage extends StatelessWidget {
               children: const [
                 SectionHeader('Top Spending'),
                 SizedBox(height: 14),
-                _SpendingRow(label: 'Makan & Minuman', value: 'Rp 2.400.000', progress: .72, color: AppColors.chartPurple),
-                _SpendingRow(label: 'Transportasi', value: 'Rp 890.000', progress: .42, color: AppColors.chartBlue),
-                _SpendingRow(label: 'Belanja', value: 'Rp 760.000', progress: .36, color: AppColors.chartOrange),
+                _SpendingRow(
+                  label: 'Makan & Minuman',
+                  value: 'Rp 2.400.000',
+                  progress: .72,
+                  color: AppColors.chartPurple,
+                ),
+                _SpendingRow(
+                  label: 'Transportasi',
+                  value: 'Rp 890.000',
+                  progress: .42,
+                  color: AppColors.chartBlue,
+                ),
+                _SpendingRow(
+                  label: 'Belanja',
+                  value: 'Rp 760.000',
+                  progress: .36,
+                  color: AppColors.chartOrange,
+                ),
               ],
             ),
           ),
@@ -181,7 +233,29 @@ class ReportPage extends StatelessWidget {
   }
 }
 
-const _heatmap = [.12, .28, .52, .18, .35, .72, .42, .22, .64, .30, .46, .88, .24, .58, .40, .18, .76, .34, .20, .50, .62];
+const _heatmap = [
+  .12,
+  .28,
+  .52,
+  .18,
+  .35,
+  .72,
+  .42,
+  .22,
+  .64,
+  .30,
+  .46,
+  .88,
+  .24,
+  .58,
+  .40,
+  .18,
+  .76,
+  .34,
+  .20,
+  .50,
+  .62,
+];
 
 const _bars = [
   (98.0, 42.0, '1-7'),
@@ -206,9 +280,18 @@ class _MonthSelector extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text(label, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+          Text(
+            label,
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
           const SizedBox(width: 6),
-          const Icon(LucideIcons.chevronDown, color: AppColors.textMuted, size: 16),
+          const Icon(
+            LucideIcons.chevronDown,
+            color: AppColors.textMuted,
+            size: 16,
+          ),
         ],
       ),
     );
@@ -216,7 +299,11 @@ class _MonthSelector extends StatelessWidget {
 }
 
 class _Legend extends StatelessWidget {
-  const _Legend({required this.label, required this.value, required this.color});
+  const _Legend({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   final String label;
   final String value;
@@ -228,16 +315,24 @@ class _Legend extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
-          Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
           const SizedBox(width: 8),
           Expanded(child: Text(label, style: AppTypography.caption)),
-          Text(value, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+          Text(
+            value,
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
         ],
       ),
     );
   }
 }
-
 
 class _SpendingRow extends StatelessWidget {
   const _SpendingRow({
@@ -258,7 +353,11 @@ class _SpendingRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         children: [
-          PremiumIconBadge(icon: LucideIcons.circleDollarSign, color: color, size: 38),
+          PremiumIconBadge(
+            icon: LucideIcons.circleDollarSign,
+            color: color,
+            size: 38,
+          ),
           AppSpacing.hGapMD,
           Expanded(
             child: Column(
@@ -266,8 +365,15 @@ class _SpendingRow extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Expanded(child: Text(label, style: AppTypography.labelMedium)),
-                    Text(value, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                    Expanded(
+                      child: Text(label, style: AppTypography.labelMedium),
+                    ),
+                    Text(
+                      value,
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
                 AppSpacing.gapXS,
@@ -282,7 +388,11 @@ class _SpendingRow extends StatelessWidget {
 }
 
 class _CashflowBar extends StatelessWidget {
-  const _CashflowBar({required this.income, required this.expense, required this.label});
+  const _CashflowBar({
+    required this.income,
+    required this.expense,
+    required this.label,
+  });
 
   final double income;
   final double expense;

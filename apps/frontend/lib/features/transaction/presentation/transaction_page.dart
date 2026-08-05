@@ -28,116 +28,109 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
     return PremiumScaffold(
       child: Padding(
         padding: AppSpacing.screen,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Text('Transaksi', style: AppTypography.heading2),
-              ),
-              AppSpacing.gapLG,
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: AppRadius.radiusXL,
-                  border: Border.all(
-                    color: AppColors.border.withValues(alpha: .45),
-                  ),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(
-                      LucideIcons.search,
-                      color: AppColors.textMuted,
-                      size: 20,
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Cari transaksi',
-                        style: TextStyle(color: AppColors.textMuted),
-                      ),
-                    ),
-                    Icon(
-                      LucideIcons.slidersHorizontal,
-                      color: AppColors.textSecondary,
-                    ),
-                  ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Text('Transaksi', style: AppTypography.heading2)),
+            AppSpacing.gapLG,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: AppRadius.radiusXL,
+                border: Border.all(
+                  color: AppColors.border.withValues(alpha: .45),
                 ),
               ),
-              AppSpacing.gapMD,
-              Row(
+              child: const Row(
                 children: [
-                  _Chip(
-                    label: 'Semua',
-                    selected: filter == null,
-                    onTap: () => setState(() => filter = null),
+                  Icon(
+                    LucideIcons.search,
+                    color: AppColors.textMuted,
+                    size: 20,
                   ),
-                  AppSpacing.hGapSM,
-                  _Chip(
-                    label: 'Pemasukan',
-                    selected: filter == TransactionType.income,
-                    onTap: () =>
-                        setState(() => filter = TransactionType.income),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Cari transaksi',
+                      style: TextStyle(color: AppColors.textMuted),
+                    ),
                   ),
-                  AppSpacing.hGapSM,
-                  _Chip(
-                    label: 'Pengeluaran',
-                    selected: filter == TransactionType.expense,
-                    onTap: () =>
-                        setState(() => filter = TransactionType.expense),
+                  Icon(
+                    LucideIcons.slidersHorizontal,
+                    color: AppColors.textSecondary,
                   ),
                 ],
               ),
-              AppSpacing.gapLG,
-              Expanded(
-                child: transactions.when(
-                  loading: () => ListView.separated(
-                    itemCount: 6,
-                    separatorBuilder: (_, _) => AppSpacing.gapMD,
-                    itemBuilder: (_, _) => const ShimmerSkeleton(height: 76),
-                  ),
-                  error: (error, _) => EmptyStateCard(
-                    icon: LucideIcons.triangleAlert,
-                    title: 'Transaksi belum tersedia',
-                    message: error.toString(),
-                    action: 'Coba Lagi',
-                  ),
-                  data: (items) {
-                    final expanded = [...items, ..._extraTransactions()]
-                        .where((item) => filter == null || item.type == filter)
-                        .toList();
-                    return AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
-                      child: ListView(
-                        key: ValueKey(filter),
-                        padding: const EdgeInsets.only(bottom: 110),
-                        children: [
-                          _Group(
-                            title: 'Hari ini',
-                            items: expanded.take(4).toList(),
-                          ),
-                          _Group(
-                            title: 'Kemarin',
-                            items: expanded.skip(4).take(2).toList(),
-                          ),
-                          _Group(
-                            title: 'Sebelumnya',
-                            items: expanded.skip(6).toList(),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+            ),
+            AppSpacing.gapMD,
+            Row(
+              children: [
+                _Chip(
+                  label: 'Semua',
+                  selected: filter == null,
+                  onTap: () => setState(() => filter = null),
                 ),
+                AppSpacing.hGapSM,
+                _Chip(
+                  label: 'Pemasukan',
+                  selected: filter == TransactionType.income,
+                  onTap: () => setState(() => filter = TransactionType.income),
+                ),
+                AppSpacing.hGapSM,
+                _Chip(
+                  label: 'Pengeluaran',
+                  selected: filter == TransactionType.expense,
+                  onTap: () => setState(() => filter = TransactionType.expense),
+                ),
+              ],
+            ),
+            AppSpacing.gapLG,
+            Expanded(
+              child: transactions.when(
+                loading: () => ListView.separated(
+                  itemCount: 6,
+                  separatorBuilder: (_, _) => AppSpacing.gapMD,
+                  itemBuilder: (_, _) => const ShimmerSkeleton(height: 76),
+                ),
+                error: (error, _) => EmptyStateCard(
+                  icon: LucideIcons.triangleAlert,
+                  title: 'Transaksi belum tersedia',
+                  message: error.toString(),
+                  action: 'Coba Lagi',
+                ),
+                data: (items) {
+                  final expanded = [...items, ..._extraTransactions()]
+                      .where((item) => filter == null || item.type == filter)
+                      .toList();
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    child: ListView(
+                      key: ValueKey(filter),
+                      padding: const EdgeInsets.only(bottom: 110),
+                      children: [
+                        _Group(
+                          title: 'Hari ini',
+                          items: expanded.take(4).toList(),
+                        ),
+                        _Group(
+                          title: 'Kemarin',
+                          items: expanded.skip(4).take(2).toList(),
+                        ),
+                        _Group(
+                          title: 'Sebelumnya',
+                          items: expanded.skip(6).toList(),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
+      ),
+    );
   }
 }
 
@@ -217,43 +210,43 @@ class _TransactionTile extends StatelessWidget {
           borderRadius: AppRadius.radiusXL,
           padding: const EdgeInsets.all(14),
           child: Row(
-        children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: .18),
-              borderRadius: AppRadius.radiusLG,
-            ),
-            child: Icon(_icon(item.category), color: color),
-          ),
-          AppSpacing.hGapMD,
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item.title, style: AppTypography.labelLarge),
-                Text(
-                  _categoryLabel(item.category),
-                  style: AppTypography.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                '${item.isIncome ? '+' : '-'}${rupiah(item.amount)}',
-                style: AppTypography.labelLarge.copyWith(color: color),
+              Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .18),
+                  borderRadius: AppRadius.radiusLG,
+                ),
+                child: Icon(_icon(item.category), color: color),
               ),
-              Text(
-                DateFormat('dd MMM yyyy').format(item.date),
-                style: AppTypography.caption,
+              AppSpacing.hGapMD,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.title, style: AppTypography.labelLarge),
+                    Text(
+                      _categoryLabel(item.category),
+                      style: AppTypography.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${item.isIncome ? '+' : '-'}${rupiah(item.amount)}',
+                    style: AppTypography.labelLarge.copyWith(color: color),
+                  ),
+                  Text(
+                    DateFormat('dd MMM yyyy').format(item.date),
+                    style: AppTypography.caption,
+                  ),
+                ],
               ),
             ],
-          ),
-        ],
           ),
         ),
       ),

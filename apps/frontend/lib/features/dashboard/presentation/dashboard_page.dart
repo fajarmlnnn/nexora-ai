@@ -13,6 +13,9 @@ import '../widgets/budget_summary_card.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/recent_transaction_card.dart';
 import '../widgets/stat_card.dart';
+import '../../../core/widgets/layout/n_section_header.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/widgets/card/n_card.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -98,7 +101,8 @@ class DashboardPage extends ConsumerWidget {
                     message: error.toString(),
                     action: 'Coba Lagi',
                   ),
-                  data: (transactions) => RecentTransactionCard(transactions: transactions),
+                  data: (transactions) =>
+                      RecentTransactionCard(transactions: transactions),
                 ),
               ],
             ),
@@ -109,7 +113,6 @@ class DashboardPage extends ConsumerWidget {
   }
 }
 
-
 class _QuickActions extends StatelessWidget {
   const _QuickActions();
 
@@ -118,16 +121,19 @@ class _QuickActions extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader('Quick Action'),
+        const NSectionHeader(title: 'Quick Action'),
         AppSpacing.gapMD,
         Row(
-          children: const [
-            _QuickAction(icon: LucideIcons.receiptText, label: 'Tambah\nTransaksi'),
-            SizedBox(width: 10),
+          children: [
+            _QuickAction(
+              icon: LucideIcons.receiptText,
+              label: 'Tambah\nTransaksi',
+            ),
+            AppSpacing.hGapSM,
             _QuickAction(icon: LucideIcons.scanLine, label: 'Scan\nStruk'),
-            SizedBox(width: 10),
+            AppSpacing.hGapSM,
             _QuickAction(icon: LucideIcons.walletCards, label: 'Buat\nBudget'),
-            SizedBox(width: 10),
+            AppSpacing.hGapSM,
             _QuickAction(icon: LucideIcons.send, label: 'Transfer'),
           ],
         ),
@@ -146,13 +152,24 @@ class _QuickAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: PremiumEntrance(
-        child: PremiumCard(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+        child: NCard(
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.sm,
+            horizontal: AppSpacing.xs,
+          ),
           child: Column(
             children: [
-              PremiumIconBadge(icon: icon, color: AppColors.primaryLight, size: 42),
-              const SizedBox(height: 8),
-              Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary, height: 1.2)),
+              PremiumIconBadge(
+                icon: icon,
+                color: AppColors.primaryLight,
+                size: 42,
+              ),
+              AppSpacing.gapXS,
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: AppTypography.caption,
+              ),
             ],
           ),
         ),
@@ -160,7 +177,6 @@ class _QuickAction extends StatelessWidget {
     );
   }
 }
-
 
 class _SmartCommandCenter extends StatelessWidget {
   const _SmartCommandCenter();
@@ -170,44 +186,63 @@ class _SmartCommandCenter extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader('AI Financial Command Center'),
+        const NSectionHeader(title: 'AI Financial Command Center'),
         AppSpacing.gapMD,
-        const Row(
+        Row(
           children: [
-            Expanded(child: _ScoreCard(label: 'Budget Health', value: '82', caption: 'Sehat', color: AppColors.success)),
-            SizedBox(width: 12),
-            Expanded(child: _ScoreCard(label: 'Financial Score', value: '76', caption: '+8 bulan ini', color: AppColors.primaryLight)),
+            Expanded(
+              child: _ScoreCard(
+                label: 'Budget Health',
+                value: '82',
+                caption: 'Sehat',
+                color: AppColors.success,
+              ),
+            ),
+            AppSpacing.hGapMD,
+            Expanded(
+              child: _ScoreCard(
+                label: 'Financial Score',
+                value: '76',
+                caption: '+8 bulan ini',
+                color: AppColors.primaryLight,
+              ),
+            ),
           ],
         ),
         AppSpacing.gapMD,
         const _InsightTile(
           icon: LucideIcons.calendarCheck,
           title: 'Ringkasan hari ini',
-          message: 'Kamu mengeluarkan Rp 185.000 hari ini, 14% lebih rendah dari rata-rata harian minggu lalu.',
+          message:
+              'Kamu mengeluarkan Rp 185.000 hari ini, 14% lebih rendah dari rata-rata harian minggu lalu.',
           color: AppColors.info,
         ),
         const _InsightTile(
           icon: LucideIcons.trendingDown,
           title: 'Spending trend membaik',
-          message: 'Pengeluaran makanan turun 18%. Pertahankan batas Rp 120.000 per hari sampai akhir bulan.',
+          message:
+              'Pengeluaran makanan turun 18%. Pertahankan batas Rp 120.000 per hari sampai akhir bulan.',
           color: AppColors.success,
         ),
         const _InsightTile(
           icon: LucideIcons.walletCards,
           title: 'Rekomendasi tabungan',
-          message: 'Nexora memperkirakan kamu aman menabung Rp 750.000 tambahan bulan ini.',
+          message:
+              'Nexora memperkirakan kamu aman menabung Rp 750.000 tambahan bulan ini.',
           color: AppColors.primaryLight,
         ),
         const _InsightTile(
           icon: LucideIcons.receiptText,
           title: 'Tagihan mendatang',
-          message: 'Internet rumah Rp 420.000 jatuh tempo 3 hari lagi. Saldo tetap aman setelah pembayaran.',
+          message:
+              'Internet rumah Rp 420.000 jatuh tempo 3 hari lagi. Saldo tetap aman setelah pembayaran.',
           color: AppColors.warning,
         ),
         const _InsightTile(
           icon: LucideIcons.badgeCheck,
           title: 'Achievement unlocked',
-          message: 'Kamu berhasil menjaga cashflow positif selama 12 hari berturut-turut.',
+          message:
+              'Kamu berhasil menjaga cashflow positif selama 12 hari berturut-turut.',
           color: AppColors.success,
         ),
       ],
@@ -216,7 +251,12 @@ class _SmartCommandCenter extends StatelessWidget {
 }
 
 class _ScoreCard extends StatelessWidget {
-  const _ScoreCard({required this.label, required this.value, required this.caption, required this.color});
+  const _ScoreCard({
+    required this.label,
+    required this.value,
+    required this.caption,
+    required this.color,
+  });
 
   final String label;
   final String value;
@@ -225,8 +265,8 @@ class _ScoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PremiumCard(
-      padding: const EdgeInsets.all(14),
+    return NCard(
+      padding: const EdgeInsets.all(AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -258,7 +298,12 @@ class _ScoreCard extends StatelessWidget {
 }
 
 class _InsightTile extends StatelessWidget {
-  const _InsightTile({required this.icon, required this.title, required this.message, required this.color});
+  const _InsightTile({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.color,
+  });
 
   final IconData icon;
   final String title;
@@ -268,10 +313,10 @@ class _InsightTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: PremiumCard(
-        borderRadius: BorderRadius.circular(22),
-        padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: NCard(
+        borderRadius: AppRadius.radiusXL,
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Row(
           children: [
             PremiumIconBadge(icon: icon, color: color, size: 42),
@@ -300,11 +345,11 @@ class _DashboardSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: AppSpacing.screen,
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ShimmerSkeleton(width: 180, height: 28),
-          SizedBox(height: 18),
+          AppSpacing.gapLG,
           ShimmerSkeleton(height: 206),
           SizedBox(height: 18),
           Row(

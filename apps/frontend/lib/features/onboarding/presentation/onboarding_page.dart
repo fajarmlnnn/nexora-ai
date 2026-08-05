@@ -24,17 +24,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
   static const _pages = [
     _OnboardingData(
       title: 'Halo, Fajar! 👋',
-      message: 'Aku Nexora AI, siap membantumu mengelola keuanganmu setiap hari.',
+      message:
+          'Aku Nexora AI, siap membantumu mengelola keuanganmu setiap hari.',
       icon: LucideIcons.sparkles,
     ),
     _OnboardingData(
       title: 'AI yang bekerja untuk keuanganmu',
-      message: 'Nexora AI menganalisis transaksi, menemukan pola, dan memberi insight terbaik untukmu.',
+      message:
+          'Nexora AI menganalisis transaksi, menemukan pola, dan memberi insight terbaik untukmu.',
       icon: LucideIcons.chartNoAxesCombined,
     ),
     _OnboardingData(
       title: 'Aman & Privasi Terjamin',
-      message: 'Data keuanganmu aman dengan enkripsi tingkat tinggi dan hanya kamu yang memiliki akses.',
+      message:
+          'Data keuanganmu aman dengan enkripsi tingkat tinggi dan hanya kamu yang memiliki akses.',
       icon: LucideIcons.shieldCheck,
     ),
   ];
@@ -68,7 +71,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 controller: _pageController,
                 itemCount: _pages.length,
                 onPageChanged: (value) => setState(() => _index = value),
-                itemBuilder: (context, index) => _OnboardingSlide(data: _pages[index]),
+                itemBuilder: (context, index) =>
+                    _OnboardingSlide(data: _pages[index]),
               ),
             ),
             Row(
@@ -81,7 +85,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     width: _index == dot ? 28 : 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: _index == dot ? AppColors.primary : AppColors.border,
+                      color: _index == dot
+                          ? AppColors.primary
+                          : AppColors.border,
                       borderRadius: AppRadius.radiusLG,
                     ),
                   ),
@@ -135,7 +141,13 @@ class _OnboardingSlide extends StatelessWidget {
                 height: 230,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .35), blurRadius: 80, spreadRadius: 8)],
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: .35),
+                      blurRadius: 80,
+                      spreadRadius: 8,
+                    ),
+                  ],
                 ),
               ),
               if (data.icon == LucideIcons.sparkles)
@@ -144,15 +156,26 @@ class _OnboardingSlide extends StatelessWidget {
                 Container(
                   width: 210,
                   height: 210,
-                  decoration: BoxDecoration(gradient: AppGradients.primary, borderRadius: AppRadius.radiusXXL),
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.primary,
+                    borderRadius: AppRadius.radiusXXL,
+                  ),
                   child: Icon(data.icon, size: 96, color: Colors.white),
                 ),
             ],
           ),
           AppSpacing.gapLG,
-          Text(data.title, style: AppTypography.heading1, textAlign: TextAlign.center),
+          Text(
+            data.title,
+            style: AppTypography.heading1,
+            textAlign: TextAlign.center,
+          ),
           AppSpacing.gapSM,
-          Text(data.message, style: AppTypography.bodyMedium, textAlign: TextAlign.center),
+          Text(
+            data.message,
+            style: AppTypography.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
@@ -160,7 +183,11 @@ class _OnboardingSlide extends StatelessWidget {
 }
 
 class _OnboardingData {
-  const _OnboardingData({required this.title, required this.message, required this.icon});
+  const _OnboardingData({
+    required this.title,
+    required this.message,
+    required this.icon,
+  });
 
   final String title;
   final String message;

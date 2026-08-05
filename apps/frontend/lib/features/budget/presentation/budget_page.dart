@@ -10,7 +10,6 @@ import '../../../core/widgets/premium_widgets.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 import '../../dashboard/widgets/budget_summary_card.dart';
 
-
 class _BudgetIntelligenceCard extends StatelessWidget {
   const _BudgetIntelligenceCard();
 
@@ -38,7 +37,10 @@ class _BudgetIntelligenceCard extends StatelessWidget {
                   children: [
                     Text('Health Score 82/100', style: AppTypography.heading3),
                     AppSpacing.gapXS,
-                    Text('Sisa 11 hari. Kategori makan paling berisiko melewati budget dalam 6 hari.', style: AppTypography.bodySmall),
+                    Text(
+                      'Sisa 11 hari. Kategori makan paling berisiko melewati budget dalam 6 hari.',
+                      style: AppTypography.bodySmall,
+                    ),
                   ],
                 ),
               ),
@@ -50,11 +52,17 @@ class _BudgetIntelligenceCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: .10),
               borderRadius: AppRadius.radiusXL,
-              border: Border.all(color: AppColors.primary.withValues(alpha: .24)),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: .24),
+              ),
             ),
             child: Row(
               children: [
-                const PremiumIconBadge(icon: LucideIcons.sparkles, color: AppColors.primaryLight, size: 40),
+                const PremiumIconBadge(
+                  icon: LucideIcons.sparkles,
+                  color: AppColors.primaryLight,
+                  size: 40,
+                ),
                 AppSpacing.hGapMD,
                 Expanded(
                   child: Text(
@@ -124,10 +132,15 @@ class BudgetPage extends ConsumerWidget {
                         Text('Total Budget', style: AppTypography.caption),
                         Text('Rp 5.000.000', style: AppTypography.heading3),
                         const SizedBox(height: 8),
-                        Text('Terpakai Rp 3.900.000', style: AppTypography.bodySmall),
+                        Text(
+                          'Terpakai Rp 3.900.000',
+                          style: AppTypography.bodySmall,
+                        ),
                         Text(
                           'Sisa Rp 1.100.000',
-                          style: AppTypography.bodySmall.copyWith(color: AppColors.success),
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.success,
+                          ),
                         ),
                       ],
                     ),
@@ -143,7 +156,8 @@ class BudgetPage extends ConsumerWidget {
             const EmptyStateCard(
               icon: LucideIcons.walletCards,
               title: 'Budget baru siap dibuat',
-              message: 'Tambahkan kategori untuk menjaga pengeluaran tetap sehat.',
+              message:
+                  'Tambahkan kategori untuk menjaga pengeluaran tetap sehat.',
               action: '+ Buat Budget',
             ),
           ],
