@@ -41,7 +41,9 @@ class DashboardPage extends ConsumerWidget {
         ),
         data: (summary) {
           return SingleChildScrollView(
-            padding: AppSpacing.screen,
+            padding: AppSpacing.screen.copyWith(
+              bottom: AppSpacing.bottomNav(context),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -344,7 +346,9 @@ class _DashboardSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: AppSpacing.screen,
+      padding: AppSpacing.screen.copyWith(
+        bottom: AppSpacing.bottomNav(context),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

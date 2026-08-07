@@ -30,7 +30,9 @@ class ProfilePage extends StatelessWidget {
     ];
     return PremiumScaffold(
       child: ListView(
-        padding: AppSpacing.screen.copyWith(bottom: 120),
+        padding: AppSpacing.screen.copyWith(
+          bottom: AppSpacing.bottomNav(context),
+        ),
         children: [
           Text('Profile', style: AppTypography.heading1),
           AppSpacing.gapLG,

@@ -69,7 +69,7 @@ class _GoalsPageState extends State<GoalsPage>
   Widget build(BuildContext context) {
     return PremiumScaffold(
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 82),
+        padding: EdgeInsets.only(bottom: AppSpacing.bottomNav(context) - 6),
         child: FloatingActionButton(
           heroTag: 'goals-add',
           onPressed: () {},
@@ -151,7 +151,7 @@ class _GoalList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
-      padding: const EdgeInsets.only(bottom: 120),
+      padding: EdgeInsets.only(bottom: AppSpacing.bottomNav(context)),
       itemCount: goals.length + (showCelebration ? 1 : 0),
       separatorBuilder: (_, _) => AppSpacing.gapMD,
       itemBuilder: (context, index) {

@@ -37,10 +37,7 @@ class PremiumScaffold extends StatelessWidget {
       body: Stack(
         children: [
           const Positioned.fill(child: PremiumBackground()),
-          SafeArea(
-  bottom: false,
-  child: child,
-),
+          SafeArea(bottom: false, child: child),
         ],
       ),
     );

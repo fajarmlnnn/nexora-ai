@@ -107,7 +107,9 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
                     duration: const Duration(milliseconds: 250),
                     child: ListView(
                       key: ValueKey(filter),
-                      padding: const EdgeInsets.only(bottom: 110),
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.paddingOf(context).bottom + 60,
+                      ),
                       children: [
                         _Group(
                           title: 'Hari ini',

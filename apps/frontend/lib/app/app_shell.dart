@@ -23,7 +23,7 @@ class AppShell extends StatelessWidget {
         }
       },
       child: Scaffold(
-        extendBody: true,
+        extendBody: false,
         body: navigationShell,
         bottomNavigationBar: _PremiumBottomNav(
           currentIndex: navigationShell.currentIndex,
@@ -41,6 +41,10 @@ class AppShell extends StatelessWidget {
     showModalBottomSheet<void>(
       context: parentContext,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: .55),
+      useSafeArea: true,
+      isScrollControlled: true,
+      showDragHandle: true,
       builder: (_) => _CreateActionSheet(parentContext: parentContext),
     );
   }
@@ -62,10 +66,15 @@ class _PremiumBottomNav extends StatelessWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Container(
-      height: 78 + bottomInset,
-      padding: EdgeInsets.fromLTRB(12, 10, 12, 10 + bottomInset),
+      height: 68 + bottomInset,
+      padding: EdgeInsets.only(
+        left: 12,
+        right: 12,
+        top: 6,
+        bottom: bottomInset,
+      ),
       decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: .94),
+        color: AppColors.background.withValues(alpha: .97),
         border: Border(
           top: BorderSide(color: AppColors.border.withValues(alpha: .55)),
         ),
@@ -92,7 +101,7 @@ class _PremiumBottomNav extends StatelessWidget {
           ),
           _NavItem(
             label: 'Goals',
-            icon: LucideIcons.badgeCheck,
+            icon: LucideIcons.target,
             index: 2,
             currentIndex: currentIndex,
             onTap: onTap,
@@ -131,6 +140,8 @@ class _NavItem extends StatelessWidget {
     return Expanded(
       child: InkWell(
         borderRadius: AppRadius.radiusLG,
+        splashColor: AppColors.primary.withValues(alpha: .15),
+        highlightColor: Colors.transparent,
         onTap: () => onTap(index),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 240),
@@ -156,12 +167,16 @@ class _NavItem extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
-              Icon(
-                icon,
-                size: 23,
-                color: selected
-                    ? AppColors.primaryLight
-                    : AppColors.textSecondary,
+              AnimatedScale(
+                duration: const Duration(milliseconds: 220),
+                scale: selected ? 1.12 : 1,
+                child: Icon(
+                  icon,
+                  size: 23,
+                  color: selected
+                      ? AppColors.primaryLight
+                      : AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: 3),
               AnimatedDefaultTextStyle(
@@ -194,19 +209,25 @@ class _CenterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Hero(
-        tag: 'nexora-add-action',
-        child: Container(
-          width: 58,
-          height: 58,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: AppGradients.button,
-            boxShadow: AppShadows.button,
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Hero(
+          tag: 'nexora-add-action',
+          child: Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: AppGradients.button,
+              boxShadow: AppShadows.button,
+            ),
+            child: const Icon(LucideIcons.plus, color: Colors.white, size: 32),
           ),
-          child: const Icon(LucideIcons.plus, color: Colors.white, size: 32),
         ),
       ),
     );
@@ -220,63 +241,62 @@ class _CreateActionSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: AppRadius.radiusXXL,
-        boxShadow: AppShadows.modal,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 42,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.border,
-              borderRadius: AppRadius.radiusLG,
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          MediaQuery.paddingOf(context).bottom + 16,
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: AppRadius.radiusXXL,
+          boxShadow: AppShadows.modal,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SheetAction(
+              icon: LucideIcons.receiptText,
+              title: 'Add Income',
+              subtitle: 'Catat gaji, bonus, atau pemasukan lain',
+              onTap: () {
+                Navigator.pop(context);
+                parentContext.push('/add-income');
+              },
             ),
-          ),
-          const SizedBox(height: 18),
-          _SheetAction(
-            icon: LucideIcons.receiptText,
-            title: 'Add Income',
-            subtitle: 'Catat gaji, bonus, atau pemasukan lain',
-            onTap: () {
-              Navigator.pop(parentContext);
-              parentContext.push('/add-income');
-            },
-          ),
-          _SheetAction(
-            icon: LucideIcons.receiptText,
-            title: 'Add Expense',
-            subtitle: 'Catat makan, transportasi, dan tagihan',
-            onTap: () {
-              Navigator.pop(parentContext);
-              parentContext.push('/add-expense');
-            },
-          ),
-          _SheetAction(
-            icon: LucideIcons.target,
-            title: 'Add Goal',
-            subtitle: 'Create a saving, debt, or wishlist goal',
-            onTap: () {
-              Navigator.pop(parentContext);
-              parentContext.go('/goals');
-            },
-          ),
-          _SheetAction(
-            icon: LucideIcons.sparkles,
-            title: 'Ask Nexora AI',
-            subtitle: 'Get personal money guidance',
-            onTap: () {
-              Navigator.pop(parentContext);
-              parentContext.push('/ai');
-            },
-          ),
-        ],
+            _SheetAction(
+              icon: LucideIcons.receiptText,
+              title: 'Add Expense',
+              subtitle: 'Catat makan, transportasi, dan tagihan',
+              onTap: () {
+                Navigator.pop(context);
+                parentContext.push('/add-expense');
+              },
+            ),
+            _SheetAction(
+              icon: LucideIcons.target,
+              title: 'Add Goal',
+              subtitle: 'Create a saving, debt, or wishlist goal',
+              onTap: () {
+                Navigator.pop(context);
+                parentContext.go('/goals');
+              },
+            ),
+            _SheetAction(
+              icon: LucideIcons.sparkles,
+              title: 'Ask Nexora AI',
+              subtitle: 'Get personal money guidance',
+              onTap: () {
+                Navigator.pop(context);
+                parentContext.push('/ai');
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -300,6 +320,8 @@ class _SheetAction extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: AppRadius.radiusLG,
+        splashColor: AppColors.primary.withValues(alpha: .15),
+        highlightColor: Colors.transparent,
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),

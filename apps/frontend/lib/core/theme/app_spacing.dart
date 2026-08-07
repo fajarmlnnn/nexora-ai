@@ -15,6 +15,13 @@ abstract final class AppSpacing {
   static const double xxxl = 40;
   static const double huge = 48;
 
+  // Bottom Navigation
+  static const double bottomNavHeight = 76;
+
+  static double bottomNav(BuildContext context) {
+    return MediaQuery.paddingOf(context).bottom + bottomNavHeight;
+  }
+
   // Padding
   static const EdgeInsets screen = EdgeInsets.symmetric(
     horizontal: xl,
