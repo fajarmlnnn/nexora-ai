@@ -68,9 +68,9 @@ class _PremiumBottomNav extends StatelessWidget {
     return Container(
       height: 68 + bottomInset,
       padding: EdgeInsets.only(
-        left: 12,
-        right: 12,
-        top: 6,
+        left: 0,
+        right: 0,
+        top: 0,
         bottom: bottomInset,
       ),
       decoration: BoxDecoration(

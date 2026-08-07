@@ -136,7 +136,7 @@ class _QuickActions extends StatelessWidget {
             AppSpacing.hGapSM,
             _QuickAction(icon: LucideIcons.walletCards, label: 'Buat\nBudget'),
             AppSpacing.hGapSM,
-            _QuickAction(icon: LucideIcons.send, label: 'Transfer'),
+            _QuickAction(icon: LucideIcons.sendHorizontal, label: 'Transfer'),
           ],
         ),
       ],
