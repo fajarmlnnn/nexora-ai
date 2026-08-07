@@ -38,11 +38,9 @@ class PremiumScaffold extends StatelessWidget {
         children: [
           const Positioned.fill(child: PremiumBackground()),
           SafeArea(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: bottomPadding ? 92 : 0),
-              child: child,
-            ),
-          ),
+  bottom: false,
+  child: child,
+),
         ],
       ),
     );
