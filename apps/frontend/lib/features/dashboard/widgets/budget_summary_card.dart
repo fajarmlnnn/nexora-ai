@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -54,7 +53,8 @@ class BudgetSummaryCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       rupiah(totalLimit),
-                      style: AppTypography.titleMedium.copyWith(
+                      style: AppTypography.currency.copyWith(
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -66,7 +66,7 @@ class BudgetSummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 11),
           ClipRRect(
-            borderRadius: AppRadius.radiusPill,
+            borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
               value: overallProgress,
               minHeight: 6,
@@ -116,7 +116,7 @@ class _ProgressBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: .10),
-        borderRadius: AppRadius.radiusPill,
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(color: color.withValues(alpha: .18)),
       ),
       child: Text(
@@ -173,6 +173,7 @@ class _BudgetRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.labelMedium.copyWith(
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -188,7 +189,7 @@ class _BudgetRow extends StatelessWidget {
               ),
               const SizedBox(height: 5),
               ClipRRect(
-                borderRadius: AppRadius.radiusPill,
+                borderRadius: BorderRadius.circular(999),
                 child: LinearProgressIndicator(
                   value: item.progress,
                   minHeight: 4,
