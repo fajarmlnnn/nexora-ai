@@ -20,99 +20,159 @@ class AIInsightCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, gradient) = switch (insight.level) {
       InsightLevel.positive => (LucideIcons.badgeCheck, AppGradients.success),
-      InsightLevel.warning => (LucideIcons.triangleAlert, AppGradients.primary),
-      InsightLevel.critical => (LucideIcons.circleAlert, AppGradients.danger),
+
+      InsightLevel.warning => (LucideIcons.sparkles, AppGradients.primary),
+
+      InsightLevel.critical => (LucideIcons.triangleAlert, AppGradients.danger),
     };
 
-    return NCard(
-      onTap: onTap,
-      gradient: gradient,
-      showBorder: false,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Hero(
-            tag: 'dashboard_ai_insight',
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: 82,
-                  height: 82,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: .12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const SizedBox.shrink(),
+    return Hero(
+      tag: "dashboard_ai_card",
+      child: NCard(
+        onTap: onTap,
+        gradient: gradient,
+        showBorder: false,
+        padding: const EdgeInsets.all(18),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -18,
+              top: -18,
+              child: Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: .05),
                 ),
-                const NexoraRobot(size: 74),
-                Positioned(
-                  top: 2,
-                  right: 2,
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: AppColors.background.withValues(alpha: .72),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(icon, color: Colors.white, size: 15),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
 
-          AppSpacing.hGapLG,
-
-          Expanded(
-            child: Column(
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  insight.title,
-                  style: AppTypography.heading3.copyWith(color: Colors.white),
-                ),
-
-                AppSpacing.gapXS,
-
-                Text(
-                  insight.message,
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: Colors.white.withValues(alpha: .90),
-                    height: 1.55,
-                  ),
-                ),
-
-                AppSpacing.gapLG,
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 2,
-                    vertical: 6,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                Hero(
+                  tag: "dashboard_ai_robot",
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      Text(
-                        'Lihat Analisis',
-                        style: AppTypography.labelLarge.copyWith(
-                          color: Colors.white,
+                      Container(
+                        width: 66,
+                        height: 66,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.white.withValues(alpha: .10),
+                              blurRadius: 24,
+                              spreadRadius: 4,
+                            ),
+                          ],
                         ),
                       ),
-                      AppSpacing.hGapXS,
-                      Icon(
-                        LucideIcons.arrowRight,
-                        size: 16,
-                        color: Colors.white.withValues(alpha: .92),
+
+                      Container(
+                        width: 62,
+                        height: 62,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: .12),
+                        ),
+                      ),
+
+                      const NexoraRobot(size: 56),
+
+                      Positioned(
+                        top: 1,
+                        right: 1,
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: AppColors.background.withValues(alpha: .82),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(icon, color: Colors.white, size: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 14),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        insight.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.labelLarge.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+
+                      AppSpacing.gapXS,
+
+                      Text(
+                        insight.message,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: Colors.white.withValues(alpha: .90),
+                          height: 1.5,
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: .10),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                LucideIcons.sparkles,
+                                size: 13,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                "AI Insight",
+                                style: AppTypography.caption.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                LucideIcons.arrowRight,
+                                size: 13,
+                                color: Colors.white,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

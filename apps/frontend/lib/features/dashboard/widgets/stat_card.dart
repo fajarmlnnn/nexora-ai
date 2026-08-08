@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -23,34 +23,96 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: AppRadius.radiusXL,
-          boxShadow: AppShadows.card,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 34,
-              height: 34,
+      child: Hero(
+        tag: "stat_$title",
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: AppRadius.radiusXL,
+            onTap: () {},
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: .12),
-                borderRadius: AppRadius.radiusLG,
+                gradient: AppGradients.surface,
+                borderRadius: AppRadius.radiusXL,
+                border: Border.all(color: Colors.white.withValues(alpha: .06)),
+                boxShadow: AppShadows.card,
               ),
-              child: Icon(icon, color: iconColor, size: 22),
+              child: Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: iconColor.withValues(alpha: .14),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: iconColor.withValues(alpha: .18),
+                          blurRadius: 18,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Icon(icon, color: iconColor, size: 21),
+                  ),
+
+                  AppSpacing.hGapMD,
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                title,
+                                style: AppTypography.caption.copyWith(
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ),
+
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: iconColor.withValues(alpha: .12),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Icon(
+                                Icons.trending_up_rounded,
+                                size: 12,
+                                color: iconColor,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 6),
+
+                        Text(
+                          amount,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.labelLarge.copyWith(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-
-            AppSpacing.gapSM,
-
-            Text(title, style: AppTypography.bodySmall),
-
-            AppSpacing.gapXS,
-
-            Text(amount, style: AppTypography.heading3),
-          ],
+          ),
         ),
       ),
     );

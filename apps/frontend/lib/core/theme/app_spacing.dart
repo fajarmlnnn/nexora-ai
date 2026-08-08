@@ -16,7 +16,7 @@ abstract final class AppSpacing {
   static const double huge = 48;
 
   // Bottom Navigation
-  static const double bottomNavHeight = 76;
+  static const double bottomNavHeight = 82;
 
   static double bottomNav(BuildContext context) {
     return MediaQuery.paddingOf(context).bottom + bottomNavHeight;

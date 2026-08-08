@@ -27,10 +27,12 @@ class AppShell extends StatelessWidget {
         body: navigationShell,
         bottomNavigationBar: _PremiumBottomNav(
           currentIndex: navigationShell.currentIndex,
-          onTap: (index) => navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          ),
+          onTap: (index) {
+            navigationShell.goBranch(
+              index,
+              initialLocation: index == navigationShell.currentIndex,
+            );
+          },
           onAdd: () => _showCreateSheet(context),
         ),
       ),
@@ -45,7 +47,9 @@ class AppShell extends StatelessWidget {
       useSafeArea: true,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => _CreateActionSheet(parentContext: parentContext),
+      builder: (_) {
+        return _CreateActionSheet(parentContext: parentContext);
+      },
     );
   }
 }
@@ -66,12 +70,12 @@ class _PremiumBottomNav extends StatelessWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Container(
-      height: 68 + bottomInset,
+      height: 78 + bottomInset,
       padding: EdgeInsets.only(
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: bottomInset,
+        left: 8,
+        right: 8,
+        top: 8,
+        bottom: bottomInset + 6,
       ),
       decoration: BoxDecoration(
         color: AppColors.background.withValues(alpha: .97),
@@ -83,33 +87,45 @@ class _PremiumBottomNav extends StatelessWidget {
       child: Row(
         children: [
           _NavItem(
-            label: 'Dashboard',
+            label: 'Home',
             icon: LucideIcons.house,
             index: 0,
             currentIndex: currentIndex,
             onTap: onTap,
           ),
+
           _NavItem(
-            label: 'Transactions',
+            label: 'Transaksi',
             icon: LucideIcons.arrowLeftRight,
             index: 1,
             currentIndex: currentIndex,
             onTap: onTap,
           ),
-          Expanded(
-            child: Center(child: _CenterButton(onTap: onAdd)),
-          ),
+
           _NavItem(
-            label: 'Goals',
-            icon: LucideIcons.target,
+            label: 'Wallet',
+            icon: LucideIcons.walletMinimal,
             index: 2,
             currentIndex: currentIndex,
             onTap: onTap,
           ),
+
+          Expanded(
+            child: Center(child: _CenterButton(onTap: onAdd)),
+          ),
+
+          _NavItem(
+            label: 'Goals',
+            icon: LucideIcons.target,
+            index: 3,
+            currentIndex: currentIndex,
+            onTap: onTap,
+          ),
+
           _NavItem(
             label: 'Profile',
             icon: LucideIcons.userRound,
-            index: 3,
+            index: 4,
             currentIndex: currentIndex,
             onTap: onTap,
           ),
@@ -137,6 +153,7 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = index == currentIndex;
+
     return Expanded(
       child: InkWell(
         borderRadius: AppRadius.radiusLG,
@@ -146,7 +163,7 @@ class _NavItem extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 240),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 6),
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 3),
           decoration: BoxDecoration(
             color: selected
                 ? AppColors.primary.withValues(alpha: .12)
@@ -167,18 +184,21 @@ class _NavItem extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
+
               AnimatedScale(
                 duration: const Duration(milliseconds: 220),
                 scale: selected ? 1.12 : 1,
                 child: Icon(
                   icon,
-                  size: 23,
+                  size: 22,
                   color: selected
                       ? AppColors.primaryLight
                       : AppColors.textSecondary,
                 ),
               ),
+
               const SizedBox(height: 3),
+
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 220),
                 style: AppTypography.caption.copyWith(
@@ -186,7 +206,7 @@ class _NavItem extends StatelessWidget {
                       ? AppColors.primaryLight
                       : AppColors.textSecondary,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: 10,
+                  fontSize: 9,
                 ),
                 child: Text(
                   label,
@@ -268,6 +288,7 @@ class _CreateActionSheet extends StatelessWidget {
                 parentContext.push('/add-income');
               },
             ),
+
             _SheetAction(
               icon: LucideIcons.receiptText,
               title: 'Add Expense',
@@ -277,6 +298,17 @@ class _CreateActionSheet extends StatelessWidget {
                 parentContext.push('/add-expense');
               },
             ),
+
+            _SheetAction(
+              icon: LucideIcons.walletMinimal,
+              title: 'Add Wallet',
+              subtitle: 'Tambahkan rekening atau e-wallet baru',
+              onTap: () {
+                Navigator.pop(context);
+                parentContext.go('/wallet');
+              },
+            ),
+
             _SheetAction(
               icon: LucideIcons.target,
               title: 'Add Goal',
@@ -286,6 +318,7 @@ class _CreateActionSheet extends StatelessWidget {
                 parentContext.go('/goals');
               },
             ),
+
             _SheetAction(
               icon: LucideIcons.sparkles,
               title: 'Ask Nexora AI',
@@ -309,6 +342,7 @@ class _SheetAction extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
   });
+
   final IconData icon;
   final String title;
   final String subtitle;

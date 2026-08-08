@@ -50,24 +50,26 @@ class PremiumBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF060A16), AppColors.background],
-        ),
-      ),
+      decoration: const BoxDecoration(gradient: AppGradients.background),
       child: Stack(
+        fit: StackFit.expand,
         children: const [
           Positioned(
-            top: -90,
-            right: -60,
-            child: _Glow(size: 240, color: AppColors.primary),
+            top: -220,
+            right: -170,
+            child: _Glow(size: 500, color: AppColors.primary),
           ),
+
           Positioned(
-            bottom: 72,
-            left: -110,
-            child: _Glow(size: 210, color: AppColors.info),
+            top: 180,
+            left: -220,
+            child: _Glow(size: 420, color: AppColors.aiAccent),
+          ),
+
+          Positioned(
+            bottom: -180,
+            right: -180,
+            child: _Glow(size: 420, color: AppColors.info),
           ),
         ],
       ),
@@ -90,9 +92,9 @@ class _Glow extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: .26),
-            blurRadius: 96,
-            spreadRadius: 42,
+            color: color.withValues(alpha: .08),
+            blurRadius: size * .42,
+            spreadRadius: size * .06,
           ),
         ],
       ),
@@ -120,9 +122,17 @@ class PremiumCard extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        gradient: gradient ?? AppGradients.glass,
+        gradient:
+            gradient ??
+            const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              stops: [0.0, 0.55, 1.0],
+              colors: [Color(0xFF20293A), Color(0xFF171F2D), Color(0xFF10161F)],
+            ),
+
         borderRadius: borderRadius,
-        border: Border.all(color: AppColors.border.withValues(alpha: .55)),
+        border: Border.all(color: Colors.white.withValues(alpha: .08)),
         boxShadow: AppShadows.card,
       ),
       child: child,
@@ -244,7 +254,7 @@ class EmptyStateCard extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: .28),
+                      color: AppColors.primary.withValues(alpha: .14),
                       blurRadius: 54,
                       spreadRadius: 8,
                     ),
@@ -443,7 +453,7 @@ class PremiumIconBadge extends StatelessWidget {
         color: color.withValues(alpha: .16),
         borderRadius: AppRadius.radiusLG,
       ),
-      child: Icon(icon, color: color, size: size * .48),
+      child: Icon(icon, color: color, size: size * .56),
     );
   }
 }
@@ -453,35 +463,38 @@ class PremiumEntrance extends StatelessWidget {
     super.key,
     required this.child,
     this.delay = Duration.zero,
-    this.offset = const Offset(0, .08),
+    this.offset = const Offset(0, .12),
+    this.duration = const Duration(milliseconds: 650),
   });
 
   final Widget child;
   final Duration delay;
   final Offset offset;
+  final Duration duration;
 
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 620 + delay.inMilliseconds),
+      duration: duration + delay,
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
-        final safeValue = delay == Duration.zero
+        final animation = delay == Duration.zero
             ? value
-            : ((value * (620 + delay.inMilliseconds) - delay.inMilliseconds) /
-                      620)
-                  .clamp(0.0, 1.0)
-                  .toDouble();
+            : ((value * (duration.inMilliseconds + delay.inMilliseconds) -
+                        delay.inMilliseconds) /
+                    duration.inMilliseconds)
+                .clamp(0.0, 1.0);
+
         return Opacity(
-          opacity: safeValue,
+          opacity: animation,
           child: Transform.translate(
             offset: Offset(
-              offset.dx * 80 * (1 - safeValue),
-              offset.dy * 80 * (1 - safeValue),
+              offset.dx * 60 * (1 - animation),
+              offset.dy * 60 * (1 - animation),
             ),
             child: Transform.scale(
-              scale: .96 + (.04 * safeValue),
+              scale: .97 + (.03 * animation),
               child: child,
             ),
           ),
@@ -544,7 +557,7 @@ class _NexoraRobotPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final s = size.width;
     final glow = Paint()
-      ..color = AppColors.primary.withValues(alpha: .22)
+      ..color = AppColors.primary.withValues(alpha: .10)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 26);
     canvas.drawOval(
       Rect.fromCenter(
