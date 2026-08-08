@@ -24,7 +24,6 @@ final appRouter = GoRouter(
       pageBuilder: (context, state) =>
           _buildTransitionPage(state: state, child: const SplashPage()),
     ),
-
     GoRoute(
       path: '/onboarding',
       pageBuilder: (context, state) =>
@@ -36,9 +35,7 @@ final appRouter = GoRouter(
         return AppShell(navigationShell: navigationShell);
       },
       branches: [
-        // ─────────────────────────────────────────────
-        // 0. DASHBOARD
-        // ─────────────────────────────────────────────
+        // 0. HOME
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -51,9 +48,7 @@ final appRouter = GoRouter(
           ],
         ),
 
-        // ─────────────────────────────────────────────
         // 1. TRANSACTIONS
-        // ─────────────────────────────────────────────
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -66,9 +61,7 @@ final appRouter = GoRouter(
           ],
         ),
 
-        // ─────────────────────────────────────────────
         // 2. WALLET
-        // ─────────────────────────────────────────────
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -79,9 +72,7 @@ final appRouter = GoRouter(
           ],
         ),
 
-        // ─────────────────────────────────────────────
         // 3. GOALS
-        // ─────────────────────────────────────────────
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -91,33 +82,20 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-
-        // ─────────────────────────────────────────────
-        // 4. PROFILE
-        // ─────────────────────────────────────────────
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/profile',
-              pageBuilder: (context, state) => _buildTransitionPage(
-                state: state,
-                child: const ProfilePage(),
-              ),
-            ),
-          ],
-        ),
       ],
     ),
 
-    // ─────────────────────────────────────────────
     // STANDALONE ROUTES
-    // ─────────────────────────────────────────────
+    GoRoute(
+      path: '/profile',
+      pageBuilder: (context, state) =>
+          _buildTransitionPage(state: state, child: const ProfilePage()),
+    ),
     GoRoute(
       path: '/ai',
       pageBuilder: (context, state) =>
           _buildTransitionPage(state: state, child: const AIPage()),
     ),
-
     GoRoute(
       path: '/add-income',
       pageBuilder: (context, state) => _buildTransitionPage(
@@ -125,7 +103,6 @@ final appRouter = GoRouter(
         child: const MoneyFormPage(income: true),
       ),
     ),
-
     GoRoute(
       path: '/add-expense',
       pageBuilder: (context, state) => _buildTransitionPage(
@@ -133,25 +110,21 @@ final appRouter = GoRouter(
         child: const MoneyFormPage(income: false),
       ),
     ),
-
     GoRoute(
       path: '/budget',
       pageBuilder: (context, state) =>
           _buildTransitionPage(state: state, child: const BudgetPage()),
     ),
-
     GoRoute(
       path: '/installments',
       pageBuilder: (context, state) =>
           _buildTransitionPage(state: state, child: const InstallmentPage()),
     ),
-
     GoRoute(
       path: '/reports',
       pageBuilder: (context, state) =>
           _buildTransitionPage(state: state, child: const ReportPage()),
     ),
-
     GoRoute(
       path: '/notifications',
       pageBuilder: (context, state) =>
