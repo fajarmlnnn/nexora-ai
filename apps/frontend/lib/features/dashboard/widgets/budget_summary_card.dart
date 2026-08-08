@@ -118,17 +118,26 @@ class _Metric extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTypography.caption.copyWith(fontSize: 9, color: AppColors.textSecondary)),
-        const SizedBox(height: 3),
         Text(
-          value,
-          maxLines: 1,
-          softWrap: false,
-          overflow: TextOverflow.ellipsis,
-          style: AppTypography.currency.copyWith(
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-            color: valueColor ?? AppColors.textPrimary,
+          label,
+          style: AppTypography.caption.copyWith(
+            fontSize: 9,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 3),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            maxLines: 1,
+            softWrap: false,
+            style: AppTypography.currency.copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: valueColor ?? AppColors.textPrimary,
+            ),
           ),
         ),
       ],
@@ -162,7 +171,14 @@ class _ProgressRing extends StatelessWidget {
             backgroundColor: Colors.white.withValues(alpha: .06),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
-          Text('$percentage%', style: AppTypography.caption.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w800, fontSize: 9)),
+          Text(
+            '$percentage%',
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 9,
+            ),
+          ),
         ],
       ),
     );
@@ -204,18 +220,30 @@ class _BudgetColumn extends StatelessWidget {
                 item.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700, fontSize: 11),
+                style: AppTypography.labelMedium.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 6),
-        Text(
-          '${rupiah(item.spent)} / ${rupiah(item.limit)}',
-          maxLines: 1,
-          softWrap: false,
-          overflow: TextOverflow.ellipsis,
-          style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 8.5),
+        SizedBox(
+          width: double.infinity,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '${rupiah(item.spent)} / ${rupiah(item.limit)}',
+              maxLines: 1,
+              softWrap: false,
+              style: AppTypography.caption.copyWith(
+                color: AppColors.textMuted,
+                fontSize: 8.5,
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 5),
         Row(
@@ -234,7 +262,11 @@ class _BudgetColumn extends StatelessWidget {
             const SizedBox(width: 5),
             Text(
               '$percentage%',
-              style: AppTypography.caption.copyWith(color: accent, fontWeight: FontWeight.w800, fontSize: 9),
+              style: AppTypography.caption.copyWith(
+                color: accent,
+                fontWeight: FontWeight.w800,
+                fontSize: 9,
+              ),
             ),
           ],
         ),
