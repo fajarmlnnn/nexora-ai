@@ -1,13 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
 import '../../../core/widgets/layout/n_section_header.dart';
-import '../../../core/widgets/premium_widgets.dart';
-
 import '../models/budget_item.dart';
 
 class BudgetSummaryCard extends StatelessWidget {
@@ -17,155 +16,235 @@ class BudgetSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final budgets = items.take(3).toList();
+    final visibleItems = items.take(4).toList();
+    final remainingCount = math.max(0, items.length - visibleItems.length);
 
     return NCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           NSectionHeader(
-            title: "Budget Summary",
-            actionLabel: "See All",
+            title: 'Budget Summary',
+            actionLabel: 'See All',
             onActionPressed: () {},
           ),
 
-          AppSpacing.gapMD,
+          const SizedBox(height: 14),
 
-          for (final item in budgets)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: _BudgetTile(item: item),
+          SizedBox(
+            height: 94,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: visibleItems.length + (remainingCount > 0 ? 1 : 0),
+              separatorBuilder: (_, _) => const SizedBox(width: 18),
+              itemBuilder: (context, index) {
+                if (index >= visibleItems.length) {
+                  return _MoreBudgetItem(count: remainingCount);
+                }
+
+                return _BudgetCircle(item: visibleItems[index]);
+              },
             ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _BudgetTile extends StatelessWidget {
-  const _BudgetTile({required this.item});
+class _BudgetCircle extends StatelessWidget {
+  const _BudgetCircle({required this.item});
 
   final BudgetItem item;
 
-  Color get progressColor {
-    if (item.progress >= .85) return AppColors.danger;
-    if (item.progress >= .60) return AppColors.warning;
-    return AppColors.success;
-  }
+  Color get accentColor {
+    if (item.isOverBudget || item.progress >= .85) {
+      return AppColors.danger;
+    }
 
-  String get status {
-    if (item.progress >= .85) return "Critical";
-    if (item.progress >= .60) return "Warning";
-    return "Safe";
+    if (item.progress >= .60) {
+      return AppColors.warning;
+    }
+
+    return AppColors.primaryLight;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: progressColor.withValues(alpha: .14),
-            borderRadius: BorderRadius.circular(14),
+    final percentage = (item.progress * 100).round();
+
+    return SizedBox(
+      width: 62,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 56,
+            height: 56,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: item.progress),
+              duration: const Duration(milliseconds: 850),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) {
+                return CustomPaint(
+                  painter: _BudgetProgressPainter(
+                    progress: value,
+                    color: accentColor,
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .035),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _icon(item.id),
+                        size: 17,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
-          child: Icon(_icon(item.id), color: progressColor, size: 20),
-        ),
 
-        AppSpacing.hGapMD,
+          const SizedBox(height: 6),
 
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.name,
-                      style: AppTypography.labelMedium.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: progressColor.withValues(alpha: .12),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      status,
-                      style: AppTypography.caption.copyWith(
-                        color: progressColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 8),
-
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: item.progress),
-                duration: const Duration(milliseconds: 900),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, child) {
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: LinearProgressIndicator(
-                      value: value,
-                      minHeight: 5,
-                      color: progressColor,
-                      backgroundColor: Colors.white.withValues(alpha: .06),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 8),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      "${rupiah(item.spent)} / ${rupiah(item.limit)}",
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.caption.copyWith(
-                        color: Colors.white.withValues(alpha: .70),
-                      ),
-                    ),
-                  ),
-
-                  Text(
-                    "${(item.progress * 100).round()}%",
-                    style: AppTypography.caption.copyWith(
-                      color: progressColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          Text(
+            item.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-      ],
+
+          const SizedBox(height: 1),
+
+          Text(
+            '$percentage%',
+            style: AppTypography.caption.copyWith(
+              color: accentColor.withValues(alpha: .78),
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-IconData _icon(String id) => switch (id) {
-  'food' => LucideIcons.utensils,
-  'transport' => LucideIcons.car,
-  'shopping' => LucideIcons.shoppingBag,
-  'entertainment' => LucideIcons.gamepad2,
-  'health' => LucideIcons.heartPulse,
-  _ => LucideIcons.circleDollarSign,
-};
+class _BudgetProgressPainter extends CustomPainter {
+  const _BudgetProgressPainter({required this.progress, required this.color});
+
+  final double progress;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+
+    final radius = size.width / 2 - 3;
+
+    final backgroundPaint = Paint()
+      ..color = Colors.white.withValues(alpha: .055)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(center, radius, backgroundPaint);
+
+    if (progress <= 0) {
+      return;
+    }
+
+    final progressPaint = Paint()
+      ..color = color.withValues(alpha: .78)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -math.pi / 2,
+      math.pi * 2 * progress,
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _BudgetProgressPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.color != color;
+  }
+}
+
+class _MoreBudgetItem extends StatelessWidget {
+  const _MoreBudgetItem({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 62,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: .035),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withValues(alpha: .07)),
+            ),
+            child: Center(
+              child: Text(
+                '+$count',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.primaryLight,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            'Lainnya',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+IconData _icon(String id) {
+  return switch (id) {
+    'food' => LucideIcons.utensils,
+    'transport' => LucideIcons.car,
+    'shopping' => LucideIcons.shoppingBag,
+    'entertainment' => LucideIcons.gamepad2,
+    'health' => LucideIcons.heartPulse,
+    'education' => LucideIcons.bookOpen,
+    'bills' => LucideIcons.receiptText,
+    _ => LucideIcons.circleDollarSign,
+  };
+}
