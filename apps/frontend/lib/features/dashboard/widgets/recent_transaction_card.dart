@@ -22,7 +22,7 @@ class RecentTransactionCard extends StatelessWidget {
     final recent = transactions.take(3).toList();
 
     return NCard(
-      padding: const EdgeInsets.fromLTRB(16, 13, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 13, 16, 11),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -31,13 +31,13 @@ class RecentTransactionCard extends StatelessWidget {
             actionLabel: 'See All',
             onActionPressed: () => context.go('/transactions'),
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 6),
           if (recent.isEmpty)
             const _EmptyTransactions()
           else
             for (int i = 0; i < recent.length; i++) ...[
               PremiumEntrance(
-                delay: Duration(milliseconds: i * 50),
+                delay: Duration(milliseconds: i * 45),
                 child: _TransactionTile(transaction: recent[i]),
               ),
               if (i != recent.length - 1)
@@ -78,7 +78,20 @@ class _TransactionTile extends StatelessWidget {
     return DateFormat('dd MMM', 'id_ID').format(transaction.date);
   }
 
-  String get typeLabel => transaction.isIncome ? 'Pemasukan' : 'Pengeluaran';
+  String get categoryLabel {
+    return switch (transaction.category) {
+      TransactionCategory.food => 'Makanan',
+      TransactionCategory.transport => 'Transportasi',
+      TransactionCategory.shopping => 'Belanja',
+      TransactionCategory.salary => 'Gaji',
+      TransactionCategory.investment => 'Investasi',
+      TransactionCategory.bills => 'Tagihan',
+      TransactionCategory.entertainment => 'Hiburan',
+      TransactionCategory.health => 'Kesehatan',
+      TransactionCategory.education => 'Pendidikan',
+      TransactionCategory.other => 'Lainnya',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,15 +99,16 @@ class _TransactionTile extends StatelessWidget {
       borderRadius: AppRadius.radiusLG,
       onTap: () => context.go('/transactions'),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 7),
         child: Row(
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
-                color: accent.withValues(alpha: .11),
+                color: accent.withValues(alpha: .10),
                 shape: BoxShape.circle,
+                border: Border.all(color: accent.withValues(alpha: .10)),
                 boxShadow: AppShadows.soft,
               ),
               child: Icon(
@@ -112,25 +126,40 @@ class _TransactionTile extends StatelessWidget {
                     transaction.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700, fontSize: 12),
+                    style: AppTypography.labelMedium.copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Row(
                     children: [
+                      Flexible(
+                        child: Text(
+                          categoryLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.textSecondary,
+                            fontSize: 8.5,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: Text(
+                          '•',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.textMuted,
+                            fontSize: 8,
+                          ),
+                        ),
+                      ),
                       Text(
                         dateLabel,
-                        style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontSize: 9),
-                      ),
-                      const SizedBox(width: 5),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: .045),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          typeLabel,
-                          style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontSize: 8),
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 8.5,
                         ),
                       ),
                     ],
@@ -139,15 +168,36 @@ class _TransactionTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Text(
-              '${transaction.isIncome ? '+' : '-'}${rupiah(transaction.amount)}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.labelMedium.copyWith(
-                color: accent,
-                fontWeight: FontWeight.w800,
-                fontSize: 11,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${transaction.isIncome ? '+' : '-'}${rupiah(transaction.amount)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.labelMedium.copyWith(
+                    color: accent,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: .08),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    transaction.isIncome ? 'Masuk' : 'Keluar',
+                    style: AppTypography.caption.copyWith(
+                      color: accent,
+                      fontSize: 7.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -172,15 +222,25 @@ class _EmptyTransactions extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: .10),
               shape: BoxShape.circle,
             ),
-            child: const Icon(LucideIcons.receipt, color: AppColors.primaryLight, size: 24),
+            child: const Icon(
+              LucideIcons.receipt,
+              color: AppColors.primaryLight,
+              size: 24,
+            ),
           ),
           const SizedBox(height: 9),
-          Text('Belum Ada Transaksi', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            'Belum Ada Transaksi',
+            style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 4),
           Text(
             'Catat transaksi pertamamu untuk mulai\nmelacak keuangan dengan Nexora.',
             textAlign: TextAlign.center,
-            style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, height: 1.35),
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.35,
+            ),
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
