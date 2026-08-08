@@ -1,9 +1,11 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_shadows.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
 import '../../../core/widgets/layout/n_section_header.dart';
@@ -16,222 +18,195 @@ class BudgetSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visibleItems = items.take(4).toList();
-    final remainingCount = math.max(0, items.length - visibleItems.length);
+    final visibleItems = items.take(3).toList();
+    final totalLimit = items.fold<double>(0, (sum, item) => sum + item.limit);
+    final totalSpent = items.fold<double>(0, (sum, item) => sum + item.spent);
+    final overallProgress = totalLimit <= 0
+        ? 0.0
+        : (totalSpent / totalLimit).clamp(0.0, 1.0);
+    final percentage = (overallProgress * 100).round();
 
     return NCard(
-      padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 15),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           NSectionHeader(
             title: 'Budget Summary',
             actionLabel: 'See All',
-            onActionPressed: () {},
+            onActionPressed: () => context.push('/budget'),
           ),
-
-          const SizedBox(height: 14),
-
-          SizedBox(
-            height: 94,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              itemCount: visibleItems.length + (remainingCount > 0 ? 1 : 0),
-              separatorBuilder: (_, _) => const SizedBox(width: 18),
-              itemBuilder: (context, index) {
-                if (index >= visibleItems.length) {
-                  return _MoreBudgetItem(count: remainingCount);
-                }
-
-                return _BudgetCircle(item: visibleItems[index]);
-              },
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Budget Bulan Ini',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      rupiah(totalLimit),
+                      style: AppTypography.titleMedium.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _ProgressBadge(percentage: percentage),
+            ],
+          ),
+          const SizedBox(height: 11),
+          ClipRRect(
+            borderRadius: AppRadius.radiusPill,
+            child: LinearProgressIndicator(
+              value: overallProgress,
+              minHeight: 6,
+              backgroundColor: Colors.white.withValues(alpha: .06),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.primary,
+              ),
             ),
           ),
+          const SizedBox(height: 7),
+          Text(
+            '${rupiah(totalSpent)} terpakai dari ${rupiah(totalLimit)}',
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          if (visibleItems.isNotEmpty) ...[
+            const SizedBox(height: 15),
+            Divider(height: 1, color: Colors.white.withValues(alpha: .06)),
+            const SizedBox(height: 6),
+            for (int i = 0; i < visibleItems.length; i++) ...[
+              _BudgetRow(item: visibleItems[i]),
+              if (i != visibleItems.length - 1)
+                const SizedBox(height: 12),
+            ],
+          ],
         ],
       ),
     );
   }
 }
 
-class _BudgetCircle extends StatelessWidget {
-  const _BudgetCircle({required this.item});
+class _ProgressBadge extends StatelessWidget {
+  const _ProgressBadge({required this.percentage});
+
+  final int percentage;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = percentage >= 90
+        ? AppColors.danger
+        : percentage >= 75
+            ? AppColors.warning
+            : AppColors.success;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .10),
+        borderRadius: AppRadius.radiusPill,
+        border: Border.all(color: color.withValues(alpha: .18)),
+      ),
+      child: Text(
+        '$percentage% terpakai',
+        style: AppTypography.caption.copyWith(
+          color: color,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _BudgetRow extends StatelessWidget {
+  const _BudgetRow({required this.item});
 
   final BudgetItem item;
-
-  Color get accentColor {
-    if (item.isOverBudget || item.progress >= .85) {
-      return AppColors.danger;
-    }
-
-    if (item.progress >= .60) {
-      return AppColors.warning;
-    }
-
-    return AppColors.primaryLight;
-  }
 
   @override
   Widget build(BuildContext context) {
     final percentage = (item.progress * 100).round();
+    final accent = item.isOverBudget
+        ? AppColors.danger
+        : item.progress >= .85
+            ? AppColors.warning
+            : item.color;
 
-    return SizedBox(
-      width: 62,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 56,
-            height: 56,
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: item.progress),
-              duration: const Duration(milliseconds: 850),
-              curve: Curves.easeOutCubic,
-              builder: (context, value, child) {
-                return CustomPaint(
-                  painter: _BudgetProgressPainter(
-                    progress: value,
-                    color: accentColor,
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .035),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _icon(item.id),
-                        size: 17,
-                        color: AppColors.textSecondary,
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: item.color.withValues(alpha: .12),
+            borderRadius: BorderRadius.circular(11),
+            boxShadow: AppShadows.soft,
+          ),
+          child: Icon(
+            _icon(item.id),
+            size: 18,
+            color: item.color,
+          ),
+        ),
+        AppSpacing.hGapSM,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.labelMedium.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(height: 6),
-
-          Text(
-            item.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: AppTypography.caption.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-
-          const SizedBox(height: 1),
-
-          Text(
-            '$percentage%',
-            style: AppTypography.caption.copyWith(
-              color: accentColor.withValues(alpha: .78),
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BudgetProgressPainter extends CustomPainter {
-  const _BudgetProgressPainter({required this.progress, required this.color});
-
-  final double progress;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-
-    final radius = size.width / 2 - 3;
-
-    final backgroundPaint = Paint()
-      ..color = Colors.white.withValues(alpha: .055)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawCircle(center, radius, backgroundPaint);
-
-    if (progress <= 0) {
-      return;
-    }
-
-    final progressPaint = Paint()
-      ..color = color.withValues(alpha: .78)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -math.pi / 2,
-      math.pi * 2 * progress,
-      false,
-      progressPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _BudgetProgressPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.color != color;
-  }
-}
-
-class _MoreBudgetItem extends StatelessWidget {
-  const _MoreBudgetItem({required this.count});
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 62,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: .035),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: .07)),
-            ),
-            child: Center(
-              child: Text(
-                '+$count',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.primaryLight,
-                  fontWeight: FontWeight.w800,
+                  Text(
+                    '$percentage%',
+                    style: AppTypography.caption.copyWith(
+                      color: accent,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5),
+              ClipRRect(
+                borderRadius: AppRadius.radiusPill,
+                child: LinearProgressIndicator(
+                  value: item.progress,
+                  minHeight: 4,
+                  backgroundColor: Colors.white.withValues(alpha: .06),
+                  valueColor: AlwaysStoppedAnimation<Color>(accent),
                 ),
               ),
-            ),
+              const SizedBox(height: 4),
+              Text(
+                '${rupiah(item.spent)} / ${rupiah(item.limit)}',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textTertiary,
+                  fontSize: 9.5,
+                ),
+              ),
+            ],
           ),
-
-          const SizedBox(height: 6),
-
-          Text(
-            'Lainnya',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: AppTypography.caption.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
