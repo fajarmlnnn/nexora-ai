@@ -4,11 +4,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shadows.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
 import '../../../core/widgets/layout/n_section_header.dart';
-import '../../../core/widgets/premium_widgets.dart';
 import '../models/budget_item.dart';
 
 class BudgetSummaryCard extends StatelessWidget {
@@ -21,13 +19,12 @@ class BudgetSummaryCard extends StatelessWidget {
     final visibleItems = items.take(3).toList();
     final totalLimit = items.fold<double>(0, (sum, item) => sum + item.limit);
     final totalSpent = items.fold<double>(0, (sum, item) => sum + item.spent);
-    final overallProgress = totalLimit <= 0
-        ? 0.0
-        : (totalSpent / totalLimit).clamp(0.0, 1.0);
-    final percentage = (overallProgress * 100).round();
+    final remaining = (totalLimit - totalSpent).clamp(0.0, double.infinity);
+    final progress = totalLimit <= 0 ? 0.0 : (totalSpent / totalLimit).clamp(0.0, 1.0);
+    final percentage = (progress * 100).round();
 
     return NCard(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 13),
+      padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -36,46 +33,42 @@ class BudgetSummaryCard extends StatelessWidget {
             actionLabel: 'See All',
             onActionPressed: () => context.push('/budget'),
           ),
-          const SizedBox(height: 11),
+          const SizedBox(height: 10),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              Expanded(child: _Metric(label: 'Total Budget', value: rupiah(totalLimit))),
+              const SizedBox(width: 10),
+              Expanded(child: _Metric(label: 'Terpakai', value: rupiah(totalSpent))),
+              const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  rupiah(totalLimit),
-                  style: AppTypography.currency.copyWith(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                  ),
+                child: _Metric(
+                  label: 'Sisa',
+                  value: rupiah(remaining),
+                  valueColor: remaining <= 0 ? AppColors.danger : AppColors.success,
                 ),
               ),
-              _ProgressBadge(percentage: percentage),
+              const SizedBox(width: 10),
+              _ProgressRing(value: progress, percentage: percentage),
             ],
           ),
-          const SizedBox(height: 5),
-          Text(
-            '${rupiah(totalSpent)} terpakai dari ${rupiah(totalLimit)}',
-            style: AppTypography.caption.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: 10,
-            ),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
-              value: overallProgress,
-              minHeight: 5,
+              value: progress,
+              minHeight: 4,
               backgroundColor: Colors.white.withValues(alpha: .06),
               valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           ),
           if (visibleItems.isNotEmpty) ...[
-            const SizedBox(height: 11),
+            const SizedBox(height: 9),
             Divider(height: 1, color: Colors.white.withValues(alpha: .06)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 7),
             for (int i = 0; i < visibleItems.length; i++) ...[
               _BudgetRow(item: visibleItems[i]),
-              if (i != visibleItems.length - 1) const SizedBox(height: 8),
+              if (i != visibleItems.length - 1) const SizedBox(height: 7),
             ],
           ],
         ],
@@ -84,9 +77,39 @@ class BudgetSummaryCard extends StatelessWidget {
   }
 }
 
-class _ProgressBadge extends StatelessWidget {
-  const _ProgressBadge({required this.percentage});
+class _Metric extends StatelessWidget {
+  const _Metric({required this.label, required this.value, this.valueColor});
 
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTypography.caption.copyWith(fontSize: 9, color: AppColors.textSecondary)),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.currency.copyWith(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: valueColor ?? AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProgressRing extends StatelessWidget {
+  const _ProgressRing({required this.value, required this.percentage});
+
+  final double value;
   final int percentage;
 
   @override
@@ -95,22 +118,25 @@ class _ProgressBadge extends StatelessWidget {
         ? AppColors.danger
         : percentage >= 75
             ? AppColors.warning
-            : AppColors.success;
+            : AppColors.primaryLight;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: .10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: .18)),
-      ),
-      child: Text(
-        '$percentage%',
-        style: AppTypography.caption.copyWith(
-          color: color,
-          fontWeight: FontWeight.w800,
-          fontSize: 10,
-        ),
+    return SizedBox(
+      width: 46,
+      height: 46,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CircularProgressIndicator(
+            value: value,
+            strokeWidth: 4,
+            backgroundColor: Colors.white.withValues(alpha: .06),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+          Text(
+            '$percentage%',
+            style: AppTypography.caption.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w800, fontSize: 9),
+          ),
+        ],
       ),
     );
   }
@@ -133,16 +159,16 @@ class _BudgetRow extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 30,
-          height: 30,
+          width: 28,
+          height: 28,
           decoration: BoxDecoration(
-            color: item.color.withValues(alpha: .12),
+            color: item.color.withValues(alpha: .11),
             borderRadius: BorderRadius.circular(9),
             boxShadow: AppShadows.soft,
           ),
-          child: Icon(_icon(item.id), size: 15, color: item.color),
+          child: Icon(_icon(item.id), size: 14, color: item.color),
         ),
-        AppSpacing.hGapSM,
+        const SizedBox(width: 9),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,45 +180,29 @@ class _BudgetRow extends StatelessWidget {
                       item.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.labelMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700, fontSize: 12),
                     ),
                   ),
                   Text(
+                    '${rupiah(item.spent)} / ${rupiah(item.limit)}',
+                    style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 8.5),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
                     '$percentage%',
-                    style: AppTypography.caption.copyWith(
-                      color: accent,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 9.5,
-                    ),
+                    style: AppTypography.caption.copyWith(color: accent, fontWeight: FontWeight.w800, fontSize: 9),
                   ),
                 ],
               ),
-              const SizedBox(height: 3),
-              Row(
-                children: [
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                        value: item.progress,
-                        minHeight: 3,
-                        backgroundColor: Colors.white.withValues(alpha: .06),
-                        valueColor: AlwaysStoppedAnimation<Color>(accent),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${rupiah(item.spent)} / ${rupiah(item.limit)}',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.textMuted,
-                      fontSize: 8.5,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 4),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: item.progress,
+                  minHeight: 3,
+                  backgroundColor: Colors.white.withValues(alpha: .06),
+                  valueColor: AlwaysStoppedAnimation<Color>(accent),
+                ),
               ),
             ],
           ),
