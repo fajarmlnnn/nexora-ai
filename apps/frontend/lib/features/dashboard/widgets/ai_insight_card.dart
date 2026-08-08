@@ -25,100 +25,72 @@ class AIInsightCard extends StatelessWidget {
       tag: 'dashboard_ai_card',
       child: NCard(
         onTap: onTap,
+        color: AppColors.card,
         showBorder: true,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1C1830), Color(0xFF151421), Color(0xFF101117)],
-        ),
+        showShadow: true,
         padding: const EdgeInsets.all(14),
-        child: Stack(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Positioned(
-              right: -42,
-              top: -48,
-              child: IgnorePointer(
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: .08),
-                        blurRadius: 55,
-                        spreadRadius: 10,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            Hero(
+              tag: 'dashboard_ai_robot',
+              child: _RobotBadge(statusIcon: statusIcon),
             ),
 
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Hero(
-                  tag: 'dashboard_ai_robot',
-                  child: _RobotBadge(statusIcon: statusIcon),
-                ),
+            const SizedBox(width: 12),
 
-                const SizedBox(width: 12),
-
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            LucideIcons.sparkles,
-                            size: 14,
-                            color: AppColors.primaryLight,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Nexora AI',
-                            style: AppTypography.caption.copyWith(
-                              color: AppColors.primaryLight,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: .15,
-                            ),
-                          ),
-                        ],
+                      const Icon(
+                        LucideIcons.sparkles,
+                        size: 14,
+                        color: AppColors.primaryLight,
                       ),
-
-                      const SizedBox(height: 5),
-
+                      const SizedBox(width: 6),
                       Text(
-                        insight.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.labelLarge.copyWith(
-                          color: Colors.white,
+                        'Nexora AI',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.primaryLight,
                           fontWeight: FontWeight.w700,
+                          letterSpacing: .15,
                         ),
                       ),
-
-                      const SizedBox(height: 3),
-
-                      Text(
-                        insight.message,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                          height: 1.35,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _InsightAction(onTap: onTap),
                     ],
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 5),
+
+                  Text(
+                    insight.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.labelLarge.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+
+                  const SizedBox(height: 3),
+
+                  Text(
+                    insight.message,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.35,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  _InsightAction(onTap: onTap),
+                ],
+              ),
             ),
           ],
         ),
@@ -146,17 +118,10 @@ class _RobotBadge extends StatelessWidget {
             height: 54,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.primary.withValues(alpha: .07),
+              color: AppColors.primary.withValues(alpha: .06),
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: .16),
+                color: AppColors.primary.withValues(alpha: .14),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: .10),
-                  blurRadius: 22,
-                  spreadRadius: 1,
-                ),
-              ],
             ),
           ),
 
@@ -172,7 +137,7 @@ class _RobotBadge extends StatelessWidget {
                 color: AppColors.card,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: AppColors.primary.withValues(alpha: .25),
+                  color: AppColors.primary.withValues(alpha: .22),
                 ),
               ),
               child: Icon(statusIcon, size: 10, color: AppColors.primaryLight),
