@@ -9,6 +9,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
 import '../../../core/widgets/layout/n_section_header.dart';
+import '../../../core/widgets/premium_widgets.dart';
 import '../models/budget_item.dart';
 
 class BudgetSummaryCard extends StatelessWidget {
@@ -199,7 +200,7 @@ class _BudgetRow extends StatelessWidget {
               Text(
                 '${rupiah(item.spent)} / ${rupiah(item.limit)}',
                 style: AppTypography.caption.copyWith(
-                  color: AppColors.textTertiary,
+                  color: AppColors.textMuted,
                   fontSize: 9.5,
                 ),
               ),
