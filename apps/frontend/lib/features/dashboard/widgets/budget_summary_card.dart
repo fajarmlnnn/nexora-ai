@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
-import '../../../core/widgets/layout/n_section_header.dart';
 import '../models/budget_item.dart';
 
 class BudgetSummaryCard extends StatelessWidget {
@@ -20,7 +18,9 @@ class BudgetSummaryCard extends StatelessWidget {
     final totalLimit = items.fold<double>(0, (sum, item) => sum + item.limit);
     final totalSpent = items.fold<double>(0, (sum, item) => sum + item.spent);
     final remaining = (totalLimit - totalSpent).clamp(0.0, double.infinity);
-    final progress = totalLimit <= 0 ? 0.0 : (totalSpent / totalLimit).clamp(0.0, 1.0);
+    final progress = totalLimit <= 0
+        ? 0.0
+        : (totalSpent / totalLimit).clamp(0.0, 1.0);
     final percentage = (progress * 100).round();
 
     return NCard(
@@ -28,24 +28,38 @@ class BudgetSummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          NSectionHeader(
-            title: 'Budget Summary',
-            actionLabel: 'See All',
-            onActionPressed: () => context.push('/budget'),
+          Text(
+            'Budget Summary',
+            style: AppTypography.titleMedium.copyWith(
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
           ),
           const SizedBox(height: 10),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Expanded(child: _Metric(label: 'Total Budget', value: rupiah(totalLimit))),
+              Expanded(
+                child: _Metric(
+                  label: 'Total Budget',
+                  value: rupiah(totalLimit),
+                ),
+              ),
               const SizedBox(width: 10),
-              Expanded(child: _Metric(label: 'Terpakai', value: rupiah(totalSpent))),
+              Expanded(
+                child: _Metric(
+                  label: 'Terpakai',
+                  value: rupiah(totalSpent),
+                ),
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: _Metric(
                   label: 'Sisa',
                   value: rupiah(remaining),
-                  valueColor: remaining <= 0 ? AppColors.danger : AppColors.success,
+                  valueColor: remaining <= 0
+                      ? AppColors.danger
+                      : AppColors.success,
                 ),
               ),
               const SizedBox(width: 10),
@@ -59,7 +73,9 @@ class BudgetSummaryCard extends StatelessWidget {
               value: progress,
               minHeight: 4,
               backgroundColor: Colors.white.withValues(alpha: .06),
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.primary,
+              ),
             ),
           ),
           if (visibleItems.isNotEmpty) ...[
@@ -89,7 +105,13 @@ class _Metric extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTypography.caption.copyWith(fontSize: 9, color: AppColors.textSecondary)),
+        Text(
+          label,
+          style: AppTypography.caption.copyWith(
+            fontSize: 9,
+            color: AppColors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 3),
         Text(
           value,
@@ -134,7 +156,11 @@ class _ProgressRing extends StatelessWidget {
           ),
           Text(
             '$percentage%',
-            style: AppTypography.caption.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w800, fontSize: 9),
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 9,
+            ),
           ),
         ],
       ),
@@ -180,17 +206,27 @@ class _BudgetRow extends StatelessWidget {
                       item.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700, fontSize: 12),
+                      style: AppTypography.labelMedium.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                   Text(
                     '${rupiah(item.spent)} / ${rupiah(item.limit)}',
-                    style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 8.5),
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textMuted,
+                      fontSize: 8.5,
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Text(
                     '$percentage%',
-                    style: AppTypography.caption.copyWith(color: accent, fontWeight: FontWeight.w800, fontSize: 9),
+                    style: AppTypography.caption.copyWith(
+                      color: accent,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 9,
+                    ),
                   ),
                 ],
               ),
