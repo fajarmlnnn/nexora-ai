@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
+import '../../../core/widgets/premium_widgets.dart';
 import '../models/budget_item.dart';
 
 class BudgetSummaryCard extends StatelessWidget {
@@ -30,9 +31,9 @@ class BudgetSummaryCard extends StatelessWidget {
         children: [
           Text(
             'Budget Summary',
-            style: AppTypography.titleMedium.copyWith(
+            style: AppTypography.heading3.copyWith(
+              fontSize: 17,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 10),
