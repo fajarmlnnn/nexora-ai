@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_gradients.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
 
@@ -13,42 +11,49 @@ class QuickActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return NCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Quick Actions",
+            'Quick Actions',
             style: AppTypography.labelLarge.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
 
-          AppSpacing.gapMD,
+          const SizedBox(height: 12),
 
           const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _ActionItem(
-                icon: LucideIcons.plus,
-                label: "Tambah",
-                color: AppColors.primary,
+              Expanded(
+                child: _ActionItem(
+                  icon: LucideIcons.plus,
+                  label: 'Tambah',
+                  color: AppColors.primaryLight,
+                ),
               ),
-              _ActionItem(
-                icon: LucideIcons.scanLine,
-                label: "Scan",
-                color: AppColors.info,
-                isNew: true,
+              Expanded(
+                child: _ActionItem(
+                  icon: LucideIcons.scanLine,
+                  label: 'Scan',
+                  color: AppColors.primaryLight,
+                  isNew: true,
+                ),
               ),
-              _ActionItem(
-                icon: LucideIcons.walletMinimal,
-                label: "Budget",
-                color: AppColors.warning,
+              Expanded(
+                child: _ActionItem(
+                  icon: LucideIcons.walletMinimal,
+                  label: 'Budget',
+                  color: AppColors.primaryLight,
+                ),
               ),
-              _ActionItem(
-                icon: LucideIcons.send,
-                label: "Transfer",
-                color: AppColors.success,
+              Expanded(
+                child: _ActionItem(
+                  icon: LucideIcons.send,
+                  label: 'Transfer',
+                  color: AppColors.primaryLight,
+                ),
               ),
             ],
           ),
@@ -76,87 +81,93 @@ class _ActionItem extends StatefulWidget {
 }
 
 class _ActionItemState extends State<_ActionItem> {
-  bool pressed = false;
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (!mounted) return;
+
+    setState(() {
+      _pressed = value;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) {
-        setState(() => pressed = true);
-      },
-      onTapUp: (_) {
-        setState(() => pressed = false);
-      },
-      onTapCancel: () {
-        setState(() => pressed = false);
-      },
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => _setPressed(true),
+      onTapUp: (_) => _setPressed(false),
+      onTapCancel: () => _setPressed(false),
       child: AnimatedScale(
-        duration: const Duration(milliseconds: 120),
-        scale: pressed ? .94 : 1,
-        child: SizedBox(
-          width: 72,
-          child: Column(
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Hero(
-                    tag: "quick_${widget.label}",
-                    child: Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        gradient: AppGradients.button,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: widget.color.withValues(alpha: .22),
-                            blurRadius: 20,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: Icon(widget.icon, color: Colors.white, size: 22),
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOutCubic,
+        scale: _pressed ? .94 : 1,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: widget.color.withValues(alpha: .075),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: widget.color.withValues(alpha: .13),
                     ),
                   ),
+                  child: Icon(
+                    widget.icon,
+                    color: widget.color.withValues(alpha: .82),
+                    size: 20,
+                  ),
+                ),
 
-                  if (widget.isNew)
-                    Positioned(
-                      top: -2,
-                      right: -2,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 2,
+                if (widget.isNew)
+                  Positioned(
+                    top: -5,
+                    right: -7,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: .16),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: .20),
                         ),
-                        decoration: BoxDecoration(
-                          color: AppColors.danger,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          "NEW",
-                          style: AppTypography.caption.copyWith(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.w700,
-                          ),
+                      ),
+                      child: Text(
+                        'NEW',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.primaryLight,
+                          fontSize: 7,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: .2,
                         ),
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
+            ),
 
-              AppSpacing.gapSM,
+            const SizedBox(height: 7),
 
-              Text(
-                widget.label,
-                textAlign: TextAlign.center,
-                style: AppTypography.caption.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            Text(
+              widget.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: AppTypography.caption.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
