@@ -47,9 +47,7 @@ class AppShell extends StatelessWidget {
       useSafeArea: true,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) {
-        return _CreateActionSheet(parentContext: parentContext);
-      },
+      builder: (_) => _CreateActionSheet(parentContext: parentContext),
     );
   }
 }
@@ -93,7 +91,6 @@ class _PremiumBottomNav extends StatelessWidget {
             currentIndex: currentIndex,
             onTap: onTap,
           ),
-
           _NavItem(
             label: 'Transaksi',
             icon: LucideIcons.arrowLeftRight,
@@ -101,7 +98,9 @@ class _PremiumBottomNav extends StatelessWidget {
             currentIndex: currentIndex,
             onTap: onTap,
           ),
-
+          Expanded(
+            child: Center(child: _CenterButton(onTap: onAdd)),
+          ),
           _NavItem(
             label: 'Wallet',
             icon: LucideIcons.walletMinimal,
@@ -109,23 +108,10 @@ class _PremiumBottomNav extends StatelessWidget {
             currentIndex: currentIndex,
             onTap: onTap,
           ),
-
-          Expanded(
-            child: Center(child: _CenterButton(onTap: onAdd)),
-          ),
-
           _NavItem(
             label: 'Goals',
             icon: LucideIcons.target,
             index: 3,
-            currentIndex: currentIndex,
-            onTap: onTap,
-          ),
-
-          _NavItem(
-            label: 'Profile',
-            icon: LucideIcons.userRound,
-            index: 4,
             currentIndex: currentIndex,
             onTap: onTap,
           ),
@@ -184,7 +170,6 @@ class _NavItem extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
-
               AnimatedScale(
                 duration: const Duration(milliseconds: 220),
                 scale: selected ? 1.12 : 1,
@@ -196,9 +181,7 @@ class _NavItem extends StatelessWidget {
                       : AppColors.textSecondary,
                 ),
               ),
-
               const SizedBox(height: 3),
-
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 220),
                 style: AppTypography.caption.copyWith(
@@ -288,7 +271,6 @@ class _CreateActionSheet extends StatelessWidget {
                 parentContext.push('/add-income');
               },
             ),
-
             _SheetAction(
               icon: LucideIcons.receiptText,
               title: 'Add Expense',
@@ -298,7 +280,6 @@ class _CreateActionSheet extends StatelessWidget {
                 parentContext.push('/add-expense');
               },
             ),
-
             _SheetAction(
               icon: LucideIcons.walletMinimal,
               title: 'Add Wallet',
@@ -308,7 +289,6 @@ class _CreateActionSheet extends StatelessWidget {
                 parentContext.go('/wallet');
               },
             ),
-
             _SheetAction(
               icon: LucideIcons.target,
               title: 'Add Goal',
@@ -318,7 +298,6 @@ class _CreateActionSheet extends StatelessWidget {
                 parentContext.go('/goals');
               },
             ),
-
             _SheetAction(
               icon: LucideIcons.sparkles,
               title: 'Ask Nexora AI',
@@ -370,9 +349,7 @@ class _SheetAction extends StatelessWidget {
                 ),
                 child: Icon(icon, color: Colors.white),
               ),
-
               const SizedBox(width: 14),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,7 +360,6 @@ class _SheetAction extends StatelessWidget {
                   ],
                 ),
               ),
-
               const Icon(LucideIcons.chevronRight, color: AppColors.textMuted),
             ],
           ),
