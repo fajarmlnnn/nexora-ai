@@ -31,7 +31,7 @@ class RecentTransactionCard extends StatelessWidget {
             actionLabel: 'See All',
             onActionPressed: () => context.go('/transactions'),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           if (recent.isEmpty)
             const _EmptyTransactions()
           else
@@ -99,25 +99,25 @@ class _TransactionTile extends StatelessWidget {
       borderRadius: AppRadius.radiusLG,
       onTap: () => context.go('/transactions'),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 7),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
             Container(
-              width: 38,
-              height: 38,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
-                color: accent.withValues(alpha: .10),
+                color: accent.withValues(alpha: .11),
                 shape: BoxShape.circle,
                 border: Border.all(color: accent.withValues(alpha: .10)),
                 boxShadow: AppShadows.soft,
               ),
               child: Icon(
                 transaction.isIncome ? LucideIcons.arrowDownLeft : icon,
-                size: 17,
+                size: 19,
                 color: accent,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 11),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,8 +127,9 @@ class _TransactionTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.labelMedium.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -141,7 +142,7 @@ class _TransactionTile extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.caption.copyWith(
                             color: AppColors.textSecondary,
-                            fontSize: 8.5,
+                            fontSize: 9,
                           ),
                         ),
                       ),
@@ -159,7 +160,7 @@ class _TransactionTile extends StatelessWidget {
                         dateLabel,
                         style: AppTypography.caption.copyWith(
                           color: AppColors.textSecondary,
-                          fontSize: 8.5,
+                          fontSize: 9,
                         ),
                       ),
                     ],
@@ -174,16 +175,17 @@ class _TransactionTile extends StatelessWidget {
                 Text(
                   '${transaction.isIncome ? '+' : '-'}${rupiah(transaction.amount)}',
                   maxLines: 1,
+                  softWrap: false,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.labelMedium.copyWith(
                     color: accent,
                     fontWeight: FontWeight.w800,
-                    fontSize: 11,
+                    fontSize: 12,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     color: accent.withValues(alpha: .08),
                     borderRadius: BorderRadius.circular(999),
@@ -222,25 +224,15 @@ class _EmptyTransactions extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: .10),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              LucideIcons.receipt,
-              color: AppColors.primaryLight,
-              size: 24,
-            ),
+            child: const Icon(LucideIcons.receipt, color: AppColors.primaryLight, size: 24),
           ),
           const SizedBox(height: 9),
-          Text(
-            'Belum Ada Transaksi',
-            style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700),
-          ),
+          Text('Belum Ada Transaksi', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(
             'Catat transaksi pertamamu untuk mulai\nmelacak keuangan dengan Nexora.',
             textAlign: TextAlign.center,
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.35,
-            ),
+            style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, height: 1.35),
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
