@@ -26,7 +26,7 @@ class BudgetSummaryCard extends StatelessWidget {
     final percentage = (progress * 100).round();
 
     return NCard(
-      padding: const EdgeInsets.fromLTRB(16, 13, 16, 14),
+      padding: const EdgeInsets.fromLTRB(16, 15, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -59,7 +59,7 @@ class BudgetSummaryCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -78,7 +78,7 @@ class BudgetSummaryCard extends StatelessWidget {
               _ProgressRing(value: progress, percentage: percentage),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 11),
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
@@ -89,7 +89,7 @@ class BudgetSummaryCard extends StatelessWidget {
             ),
           ),
           if (visibleItems.isNotEmpty) ...[
-            const SizedBox(height: 11),
+            const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
