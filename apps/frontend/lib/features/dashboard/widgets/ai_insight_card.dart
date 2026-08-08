@@ -2,12 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_gradients.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
 import '../../../core/widgets/premium_widgets.dart';
-
 import '../models/ai_insight.dart';
 
 class AIInsightCard extends StatelessWidget {
@@ -18,160 +15,209 @@ class AIInsightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (icon, gradient) = switch (insight.level) {
-      InsightLevel.positive => (LucideIcons.badgeCheck, AppGradients.success),
-
-      InsightLevel.warning => (LucideIcons.sparkles, AppGradients.primary),
-
-      InsightLevel.critical => (LucideIcons.triangleAlert, AppGradients.danger),
+    final statusIcon = switch (insight.level) {
+      InsightLevel.positive => LucideIcons.badgeCheck,
+      InsightLevel.warning => LucideIcons.sparkles,
+      InsightLevel.critical => LucideIcons.triangleAlert,
     };
 
     return Hero(
-      tag: "dashboard_ai_card",
+      tag: 'dashboard_ai_card',
       child: NCard(
         onTap: onTap,
-        gradient: gradient,
-        showBorder: false,
-        padding: const EdgeInsets.all(18),
+        showBorder: true,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1C1830), Color(0xFF151421), Color(0xFF101117)],
+        ),
+        padding: const EdgeInsets.all(14),
         child: Stack(
           children: [
             Positioned(
-              right: -18,
-              top: -18,
-              child: Container(
-                width: 110,
-                height: 110,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: .05),
+              right: -42,
+              top: -48,
+              child: IgnorePointer(
+                child: Container(
+                  width: 150,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: .08),
+                        blurRadius: 55,
+                        spreadRadius: 10,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
 
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Hero(
-                  tag: "dashboard_ai_robot",
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        width: 66,
-                        height: 66,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.white.withValues(alpha: .10),
-                              blurRadius: 24,
-                              spreadRadius: 4,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      Container(
-                        width: 62,
-                        height: 62,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: .12),
-                        ),
-                      ),
-
-                      const NexoraRobot(size: 56),
-
-                      Positioned(
-                        top: 1,
-                        right: 1,
-                        child: Container(
-                          width: 22,
-                          height: 22,
-                          decoration: BoxDecoration(
-                            color: AppColors.background.withValues(alpha: .82),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(icon, color: Colors.white, size: 12),
-                        ),
-                      ),
-                    ],
-                  ),
+                  tag: 'dashboard_ai_robot',
+                  child: _RobotBadge(statusIcon: statusIcon),
                 ),
 
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
 
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            LucideIcons.sparkles,
+                            size: 14,
+                            color: AppColors.primaryLight,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Nexora AI',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.primaryLight,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: .15,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 5),
+
                       Text(
                         insight.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTypography.labelLarge.copyWith(
                           color: Colors.white,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
 
-                      AppSpacing.gapXS,
+                      const SizedBox(height: 3),
 
                       Text(
                         insight.message,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: AppTypography.bodySmall.copyWith(
-                          color: Colors.white.withValues(alpha: .90),
-                          height: 1.5,
+                          color: AppColors.textSecondary,
+                          height: 1.35,
                         ),
                       ),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
 
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: .10),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                LucideIcons.sparkles,
-                                size: 13,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                "AI Insight",
-                                style: AppTypography.caption.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                LucideIcons.arrowRight,
-                                size: 13,
-                                color: Colors.white,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      _InsightAction(onTap: onTap),
                     ],
                   ),
                 ),
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RobotBadge extends StatelessWidget {
+  const _RobotBadge({required this.statusIcon});
+
+  final IconData statusIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 54,
+      height: 54,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primary.withValues(alpha: .07),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: .16),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: .10),
+                  blurRadius: 22,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+
+          const NexoraRobot(size: 46),
+
+          Positioned(
+            right: -2,
+            top: -2,
+            child: Container(
+              width: 19,
+              height: 19,
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: .25),
+                ),
+              ),
+              child: Icon(statusIcon, size: 10, color: AppColors.primaryLight),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InsightAction extends StatelessWidget {
+  const _InsightAction({required this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        splashColor: AppColors.primary.withValues(alpha: .10),
+        highlightColor: Colors.transparent,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 1),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Lihat Insight',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.primaryLight,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(
+                LucideIcons.arrowRight,
+                size: 13,
+                color: AppColors.primaryLight,
+              ),
+            ],
+          ),
         ),
       ),
     );
