@@ -27,7 +27,7 @@ class BudgetSummaryCard extends StatelessWidget {
     final percentage = (overallProgress * 100).round();
 
     return NCard(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 15),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 13),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -36,61 +36,46 @@ class BudgetSummaryCard extends StatelessWidget {
             actionLabel: 'See All',
             onActionPressed: () => context.push('/budget'),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 11),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Budget Bulan Ini',
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      rupiah(totalLimit),
-                      style: AppTypography.currency.copyWith(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  rupiah(totalLimit),
+                  style: AppTypography.currency.copyWith(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
               _ProgressBadge(percentage: percentage),
             ],
           ),
-          const SizedBox(height: 11),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: overallProgress,
-              minHeight: 6,
-              backgroundColor: Colors.white.withValues(alpha: .06),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.primary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 5),
           Text(
             '${rupiah(totalSpent)} terpakai dari ${rupiah(totalLimit)}',
             style: AppTypography.caption.copyWith(
               color: AppColors.textSecondary,
+              fontSize: 10,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: overallProgress,
+              minHeight: 5,
+              backgroundColor: Colors.white.withValues(alpha: .06),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           ),
           if (visibleItems.isNotEmpty) ...[
-            const SizedBox(height: 15),
+            const SizedBox(height: 11),
             Divider(height: 1, color: Colors.white.withValues(alpha: .06)),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             for (int i = 0; i < visibleItems.length; i++) ...[
               _BudgetRow(item: visibleItems[i]),
-              if (i != visibleItems.length - 1)
-                const SizedBox(height: 12),
+              if (i != visibleItems.length - 1) const SizedBox(height: 8),
             ],
           ],
         ],
@@ -113,17 +98,18 @@ class _ProgressBadge extends StatelessWidget {
             : AppColors.success;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: .10),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: color.withValues(alpha: .18)),
       ),
       child: Text(
-        '$percentage% terpakai',
+        '$percentage%',
         style: AppTypography.caption.copyWith(
           color: color,
           fontWeight: FontWeight.w800,
+          fontSize: 10,
         ),
       ),
     );
@@ -147,18 +133,14 @@ class _BudgetRow extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 36,
-          height: 36,
+          width: 30,
+          height: 30,
           decoration: BoxDecoration(
             color: item.color.withValues(alpha: .12),
-            borderRadius: BorderRadius.circular(11),
+            borderRadius: BorderRadius.circular(9),
             boxShadow: AppShadows.soft,
           ),
-          child: Icon(
-            _icon(item.id),
-            size: 18,
-            color: item.color,
-          ),
+          child: Icon(_icon(item.id), size: 15, color: item.color),
         ),
         AppSpacing.hGapSM,
         Expanded(
@@ -183,27 +165,34 @@ class _BudgetRow extends StatelessWidget {
                     style: AppTypography.caption.copyWith(
                       color: accent,
                       fontWeight: FontWeight.w800,
+                      fontSize: 9.5,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 5),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: LinearProgressIndicator(
-                  value: item.progress,
-                  minHeight: 4,
-                  backgroundColor: Colors.white.withValues(alpha: .06),
-                  valueColor: AlwaysStoppedAnimation<Color>(accent),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${rupiah(item.spent)} / ${rupiah(item.limit)}',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textMuted,
-                  fontSize: 9.5,
-                ),
+              const SizedBox(height: 3),
+              Row(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: item.progress,
+                        minHeight: 3,
+                        backgroundColor: Colors.white.withValues(alpha: .06),
+                        valueColor: AlwaysStoppedAnimation<Color>(accent),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${rupiah(item.spent)} / ${rupiah(item.limit)}',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textMuted,
+                      fontSize: 8.5,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
