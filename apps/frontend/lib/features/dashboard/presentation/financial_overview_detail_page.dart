@@ -120,17 +120,55 @@ class FinancialOverviewDetailPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Jatuh tempo periode ini: ${rupiah(financial.dueThisPeriod)}', style: AppTypography.bodySmall),
-                const SizedBox(height: 8),
+                Text(
+                  'Total sisa kewajiban: ${rupiah(financial.liabilities)}',
+                  style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Pembayaran periode ini: ${rupiah(financial.dueThisPeriod)}',
+                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 10),
                 if (installments.isEmpty)
                   const Text('Tidak ada cicilan aktif.', style: AppTypography.bodySmall)
                 else
                   ...installments.map((item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 7),
+                        padding: const EdgeInsets.only(bottom: 9),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(child: Text(item.title, style: AppTypography.bodySmall)),
-                            Text(rupiah(item.remaining), style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700)),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(item.title, style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    item.isPaid
+                                        ? 'Periode ini lunas • ${rupiah(item.monthlyAmount)} / periode'
+                                        : item.dueInDays > 0
+                                            ? '${rupiah(item.monthlyAmount)} / periode • ${item.dueInDays} hari lagi'
+                                            : '${rupiah(item.monthlyAmount)} / periode',
+                                    style: AppTypography.caption.copyWith(
+                                      color: item.isPaid ? AppColors.success : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  rupiah(item.remaining),
+                                  style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800),
+                                ),
+                                const SizedBox(height: 2),
+                                Text('sisa', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                              ],
+                            ),
                           ],
                         ),
                       )),
