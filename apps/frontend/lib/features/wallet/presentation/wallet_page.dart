@@ -42,7 +42,7 @@ class _WalletPageState extends ConsumerState<WalletPage> {
               physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
               padding: AppSpacing.screen.copyWith(bottom: AppSpacing.bottomNav(context) + 18),
               children: [
-                _WalletHeader(onRefresh: () => ref.read(walletProvider.notifier).refreshWallets(), onAdd: widget.onAddWallet),
+                _WalletHeader(onAdd: widget.onAddWallet),
                 const SizedBox(height: 14),
                 _TotalAssetsCard(balance: totalBalance, visible: _isBalanceVisible, onToggle: () => setState(() => _isBalanceVisible = !_isBalanceVisible)),
                 if (primaryWallet != null) ...[
@@ -72,8 +72,7 @@ class _WalletPageState extends ConsumerState<WalletPage> {
 }
 
 class _WalletHeader extends StatelessWidget {
-  const _WalletHeader({this.onRefresh, this.onAdd});
-  final VoidCallback? onRefresh;
+  const _WalletHeader({this.onAdd});
   final VoidCallback? onAdd;
   @override
   Widget build(BuildContext context) => Row(children: [
@@ -81,18 +80,25 @@ class _WalletHeader extends StatelessWidget {
       Text('Wallet', style: AppTypography.heading1),
       Text('Kelola semua asetmu', style: AppTypography.bodySmall),
     ])),
-    _HeaderButton(icon: LucideIcons.refreshCw, onTap: onRefresh),
-    const SizedBox(width: 8),
-    Material(color: AppColors.primary, shape: const CircleBorder(), child: InkWell(onTap: onAdd, customBorder: const CircleBorder(), child: const SizedBox(width: 50, height: 50, child: Icon(LucideIcons.plus, color: Colors.white, size: 25)))),
+    Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.border.withValues(alpha: .45)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onAdd,
+          customBorder: const CircleBorder(),
+          child: const Center(child: Icon(LucideIcons.plus, color: AppColors.primaryLight, size: 20)),
+        ),
+      ),
+    ),
   ]);
-}
-
-class _HeaderButton extends StatelessWidget {
-  const _HeaderButton({required this.icon, this.onTap});
-  final IconData icon;
-  final VoidCallback? onTap;
-  @override
-  Widget build(BuildContext context) => Material(color: Colors.white.withValues(alpha: .055), shape: const CircleBorder(), child: InkWell(onTap: onTap, customBorder: const CircleBorder(), child: SizedBox(width: 46, height: 46, child: Icon(icon, size: 21, color: AppColors.textPrimary))));
 }
 
 class _TotalAssetsCard extends StatelessWidget {
