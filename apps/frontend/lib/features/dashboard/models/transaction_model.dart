@@ -22,6 +22,7 @@ class TransactionModel {
     required this.category,
     required this.date,
     this.note,
+    this.walletId,
     this.sourceAccount,
     this.destinationAccount,
   });
@@ -33,6 +34,7 @@ class TransactionModel {
   final TransactionCategory category;
   final DateTime date;
   final String? note;
+  final String? walletId;
   final String? sourceAccount;
   final String? destinationAccount;
 
@@ -49,6 +51,7 @@ class TransactionModel {
       category: TransactionCategory.values.byName(json['category'] as String),
       date: DateTime.parse(json['date'] as String),
       note: json['note'] as String?,
+      walletId: json['walletId'] as String?,
       sourceAccount: json['sourceAccount'] as String?,
       destinationAccount: json['destinationAccount'] as String?,
     );
@@ -63,6 +66,7 @@ class TransactionModel {
       'category': category.name,
       'date': date.toIso8601String(),
       'note': note,
+      'walletId': walletId,
       'sourceAccount': sourceAccount,
       'destinationAccount': destinationAccount,
     };
@@ -76,6 +80,7 @@ class TransactionModel {
     TransactionCategory? category,
     DateTime? date,
     String? note,
+    String? walletId,
     String? sourceAccount,
     String? destinationAccount,
   }) {
@@ -87,6 +92,7 @@ class TransactionModel {
       category: category ?? this.category,
       date: date ?? this.date,
       note: note ?? this.note,
+      walletId: walletId ?? this.walletId,
       sourceAccount: sourceAccount ?? this.sourceAccount,
       destinationAccount: destinationAccount ?? this.destinationAccount,
     );
