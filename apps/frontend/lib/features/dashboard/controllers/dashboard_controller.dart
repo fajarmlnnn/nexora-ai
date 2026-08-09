@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../finance/state/financial_transaction_store.dart';
+import '../../wallet/controllers/wallet_controller.dart';
 import '../models/ai_insight.dart';
 import '../models/budget_item.dart';
 import '../models/dashboard_data.dart';
@@ -18,9 +19,10 @@ final financialTransactionsProvider = Provider<List<TransactionModel>>((ref) {
 
 final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
   final transactions = ref.watch(financialTransactionsProvider);
+  final totalBalance = ref.watch(totalWalletBalanceProvider);
 
   return DashboardSummary(
-    totalBalance: transactions.currentBalance,
+    totalBalance: totalBalance,
     monthlyIncome: transactions.monthlyIncome,
     monthlyExpense: transactions.monthlyExpense,
     monthlyBudget: FinancialTransactionStore.monthlyBudget,
