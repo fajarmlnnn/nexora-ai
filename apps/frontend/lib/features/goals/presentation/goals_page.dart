@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -9,24 +10,18 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/context_ai_insight.dart';
 import '../../../core/widgets/premium_widgets.dart';
+import '../../dashboard/controllers/financial_overview_controller.dart';
 
-class GoalsPage extends StatefulWidget {
+class GoalsPage extends ConsumerStatefulWidget {
   const GoalsPage({super.key});
 
   @override
-  State<GoalsPage> createState() => _GoalsPageState();
+  ConsumerState<GoalsPage> createState() => _GoalsPageState();
 }
 
-class _GoalsPageState extends State<GoalsPage> {
+class _GoalsPageState extends ConsumerState<GoalsPage> {
   final PageController _pageController = PageController();
   int _selectedTab = 0;
-
-  final goals = const [
-    _GoalData('Dana Darurat', 'Saving', 10000000, 50000000, LucideIcons.shieldCheck),
-    _GoalData('Liburan ke Jepang', 'Saving', 7000000, 20000000, LucideIcons.plane),
-    _GoalData('SPayLater', 'Debt', 1250000, 2500000, LucideIcons.creditCard),
-    _GoalData('DP Rumah', 'Wishlist', 18000000, 60000000, LucideIcons.house),
-  ];
 
   @override
   void dispose() {
@@ -46,6 +41,10 @@ class _GoalsPageState extends State<GoalsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final goals = ref.watch(financialGoalsProvider)
+        .map(_GoalData.fromSnapshot)
+        .toList(growable: false);
+
     return PremiumScaffold(
       child: Padding(
         padding: AppSpacing.screen.copyWith(bottom: 0),
@@ -69,15 +68,9 @@ class _GoalsPageState extends State<GoalsPage> {
                 },
                 children: [
                   _GoalList(goals: goals, showInsight: true),
-                  _GoalList(
-                    goals: goals.where((goal) => goal.type == 'Wishlist').toList(),
-                  ),
-                  _GoalList(
-                    goals: goals.where((goal) => goal.type == 'Saving').toList(),
-                  ),
-                  _GoalList(
-                    goals: goals.where((goal) => goal.type == 'Debt').toList(),
-                  ),
+                  _GoalList(goals: goals.where((goal) => goal.type == 'Wishlist').toList()),
+                  _GoalList(goals: goals.where((goal) => goal.type == 'Saving').toList()),
+                  _GoalList(goals: goals.where((goal) => goal.type == 'Debt').toList()),
                 ],
               ),
             ),
@@ -101,10 +94,7 @@ class _GoalsHeader extends StatelessWidget {
             children: [
               Text('Goals', style: AppTypography.heading1),
               const SizedBox(height: 1),
-              Text(
-                'Rencanakan target finansialmu',
-                style: AppTypography.bodySmall,
-              ),
+              Text('Rencanakan target finansialmu', style: AppTypography.bodySmall),
             ],
           ),
         ),
@@ -116,11 +106,7 @@ class _GoalsHeader extends StatelessWidget {
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.border.withValues(alpha: .45)),
           ),
-          child: const Icon(
-            LucideIcons.plus,
-            color: AppColors.primaryLight,
-            size: 20,
-          ),
+          child: const Icon(LucideIcons.plus, color: AppColors.primaryLight, size: 20),
         ),
       ],
     );
@@ -153,16 +139,9 @@ class _GoalsOverview extends StatelessWidget {
                   value: progress,
                   strokeWidth: 6,
                   backgroundColor: AppColors.border.withValues(alpha: .35),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    AppColors.primaryLight,
-                  ),
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight),
                 ),
-                Text(
-                  '${(progress * 100).round()}%',
-                  style: AppTypography.caption.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+                Text('${(progress * 100).round()}%', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w800)),
               ],
             ),
           ),
@@ -173,23 +152,13 @@ class _GoalsOverview extends StatelessWidget {
               children: [
                 Text('Progress semua goals', style: AppTypography.caption),
                 const SizedBox(height: 2),
-                Text(
-                  '${rupiah(saved)} tersimpan',
-                  style: AppTypography.labelLarge.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+                Text('${rupiah(saved)} tersimpan', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 1),
                 Text('dari ${rupiah(target)} target', style: AppTypography.caption),
               ],
             ),
           ),
-          Text(
-            '${goals.length}',
-            style: AppTypography.heading3.copyWith(
-              color: AppColors.primaryLight,
-            ),
-          ),
+          Text('${goals.length}', style: AppTypography.heading3.copyWith(color: AppColors.primaryLight)),
           const SizedBox(width: 3),
           Text('goals', style: AppTypography.caption),
         ],
@@ -218,16 +187,12 @@ class _GoalTabs extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final itemWidth = constraints.maxWidth / labels.length;
-
           return Stack(
             children: [
               AnimatedAlign(
                 duration: const Duration(milliseconds: 280),
                 curve: Curves.easeOutCubic,
-                alignment: Alignment(
-                  -1 + (selected * 2 / (labels.length - 1)),
-                  0,
-                ),
+                alignment: Alignment(-1 + (selected * 2 / (labels.length - 1)), 0),
                 child: Container(
                   width: itemWidth,
                   height: 38,
@@ -250,18 +215,10 @@ class _GoalTabs extends StatelessWidget {
                           duration: const Duration(milliseconds: 180),
                           curve: Curves.easeOutCubic,
                           style: AppTypography.caption.copyWith(
-                            color: active
-                                ? Colors.white
-                                : AppColors.textSecondary,
-                            fontWeight: active
-                                ? FontWeight.w800
-                                : FontWeight.w600,
+                            color: active ? Colors.white : AppColors.textSecondary,
+                            fontWeight: active ? FontWeight.w800 : FontWeight.w600,
                           ),
-                          child: Text(
-                            labels[index],
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          child: Text(labels[index], maxLines: 1, overflow: TextOverflow.ellipsis),
                         ),
                       ),
                     ),
@@ -286,17 +243,13 @@ class _GoalList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.separated(
       physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.only(
-        top: 2,
-        bottom: AppSpacing.bottomNav(context) + 20,
-      ),
+      padding: EdgeInsets.only(top: 2, bottom: AppSpacing.bottomNav(context) + 20),
       itemCount: goals.length + (showInsight ? 1 : 0),
       separatorBuilder: (_, _) => const SizedBox(height: 7),
       itemBuilder: (context, index) {
         if (showInsight && index == goals.length) {
           return const ContextAIInsight(
-            message:
-                'Dana Darurat sudah menjadi prioritas. Saat sebuah goal selesai, Nexora bisa menyarankan mengalihkan dana ke target yang masih relevan.',
+            message: 'Dana Darurat sudah menjadi prioritas. Saat sebuah goal selesai, Nexora bisa menyarankan mengalihkan dana ke target yang masih relevan.',
           );
         }
         return _GoalCard(goal: goals[index]);
@@ -313,11 +266,7 @@ class _GoalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = goal.progress;
-    final status = progress >= .75
-        ? 'On track'
-        : progress >= .4
-            ? 'Berjalan'
-            : 'Perlu dorongan';
+    final status = progress >= .75 ? 'On track' : progress >= .4 ? 'Berjalan' : 'Perlu dorongan';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
@@ -336,11 +285,7 @@ class _GoalCard extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: .12),
               borderRadius: AppRadius.radiusLG,
             ),
-            child: Icon(
-              goal.icon,
-              color: AppColors.primaryLight,
-              size: 21,
-            ),
+            child: Icon(goal.icon, color: AppColors.primaryLight, size: 21),
           ),
           const SizedBox(width: 9),
           Expanded(
@@ -354,18 +299,10 @@ class _GoalCard extends StatelessWidget {
                         goal.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTypography.labelMedium.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800),
                       ),
                     ),
-                    Text(
-                      '${(progress * 100).round()}%',
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.primaryLight,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                    Text('${(progress * 100).round()}%', style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800)),
                   ],
                 ),
                 const SizedBox(height: 1),
@@ -374,37 +311,19 @@ class _GoalCard extends StatelessWidget {
                     Text(goal.type, style: AppTypography.caption),
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 1,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: .10),
                         borderRadius: AppRadius.radiusPill,
                       ),
-                      child: Text(
-                        status,
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.primaryLight,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      child: Text(status, style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontSize: 9, fontWeight: FontWeight.w700)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
-                AnimatedProgressBar(
-                  value: progress,
-                  color: AppColors.primaryLight,
-                ),
+                AnimatedProgressBar(value: progress, color: AppColors.primaryLight),
                 const SizedBox(height: 4),
-                Text(
-                  '${rupiah(goal.saved)} / ${rupiah(goal.target)}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.caption,
-                ),
+                Text('${rupiah(goal.saved)} / ${rupiah(goal.target)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption),
               ],
             ),
           ),
@@ -415,13 +334,7 @@ class _GoalCard extends StatelessWidget {
 }
 
 class _GoalData {
-  const _GoalData(
-    this.title,
-    this.type,
-    this.saved,
-    this.target,
-    this.icon,
-  );
+  const _GoalData(this.title, this.type, this.saved, this.target, this.icon);
 
   final String title;
   final String type;
@@ -429,6 +342,9 @@ class _GoalData {
   final double target;
   final IconData icon;
 
-  double get progress =>
-      target <= 0 ? 0 : (saved / target).clamp(0.0, 1.0);
+  double get progress => target <= 0 ? 0 : (saved / target).clamp(0.0, 1.0);
+
+  factory _GoalData.fromSnapshot(FinancialGoalSnapshot snapshot) {
+    return _GoalData(snapshot.title, snapshot.type, snapshot.saved, snapshot.target, snapshot.icon);
+  }
 }
