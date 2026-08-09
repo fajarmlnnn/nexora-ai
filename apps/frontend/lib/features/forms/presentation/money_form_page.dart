@@ -73,7 +73,7 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
         amount: amount,
         type: widget.income ? TransactionType.income : TransactionType.expense,
         category: _category,
-        date: _selectedDate,
+        date: DateUtils.dateOnly(_selectedDate),
         walletId: selectedWalletId,
       );
 
@@ -88,32 +88,42 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
   }
 
   Future<void> _selectDate() async {
-    final today = DateTime.now();
-    final initialDate = DateUtils.dateOnly(_selectedDate);
+    final today = DateUtils.dateOnly(DateTime.now());
     final firstDate = DateTime(2020, 1, 1);
     final lastDate = DateTime(today.year + 10, 12, 31);
+    final current = DateUtils.dateOnly(_selectedDate);
+    final initialDate = current.isBefore(firstDate)
+        ? firstDate
+        : current.isAfter(lastDate)
+            ? lastDate
+            : current;
 
+    // Jangan memaksa locale id_ID pada DatePicker. Jika MaterialLocalizations
+    // aplikasi belum mendaftarkan locale tersebut, showDatePicker dapat gagal
+    // setelah barrier ditampilkan sehingga layar terlihat abu-abu.
     final picked = await showDatePicker(
       context: context,
-      initialDate: initialDate.isBefore(firstDate)
-          ? firstDate
-          : initialDate.isAfter(lastDate)
-              ? lastDate
-              : initialDate,
+      initialDate: initialDate,
       firstDate: firstDate,
       lastDate: lastDate,
-      locale: const Locale('id', 'ID'),
-      helpText: widget.income ? 'Pilih tanggal pemasukan' : 'Pilih tanggal pengeluaran',
+      helpText: widget.income
+          ? 'Pilih tanggal pemasukan'
+          : 'Pilih tanggal pengeluaran',
       cancelText: 'Batal',
       confirmText: 'Pilih',
       barrierDismissible: true,
       barrierColor: Colors.black54,
+      useRootNavigator: true,
       builder: (dialogContext, child) {
+        if (child == null) return const SizedBox.shrink();
+
         final baseTheme = Theme.of(dialogContext);
+        final scheme = baseTheme.colorScheme;
+
         return Theme(
           data: baseTheme.copyWith(
             brightness: Brightness.dark,
-            colorScheme: baseTheme.colorScheme.copyWith(
+            colorScheme: scheme.copyWith(
               brightness: Brightness.dark,
               primary: AppColors.primaryLight,
               onPrimary: Colors.white,
@@ -125,14 +135,13 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
               surfaceTintColor: Colors.transparent,
             ),
           ),
-          child: child ?? const SizedBox.shrink(),
+          child: child,
         );
       },
     );
 
-    if (picked != null && mounted) {
-      setState(() => _selectedDate = DateUtils.dateOnly(picked));
-    }
+    if (!mounted || picked == null) return;
+    setState(() => _selectedDate = DateUtils.dateOnly(picked));
   }
 
   void _showError(String message) {
