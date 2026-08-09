@@ -1,8 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../dashboard/models/transaction_model.dart';
-
 class FinancialGoalSnapshot {
   const FinancialGoalSnapshot({
     required this.id,
@@ -161,8 +159,3 @@ final installmentDueThisPeriodProvider = Provider<double>((ref) {
             total + (installment.dueThisPeriod ? installment.monthlyAmount : 0),
       );
 });
-
-final financialOverviewTransactionProvider =
-    Provider.family<List<TransactionModel>, List<TransactionModel>>(
-  (_, transactions) => List.unmodifiable(transactions),
-);
