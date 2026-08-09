@@ -115,7 +115,7 @@ class _TotalAssetsCard extends StatelessWidget {
       ]),
       const SizedBox(height: 4),
       Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-        Expanded(child: ScrollingText(text: visible ? rupiah(balance) : 'Rp •••••••••', style: AppTypography.displaySmall.copyWith(fontWeight: FontWeight.w800, color: Colors.white, fontSize: 31))),
+        Expanded(child: ScrollingText(text: visible ? rupiah(balance) : 'Rp •••••••••', style: AppTypography.displaySmall.copyWith(fontWeight: FontWeight.w800, color: Colors.white, fontSize: 26))),
         const SizedBox(width: 8),
         const SizedBox(width: 110, height: 45, child: _AssetSparkline()),
       ]),
