@@ -21,110 +21,91 @@ class TransactionPage extends ConsumerStatefulWidget {
 
 class _TransactionPageState extends ConsumerState<TransactionPage> {
   TransactionType? filter;
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final transactions = ref.watch(recentTransactionsProvider);
+
     return PremiumScaffold(
       child: Padding(
-        padding: AppSpacing.screen,
+        padding: AppSpacing.screen.copyWith(
+          bottom: AppSpacing.bottomNav(context) + 8,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(child: Text('Transaksi', style: AppTypography.heading2)),
-            AppSpacing.gapLG,
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: AppRadius.radiusXL,
-                border: Border.all(
-                  color: AppColors.border.withValues(alpha: .45),
-                ),
-              ),
-              child: const Row(
-                children: [
-                  Icon(
-                    LucideIcons.search,
-                    color: AppColors.textMuted,
-                    size: 20,
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Cari transaksi',
-                      style: TextStyle(color: AppColors.textMuted),
-                    ),
-                  ),
-                  Icon(
-                    LucideIcons.slidersHorizontal,
-                    color: AppColors.textSecondary,
-                  ),
-                ],
-              ),
+            _TransactionHeader(
+              onFilter: () => _showFilterSheet(context),
             ),
-            AppSpacing.gapMD,
-            Row(
-              children: [
-                _Chip(
-                  label: 'Semua',
-                  selected: filter == null,
-                  onTap: () => setState(() => filter = null),
-                ),
-                AppSpacing.hGapSM,
-                _Chip(
-                  label: 'Pemasukan',
-                  selected: filter == TransactionType.income,
-                  onTap: () => setState(() => filter = TransactionType.income),
-                ),
-                AppSpacing.hGapSM,
-                _Chip(
-                  label: 'Pengeluaran',
-                  selected: filter == TransactionType.expense,
-                  onTap: () => setState(() => filter = TransactionType.expense),
-                ),
-              ],
+            const SizedBox(height: 14),
+            _SearchBar(
+              controller: _searchController,
+              onChanged: (value) => setState(() => _query = value.trim()),
+              onFilter: () => _showFilterSheet(context),
             ),
-            AppSpacing.gapLG,
+            const SizedBox(height: 10),
+            _FilterTabs(
+              selected: filter,
+              onChanged: (value) => setState(() => filter = value),
+            ),
+            const SizedBox(height: 14),
             Expanded(
               child: transactions.when(
                 loading: () => ListView.separated(
                   itemCount: 6,
-                  separatorBuilder: (_, _) => AppSpacing.gapMD,
-                  itemBuilder: (_, _) => const ShimmerSkeleton(height: 76),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (_, _) => const ShimmerSkeleton(height: 68),
                 ),
-                error: (error, _) => EmptyStateCard(
-                  icon: LucideIcons.triangleAlert,
-                  title: 'Transaksi belum tersedia',
-                  message: error.toString(),
-                  action: 'Coba Lagi',
+                error: (error, _) => Center(
+                  child: EmptyStateCard(
+                    icon: LucideIcons.triangleAlert,
+                    title: 'Transaksi belum tersedia',
+                    message: error.toString(),
+                    action: 'Coba Lagi',
+                  ),
                 ),
                 data: (items) {
                   final expanded = [...items, ..._extraTransactions()]
                       .where((item) => filter == null || item.type == filter)
+                      .where(
+                        (item) =>
+                            _query.isEmpty ||
+                            item.title.toLowerCase().contains(_query.toLowerCase()) ||
+                            _categoryLabel(item.category)
+                                .toLowerCase()
+                                .contains(_query.toLowerCase()),
+                      )
                       .toList();
-                  return AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    child: ListView(
-                      key: ValueKey(filter),
-                      padding: EdgeInsets.only(
-                        bottom: MediaQuery.paddingOf(context).bottom + 60,
+
+                  if (expanded.isEmpty) {
+                    return _NoResults(query: _query);
+                  }
+
+                  return ListView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.only(top: 2, bottom: 20),
+                    children: [
+                      _Group(
+                        title: 'Hari ini',
+                        items: expanded.take(4).toList(),
                       ),
-                      children: [
-                        _Group(
-                          title: 'Hari ini',
-                          items: expanded.take(4).toList(),
-                        ),
-                        _Group(
-                          title: 'Kemarin',
-                          items: expanded.skip(4).take(2).toList(),
-                        ),
-                        _Group(
-                          title: 'Sebelumnya',
-                          items: expanded.skip(6).toList(),
-                        ),
-                      ],
-                    ),
+                      _Group(
+                        title: 'Kemarin',
+                        items: expanded.skip(4).take(2).toList(),
+                      ),
+                      _Group(
+                        title: 'Sebelumnya',
+                        items: expanded.skip(6).toList(),
+                      ),
+                    ],
                   );
                 },
               ),
@@ -134,54 +115,239 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
       ),
     );
   }
+
+  void _showFilterSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.card,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Filter transaksi', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 12),
+              _SheetOption(
+                label: 'Semua transaksi',
+                selected: filter == null,
+                onTap: () {
+                  setState(() => filter = null);
+                  Navigator.pop(sheetContext);
+                },
+              ),
+              _SheetOption(
+                label: 'Pemasukan',
+                selected: filter == TransactionType.income,
+                onTap: () {
+                  setState(() => filter = TransactionType.income);
+                  Navigator.pop(sheetContext);
+                },
+              ),
+              _SheetOption(
+                label: 'Pengeluaran',
+                selected: filter == TransactionType.expense,
+                onTap: () {
+                  setState(() => filter = TransactionType.expense);
+                  Navigator.pop(sheetContext);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
+class _TransactionHeader extends StatelessWidget {
+  const _TransactionHeader({this.onFilter});
+
+  final VoidCallback? onFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Transaksi', style: AppTypography.heading1),
+              const SizedBox(height: 1),
+              Text('Pantau arus uangmu', style: AppTypography.bodySmall),
+            ],
+          ),
+        ),
+        Material(
+          color: AppColors.card.withValues(alpha: .72),
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: onFilter,
+            customBorder: const CircleBorder(),
+            child: const SizedBox(
+              width: 44,
+              height: 44,
+              child: Icon(LucideIcons.slidersHorizontal, size: 20, color: AppColors.textSecondary),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SearchBar extends StatelessWidget {
+  const _SearchBar({
+    required this.controller,
+    required this.onChanged,
+    this.onFilter,
   });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback? onFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 13),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: AppRadius.radiusXL,
+        border: Border.all(color: AppColors.border.withValues(alpha: .4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(LucideIcons.search, color: AppColors.textMuted, size: 20),
+          const SizedBox(width: 9),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              textInputAction: TextInputAction.search,
+              style: AppTypography.bodySmall.copyWith(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'Cari transaksi',
+                hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+          if (controller.text.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                controller.clear();
+                onChanged('');
+              },
+              child: const Icon(LucideIcons.x, size: 18, color: AppColors.textMuted),
+            ),
+          const SizedBox(width: 5),
+          GestureDetector(
+            onTap: onFilter,
+            child: const Icon(LucideIcons.listFilter, color: AppColors.primaryLight, size: 19),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterTabs extends StatelessWidget {
+  const _FilterTabs({required this.selected, required this.onChanged});
+
+  final TransactionType? selected;
+  final ValueChanged<TransactionType?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppColors.card.withValues(alpha: .68),
+        borderRadius: AppRadius.radiusLG,
+        border: Border.all(color: AppColors.border.withValues(alpha: .28)),
+      ),
+      child: Row(
+        children: [
+          _Tab(label: 'Semua', selected: selected == null, onTap: () => onChanged(null)),
+          _Tab(label: 'Pemasukan', selected: selected == TransactionType.income, onTap: () => onChanged(TransactionType.income)),
+          _Tab(label: 'Pengeluaran', selected: selected == TransactionType.expense, onTap: () => onChanged(TransactionType.expense)),
+        ],
+      ),
+    );
+  }
+}
+
+class _Tab extends StatelessWidget {
+  const _Tab({required this.label, required this.selected, required this.onTap});
+
   final String label;
   final bool selected;
   final VoidCallback onTap;
+
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: selected ? AppGradients.primary : null,
-        color: selected ? null : AppColors.card,
-        borderRadius: AppRadius.radiusXL,
-      ),
-      child: Text(
-        label,
-        style: AppTypography.labelMedium.copyWith(
-          color: selected ? Colors.white : AppColors.textSecondary,
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            gradient: selected ? AppGradients.primary : null,
+            color: selected ? null : Colors.transparent,
+            borderRadius: AppRadius.radiusMD,
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.caption.copyWith(
+              color: selected ? Colors.white : AppColors.textSecondary,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+            ),
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _Group extends StatelessWidget {
   const _Group({required this.title, required this.items});
+
   final String title;
   final List<TransactionModel> items;
+
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Text(title, style: AppTypography.heading3),
+          padding: const EdgeInsets.fromLTRB(0, 7, 0, 7),
+          child: Row(
+            children: [
+              Text(title, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
+              const SizedBox(width: 7),
+              Expanded(child: Divider(color: AppColors.border.withValues(alpha: .35), height: 1)),
+            ],
+          ),
         ),
         for (final item in items) _TransactionTile(item: item),
-        const Divider(height: 24),
+        const SizedBox(height: 4),
       ],
     );
   }
@@ -189,68 +355,158 @@ class _Group extends StatelessWidget {
 
 class _TransactionTile extends StatelessWidget {
   const _TransactionTile({required this.item});
+
   final TransactionModel item;
+
   @override
   Widget build(BuildContext context) {
     final color = item.isIncome ? AppColors.success : AppColors.danger;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 7),
       child: Dismissible(
         key: ValueKey(item.id),
         direction: DismissDirection.endToStart,
         background: Container(
           alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 20),
+          padding: const EdgeInsets.only(right: 18),
           decoration: BoxDecoration(
-            color: AppColors.danger.withValues(alpha: .18),
+            color: AppColors.danger.withValues(alpha: .16),
             borderRadius: AppRadius.radiusXL,
           ),
-          child: const Icon(LucideIcons.trash2, color: AppColors.danger),
+          child: const Icon(LucideIcons.trash2, color: AppColors.danger, size: 20),
         ),
         confirmDismiss: (_) async => false,
         child: PremiumCard(
           borderRadius: AppRadius.radiusXL,
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
           child: Row(
             children: [
               Container(
-                width: 54,
-                height: 54,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: .18),
+                  color: color.withValues(alpha: .13),
                   borderRadius: AppRadius.radiusLG,
                 ),
-                child: Icon(_icon(item.category), color: color),
+                child: Icon(_icon(item.category), color: color, size: 21),
               ),
-              AppSpacing.hGapMD,
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(item.title, style: AppTypography.labelLarge),
                     Text(
-                      _categoryLabel(item.category),
-                      style: AppTypography.bodySmall,
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 1),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _categoryLabel(item.category),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.caption,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Container(
+                          width: 3,
+                          height: 3,
+                          decoration: const BoxDecoration(color: AppColors.textMuted, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            DateFormat('dd MMM').format(item.date),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.caption,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${item.isIncome ? '+' : '-'}${rupiah(item.amount)}',
-                    style: AppTypography.labelLarge.copyWith(color: color),
-                  ),
-                  Text(
-                    DateFormat('dd MMM yyyy').format(item.date),
-                    style: AppTypography.caption,
-                  ),
-                ],
+              const SizedBox(width: 8),
+              Text(
+                '${item.isIncome ? '+' : '-'}${rupiah(item.amount)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+                style: AppTypography.labelMedium.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _NoResults extends StatelessWidget {
+  const _NoResults({required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 70),
+        child: Column(
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: .12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(LucideIcons.searchX, color: AppColors.primaryLight, size: 25),
+            ),
+            const SizedBox(height: 12),
+            Text('Transaksi tidak ditemukan', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text(
+              query.isEmpty ? 'Belum ada transaksi pada filter ini.' : 'Coba gunakan kata kunci lain.',
+              textAlign: TextAlign.center,
+              style: AppTypography.caption,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetOption extends StatelessWidget {
+  const _SheetOption({required this.label, required this.selected, required this.onTap});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      onTap: onTap,
+      title: Text(label, style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600)),
+      trailing: Icon(
+        selected ? LucideIcons.circleCheck : LucideIcons.circle,
+        size: 20,
+        color: selected ? AppColors.primaryLight : AppColors.textMuted,
       ),
     );
   }
@@ -306,5 +562,5 @@ List<TransactionModel> _extraTransactions() => [
 
 String _categoryLabel(TransactionCategory category) {
   final name = category.name;
-  return "${name[0].toUpperCase()}${name.substring(1)}";
+  return '${name[0].toUpperCase()}${name.substring(1)}';
 }
