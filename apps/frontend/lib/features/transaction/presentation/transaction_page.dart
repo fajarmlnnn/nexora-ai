@@ -42,9 +42,7 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _TransactionHeader(
-              onFilter: () => _showFilterSheet(context),
-            ),
+            _TransactionHeader(onFilter: () => _showFilterSheet(context)),
             const SizedBox(height: 14),
             _SearchBar(
               controller: _searchController,
@@ -73,30 +71,26 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
                   ),
                 ),
                 data: (items) {
+                  final query = _query.toLowerCase();
                   final expanded = [...items, ..._extraTransactions()]
                       .where((item) => filter == null || item.type == filter)
                       .where(
                         (item) =>
-                            _query.isEmpty ||
-                            item.title.toLowerCase().contains(_query.toLowerCase()) ||
+                            query.isEmpty ||
+                            item.title.toLowerCase().contains(query) ||
                             _categoryLabel(item.category)
                                 .toLowerCase()
-                                .contains(_query.toLowerCase()),
+                                .contains(query),
                       )
                       .toList();
 
-                  if (expanded.isEmpty) {
-                    return _NoResults(query: _query);
-                  }
+                  if (expanded.isEmpty) return _NoResults(query: _query);
 
                   return ListView(
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.only(top: 2, bottom: 20),
                     children: [
-                      _Group(
-                        title: 'Hari ini',
-                        items: expanded.take(4).toList(),
-                      ),
+                      _Group(title: 'Hari ini', items: expanded.take(4).toList()),
                       _Group(
                         title: 'Kemarin',
                         items: expanded.skip(4).take(2).toList(),
@@ -131,7 +125,10 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Filter transaksi', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
+              Text(
+                'Filter transaksi',
+                style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: 12),
               _SheetOption(
                 label: 'Semua transaksi',
@@ -167,7 +164,6 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
 
 class _TransactionHeader extends StatelessWidget {
   const _TransactionHeader({this.onFilter});
-
   final VoidCallback? onFilter;
 
   @override
@@ -193,7 +189,11 @@ class _TransactionHeader extends StatelessWidget {
             child: const SizedBox(
               width: 44,
               height: 44,
-              child: Icon(LucideIcons.slidersHorizontal, size: 20, color: AppColors.textSecondary),
+              child: Icon(
+                LucideIcons.slidersHorizontal,
+                size: 20,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
         ),
@@ -253,7 +253,11 @@ class _SearchBar extends StatelessWidget {
           const SizedBox(width: 5),
           GestureDetector(
             onTap: onFilter,
-            child: const Icon(LucideIcons.listFilter, color: AppColors.primaryLight, size: 19),
+            child: const Icon(
+              LucideIcons.listFilter,
+              color: AppColors.primaryLight,
+              size: 19,
+            ),
           ),
         ],
       ),
@@ -263,7 +267,6 @@ class _SearchBar extends StatelessWidget {
 
 class _FilterTabs extends StatelessWidget {
   const _FilterTabs({required this.selected, required this.onChanged});
-
   final TransactionType? selected;
   final ValueChanged<TransactionType?> onChanged;
 
@@ -279,8 +282,16 @@ class _FilterTabs extends StatelessWidget {
       child: Row(
         children: [
           _Tab(label: 'Semua', selected: selected == null, onTap: () => onChanged(null)),
-          _Tab(label: 'Pemasukan', selected: selected == TransactionType.income, onTap: () => onChanged(TransactionType.income)),
-          _Tab(label: 'Pengeluaran', selected: selected == TransactionType.expense, onTap: () => onChanged(TransactionType.expense)),
+          _Tab(
+            label: 'Pemasukan',
+            selected: selected == TransactionType.income,
+            onTap: () => onChanged(TransactionType.income),
+          ),
+          _Tab(
+            label: 'Pengeluaran',
+            selected: selected == TransactionType.expense,
+            onTap: () => onChanged(TransactionType.expense),
+          ),
         ],
       ),
     );
@@ -289,7 +300,6 @@ class _FilterTabs extends StatelessWidget {
 
 class _Tab extends StatelessWidget {
   const _Tab({required this.label, required this.selected, required this.onTap});
-
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -301,6 +311,7 @@ class _Tab extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
           height: 38,
           alignment: Alignment.center,
           decoration: BoxDecoration(
@@ -325,7 +336,6 @@ class _Tab extends StatelessWidget {
 
 class _Group extends StatelessWidget {
   const _Group({required this.title, required this.items});
-
   final String title;
   final List<TransactionModel> items;
 
@@ -340,9 +350,17 @@ class _Group extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(0, 7, 0, 7),
           child: Row(
             children: [
-              Text(title, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
+              Text(
+                title,
+                style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800),
+              ),
               const SizedBox(width: 7),
-              Expanded(child: Divider(color: AppColors.border.withValues(alpha: .35), height: 1)),
+              Expanded(
+                child: Divider(
+                  color: AppColors.border.withValues(alpha: .35),
+                  height: 1,
+                ),
+              ),
             ],
           ),
         ),
@@ -353,100 +371,169 @@ class _Group extends StatelessWidget {
   }
 }
 
-class _TransactionTile extends StatelessWidget {
+/// Compact swipe interaction.
+/// The previous Dismissible immediately snapped back because deletion was
+/// intentionally disabled with `confirmDismiss: false`. This version behaves
+/// like a modern mail/finance list: the card follows the finger, reveals a
+/// compact action area, then settles with a soft curve.
+class _TransactionTile extends StatefulWidget {
   const _TransactionTile({required this.item});
-
   final TransactionModel item;
 
   @override
+  State<_TransactionTile> createState() => _TransactionTileState();
+}
+
+class _TransactionTileState extends State<_TransactionTile> {
+  static const double _actionWidth = 76;
+  static const double _openThreshold = 34;
+  static const Duration _settleDuration = Duration(milliseconds: 190);
+
+  double _offset = 0;
+  bool _open = false;
+
+  void _dragUpdate(DragUpdateDetails details) {
+    setState(() {
+      _offset = (_offset + details.delta.dx).clamp(-_actionWidth, 0.0);
+    });
+  }
+
+  void _dragEnd(DragEndDetails details) {
+    final shouldOpen = _offset.abs() >= _openThreshold || details.velocity.pixelsPerSecond.dx < -450;
+    _settle(shouldOpen);
+  }
+
+  void _settle(bool open) {
+    setState(() {
+      _open = open;
+      _offset = open ? -_actionWidth : 0;
+    });
+  }
+
+  void _toggle() {
+    if (_open) _settle(false);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final item = widget.item;
     final color = item.isIncome ? AppColors.success : AppColors.danger;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 7),
-      child: Dismissible(
-        key: ValueKey(item.id),
-        direction: DismissDirection.endToStart,
-        background: Container(
+      child: ClipRRect(
+        borderRadius: AppRadius.radiusXL,
+        child: Stack(
           alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 18),
-          decoration: BoxDecoration(
-            color: AppColors.danger.withValues(alpha: .16),
-            borderRadius: AppRadius.radiusXL,
-          ),
-          child: const Icon(LucideIcons.trash2, color: AppColors.danger, size: 20),
-        ),
-        confirmDismiss: (_) async => false,
-        child: PremiumCard(
-          borderRadius: AppRadius.radiusXL,
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
+          children: [
+            Positioned.fill(
+              child: Container(
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: .13),
-                  borderRadius: AppRadius.radiusLG,
+                  color: AppColors.danger.withValues(alpha: .12),
+                  borderRadius: AppRadius.radiusXL,
                 ),
-                child: Icon(_icon(item.category), color: color, size: 21),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      item.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 1),
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            _categoryLabel(item.category),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.caption,
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        Container(
-                          width: 3,
-                          height: 3,
-                          decoration: const BoxDecoration(color: AppColors.textMuted, shape: BoxShape.circle),
-                        ),
-                        const SizedBox(width: 5),
-                        Flexible(
-                          child: Text(
-                            DateFormat('dd MMM').format(item.date),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.caption,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 18),
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 100),
+                  opacity: _offset < -8 ? 1 : 0.35,
+                  child: const Icon(
+                    LucideIcons.trash2,
+                    color: AppColors.danger,
+                    size: 20,
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                '${item.isIncome ? '+' : '-'}${rupiah(item.amount)}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.end,
-                style: AppTypography.labelMedium.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w800,
+            ),
+            AnimatedContainer(
+              duration: _settleDuration,
+              curve: Curves.easeOutCubic,
+              transform: Matrix4.translationValues(_offset, 0, 0),
+              transformAlignment: Alignment.center,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragUpdate: _dragUpdate,
+                onHorizontalDragEnd: _dragEnd,
+                onTap: _toggle,
+                child: PremiumCard(
+                  borderRadius: AppRadius.radiusXL,
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: .13),
+                          borderRadius: AppRadius.radiusLG,
+                        ),
+                        child: Icon(_icon(item.category), color: color, size: 21),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              item.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.labelMedium.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 1),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    _categoryLabel(item.category),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.caption,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Container(
+                                  width: 3,
+                                  height: 3,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.textMuted,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Flexible(
+                                  child: Text(
+                                    DateFormat('dd MMM').format(item.date),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.caption,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${item.isIncome ? '+' : '-'}${rupiah(item.amount)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.end,
+                        style: AppTypography.labelMedium.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -455,7 +542,6 @@ class _TransactionTile extends StatelessWidget {
 
 class _NoResults extends StatelessWidget {
   const _NoResults({required this.query});
-
   final String query;
 
   @override
@@ -472,13 +558,22 @@ class _NoResults extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: .12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(LucideIcons.searchX, color: AppColors.primaryLight, size: 25),
+              child: const Icon(
+                LucideIcons.searchX,
+                color: AppColors.primaryLight,
+                size: 25,
+              ),
             ),
             const SizedBox(height: 12),
-            Text('Transaksi tidak ditemukan', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
+            Text(
+              'Transaksi tidak ditemukan',
+              style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800),
+            ),
             const SizedBox(height: 4),
             Text(
-              query.isEmpty ? 'Belum ada transaksi pada filter ini.' : 'Coba gunakan kata kunci lain.',
+              query.isEmpty
+                  ? 'Belum ada transaksi pada filter ini.'
+                  : 'Coba gunakan kata kunci lain.',
               textAlign: TextAlign.center,
               style: AppTypography.caption,
             ),
@@ -490,7 +585,11 @@ class _NoResults extends StatelessWidget {
 }
 
 class _SheetOption extends StatelessWidget {
-  const _SheetOption({required this.label, required this.selected, required this.onTap});
+  const _SheetOption({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -502,7 +601,10 @@ class _SheetOption extends StatelessWidget {
       dense: true,
       contentPadding: EdgeInsets.zero,
       onTap: onTap,
-      title: Text(label, style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600)),
+      title: Text(
+        label,
+        style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
+      ),
       trailing: Icon(
         selected ? LucideIcons.circleCheck : LucideIcons.circle,
         size: 20,
@@ -513,52 +615,52 @@ class _SheetOption extends StatelessWidget {
 }
 
 IconData _icon(TransactionCategory c) => switch (c) {
-  TransactionCategory.food => LucideIcons.utensils,
-  TransactionCategory.transport => LucideIcons.car,
-  TransactionCategory.shopping => LucideIcons.shoppingBag,
-  TransactionCategory.salary => LucideIcons.wallet,
-  TransactionCategory.investment => LucideIcons.chartColumn,
-  TransactionCategory.bills => LucideIcons.receiptText,
-  TransactionCategory.entertainment => LucideIcons.gamepad2,
-  TransactionCategory.health => LucideIcons.heartPulse,
-  TransactionCategory.education => LucideIcons.graduationCap,
-  TransactionCategory.other => LucideIcons.circleDollarSign,
-};
+      TransactionCategory.food => LucideIcons.utensils,
+      TransactionCategory.transport => LucideIcons.car,
+      TransactionCategory.shopping => LucideIcons.shoppingBag,
+      TransactionCategory.salary => LucideIcons.wallet,
+      TransactionCategory.investment => LucideIcons.chartColumn,
+      TransactionCategory.bills => LucideIcons.receiptText,
+      TransactionCategory.entertainment => LucideIcons.gamepad2,
+      TransactionCategory.health => LucideIcons.heartPulse,
+      TransactionCategory.education => LucideIcons.graduationCap,
+      TransactionCategory.other => LucideIcons.circleDollarSign,
+    };
 
 List<TransactionModel> _extraTransactions() => [
-  TransactionModel(
-    id: '4',
-    title: 'Grab Bike',
-    amount: 27000,
-    type: TransactionType.expense,
-    category: TransactionCategory.transport,
-    date: DateTime.now(),
-  ),
-  TransactionModel(
-    id: '5',
-    title: 'Coffee',
-    amount: 18000,
-    type: TransactionType.expense,
-    category: TransactionCategory.food,
-    date: DateTime.now().subtract(const Duration(days: 1)),
-  ),
-  TransactionModel(
-    id: '6',
-    title: 'Freelance Project',
-    amount: 3500000,
-    type: TransactionType.income,
-    category: TransactionCategory.investment,
-    date: DateTime.now().subtract(const Duration(days: 1)),
-  ),
-  TransactionModel(
-    id: '7',
-    title: 'Monthly Groceries',
-    amount: 650000,
-    type: TransactionType.expense,
-    category: TransactionCategory.shopping,
-    date: DateTime.now().subtract(const Duration(days: 2)),
-  ),
-];
+      TransactionModel(
+        id: '4',
+        title: 'Grab Bike',
+        amount: 27000,
+        type: TransactionType.expense,
+        category: TransactionCategory.transport,
+        date: DateTime.now(),
+      ),
+      TransactionModel(
+        id: '5',
+        title: 'Coffee',
+        amount: 18000,
+        type: TransactionType.expense,
+        category: TransactionCategory.food,
+        date: DateTime.now().subtract(const Duration(days: 1)),
+      ),
+      TransactionModel(
+        id: '6',
+        title: 'Freelance Project',
+        amount: 3500000,
+        type: TransactionType.income,
+        category: TransactionCategory.investment,
+        date: DateTime.now().subtract(const Duration(days: 1)),
+      ),
+      TransactionModel(
+        id: '7',
+        title: 'Monthly Groceries',
+        amount: 650000,
+        type: TransactionType.expense,
+        category: TransactionCategory.shopping,
+        date: DateTime.now().subtract(const Duration(days: 2)),
+      ),
+    ];
 
 String _categoryLabel(TransactionCategory category) {
   final name = category.name;
