@@ -7,7 +7,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
-import '../../../core/widgets/layout/n_section_header.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../models/transaction_model.dart';
 
@@ -21,16 +20,39 @@ class RecentTransactionCard extends StatelessWidget {
     final recent = transactions.take(3).toList();
 
     return NCard(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 11),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          NSectionHeader(
-            title: 'Recent Transactions',
-            actionLabel: 'See All',
-            onActionPressed: () => context.push('/transactions'),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Recent Transactions',
+                  style: AppTypography.labelLarge.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.push('/transactions'),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'See All  ›',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.primaryLight,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           if (recent.isEmpty)
             const _EmptyTransactions()
           else
