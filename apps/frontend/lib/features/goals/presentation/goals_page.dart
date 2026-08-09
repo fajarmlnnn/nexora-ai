@@ -16,8 +16,9 @@ class GoalsPage extends StatefulWidget {
   State<GoalsPage> createState() => _GoalsPageState();
 }
 
-class _GoalsPageState extends State<GoalsPage> with SingleTickerProviderStateMixin {
-  late final TabController _controller = TabController(length: 4, vsync: this);
+class _GoalsPageState extends State<GoalsPage> {
+  final PageController _pageController = PageController();
+  int _selectedTab = 0;
 
   final goals = const [
     _GoalData('Dana Darurat', 'Wishlist', 10000000, 50000000, LucideIcons.shieldCheck, AppColors.primary),
@@ -28,8 +29,18 @@ class _GoalsPageState extends State<GoalsPage> with SingleTickerProviderStateMix
 
   @override
   void dispose() {
-    _controller.dispose();
+    _pageController.dispose();
     super.dispose();
+  }
+
+  void _selectTab(int index) {
+    if (index == _selectedTab) return;
+    setState(() => _selectedTab = index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
@@ -40,15 +51,19 @@ class _GoalsPageState extends State<GoalsPage> with SingleTickerProviderStateMix
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _GoalsHeader(),
+            const _GoalsHeader(),
             const SizedBox(height: 12),
             _GoalsOverview(goals: goals),
             const SizedBox(height: 12),
-            _GoalTabs(controller: _controller),
+            _GoalTabs(selected: _selectedTab, onSelected: _selectTab),
             const SizedBox(height: 8),
             Expanded(
-              child: TabBarView(
-                controller: _controller,
+              child: PageView(
+                controller: _pageController,
+                physics: const BouncingScrollPhysics(),
+                onPageChanged: (index) {
+                  if (index != _selectedTab) setState(() => _selectedTab = index);
+                },
                 children: [
                   _GoalList(goals: goals, showInsight: true),
                   _GoalList(goals: goals.where((g) => g.type == 'Wishlist').toList()),
@@ -155,8 +170,11 @@ class _GoalsOverview extends StatelessWidget {
 }
 
 class _GoalTabs extends StatelessWidget {
-  const _GoalTabs({required this.controller});
-  final TabController controller;
+  const _GoalTabs({required this.selected, required this.onSelected});
+  final int selected;
+  final ValueChanged<int> onSelected;
+
+  static const labels = ['Semua', 'Wishlist', 'Saving', 'Debt'];
 
   @override
   Widget build(BuildContext context) {
@@ -168,25 +186,50 @@ class _GoalTabs extends StatelessWidget {
         borderRadius: AppRadius.radiusLG,
         border: Border.all(color: AppColors.border.withValues(alpha: .3)),
       ),
-      child: TabBar(
-        controller: controller,
-        indicator: BoxDecoration(
-          gradient: AppGradients.primary,
-          borderRadius: AppRadius.radiusMD,
-          boxShadow: AppShadows.glow,
-        ),
-        indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: Colors.transparent,
-        labelPadding: EdgeInsets.zero,
-        labelStyle: AppTypography.caption.copyWith(fontWeight: FontWeight.w800),
-        labelColor: Colors.white,
-        unselectedLabelColor: AppColors.textSecondary,
-        tabs: const [
-          Tab(text: 'Semua'),
-          Tab(text: 'Wishlist'),
-          Tab(text: 'Saving'),
-          Tab(text: 'Debt'),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final itemWidth = constraints.maxWidth / labels.length;
+          return Stack(
+            children: [
+              AnimatedAlign(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment(-1 + (selected * 2 / (labels.length - 1)), 0),
+                child: Container(
+                  width: itemWidth,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.primary,
+                    borderRadius: AppRadius.radiusMD,
+                    boxShadow: AppShadows.glow,
+                  ),
+                ),
+              ),
+              Row(
+                children: List.generate(labels.length, (index) {
+                  final active = selected == index;
+                  return Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => onSelected(index),
+                      child: Center(
+                        child: AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOutCubic,
+                          style: AppTypography.caption.copyWith(
+                            color: active ? Colors.white : AppColors.textSecondary,
+                            fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                          ),
+                          child: Text(labels[index], maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
