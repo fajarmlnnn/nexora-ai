@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+export '../widgets/wallet_empty_state.dart';
+
 enum WalletType { bank, ewallet, cash, investment }
 
 class WalletModel {
@@ -17,38 +19,25 @@ class WalletModel {
   });
 
   final String id;
-
   final String name;
-
   final String bankName;
-
   final String accountNumber;
-
   final double balance;
-
   final WalletType type;
-
   final Color color;
-
   final bool isPrimary;
-
   final bool isHidden;
 
   bool get hasBalance => balance > 0;
-
   bool get isBank => type == WalletType.bank;
-
   bool get isEWallet => type == WalletType.ewallet;
-
   bool get isCash => type == WalletType.cash;
-
   bool get isInvestment => type == WalletType.investment;
 
   String get maskedAccount {
     if (accountNumber.length <= 4) {
       return accountNumber;
     }
-
     return "•••• ${accountNumber.substring(accountNumber.length - 4)}";
   }
 
@@ -56,13 +45,10 @@ class WalletModel {
     switch (type) {
       case WalletType.bank:
         return LucideIcons.landmark;
-
       case WalletType.ewallet:
         return LucideIcons.walletMinimal;
-
       case WalletType.cash:
         return LucideIcons.banknote;
-
       case WalletType.investment:
         return LucideIcons.chartColumn;
     }

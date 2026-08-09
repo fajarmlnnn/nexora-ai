@@ -18,6 +18,15 @@ abstract final class AppTypography {
     color: AppColors.textPrimary,
   );
 
+  static const TextStyle displaySmall = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 32,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.8,
+    height: 1.1,
+    color: AppColors.textPrimary,
+  );
+
   // Headings
   static const TextStyle heading1 = TextStyle(
     fontFamily: fontFamily,
