@@ -7,6 +7,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../models/ai_insight.dart';
+import 'nexora_ai_mascot.dart';
 
 class AIInsightCard extends StatelessWidget {
   const AIInsightCard({super.key, required this.insight, this.onTap});
@@ -26,14 +27,10 @@ class AIInsightCard extends StatelessWidget {
       tag: 'dashboard_ai_card',
       child: NCard(
         onTap: onTap,
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.cardSecondary,
-            AppColors.card.withValues(alpha: .98),
-            AppColors.primary.withValues(alpha: .10),
-          ],
+          colors: [Color(0xFF27245B), Color(0xFF34266D), Color(0xFF201B4A)],
         ),
         color: AppColors.card,
         showBorder: true,
@@ -53,7 +50,7 @@ class AIInsightCard extends StatelessWidget {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: .16),
+                        color: AppColors.primary.withValues(alpha: .22),
                         blurRadius: 52,
                         spreadRadius: 8,
                       ),
@@ -80,13 +77,13 @@ class AIInsightCard extends StatelessWidget {
                               shape: BoxShape.circle,
                               gradient: RadialGradient(
                                 colors: [
-                                  AppColors.primary.withValues(alpha: .22),
+                                  AppColors.primaryLight.withValues(alpha: .20),
                                   AppColors.primary.withValues(alpha: .03),
                                 ],
                               ),
                             ),
                           ),
-                          const NexoraRobot(size: 96, waving: true),
+                          const NexoraAIMascot(size: 94),
                           Positioned(
                             right: 1,
                             top: 8,
@@ -94,14 +91,14 @@ class AIInsightCard extends StatelessWidget {
                               width: 24,
                               height: 24,
                               decoration: BoxDecoration(
-                                color: AppColors.card,
+                                color: const Color(0xFF25204E),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: AppColors.primaryLight.withValues(alpha: .32),
+                                  color: AppColors.primaryLight.withValues(alpha: .35),
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: .22),
+                                    color: AppColors.primary.withValues(alpha: .25),
                                     blurRadius: 10,
                                   ),
                                 ],
@@ -164,7 +161,7 @@ class AIInsightCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            insight.title,
+                            'Nexora AI Insight',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.labelLarge.copyWith(
@@ -178,7 +175,7 @@ class AIInsightCard extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.textSecondary,
+                              color: Colors.white.withValues(alpha: .68),
                               height: 1.3,
                             ),
                           ),
