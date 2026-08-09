@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/ai/presentation/ai_page.dart';
 import '../features/budget/presentation/budget_page.dart';
 import '../features/dashboard/presentation/dashboard_page.dart';
+import '../features/dashboard/presentation/financial_overview_detail_page.dart';
 import '../features/forms/presentation/money_form_page.dart';
 import '../features/goals/presentation/goals_page.dart';
 import '../features/installment/presentation/installment_page.dart';
@@ -19,151 +20,42 @@ import 'app_shell.dart';
 final appRouter = GoRouter(
   initialLocation: '/splash',
   routes: [
-    GoRoute(
-      path: '/splash',
-      pageBuilder: (context, state) =>
-          _buildTransitionPage(state: state, child: const SplashPage()),
-    ),
-    GoRoute(
-      path: '/onboarding',
-      pageBuilder: (context, state) =>
-          _buildTransitionPage(state: state, child: const OnboardingPage()),
-    ),
-
+    GoRoute(path: '/splash', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const SplashPage())),
+    GoRoute(path: '/onboarding', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const OnboardingPage())),
     StatefulShellRoute.indexedStack(
-      builder: (context, state, navigationShell) {
-        return AppShell(navigationShell: navigationShell);
-      },
+      builder: (context, state, navigationShell) => AppShell(navigationShell: navigationShell),
       branches: [
-        // 0. HOME
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/',
-              pageBuilder: (context, state) => _buildTransitionPage(
-                state: state,
-                child: const DashboardPage(),
-              ),
-            ),
-          ],
-        ),
-
-        // 1. TRANSACTIONS
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/transactions',
-              pageBuilder: (context, state) => _buildTransitionPage(
-                state: state,
-                child: const TransactionPage(),
-              ),
-            ),
-          ],
-        ),
-
-        // 2. WALLET
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/wallet',
-              pageBuilder: (context, state) =>
-                  _buildTransitionPage(state: state, child: const WalletPage()),
-            ),
-          ],
-        ),
-
-        // 3. GOALS
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/goals',
-              pageBuilder: (context, state) =>
-                  _buildTransitionPage(state: state, child: const GoalsPage()),
-            ),
-          ],
-        ),
+        StatefulShellBranch(routes: [GoRoute(path: '/', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const DashboardPage()))]),
+        StatefulShellBranch(routes: [GoRoute(path: '/transactions', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const TransactionPage()))]),
+        StatefulShellBranch(routes: [GoRoute(path: '/wallet', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const WalletPage()))]),
+        StatefulShellBranch(routes: [GoRoute(path: '/goals', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const GoalsPage()))]),
       ],
     ),
-
-    // STANDALONE ROUTES
-    GoRoute(
-      path: '/profile',
-      pageBuilder: (context, state) =>
-          _buildTransitionPage(state: state, child: const ProfilePage()),
-    ),
-    GoRoute(
-      path: '/ai',
-      pageBuilder: (context, state) =>
-          _buildTransitionPage(state: state, child: const AIPage()),
-    ),
-    GoRoute(
-      path: '/add-income',
-      pageBuilder: (context, state) => _buildTransitionPage(
-        state: state,
-        child: const MoneyFormPage(income: true),
-      ),
-    ),
-    GoRoute(
-      path: '/add-expense',
-      pageBuilder: (context, state) => _buildTransitionPage(
-        state: state,
-        child: const MoneyFormPage(income: false),
-      ),
-    ),
-    GoRoute(
-      path: '/budget',
-      pageBuilder: (context, state) =>
-          _buildTransitionPage(state: state, child: const BudgetPage()),
-    ),
-    GoRoute(
-      path: '/installments',
-      pageBuilder: (context, state) =>
-          _buildTransitionPage(state: state, child: const InstallmentPage()),
-    ),
-    GoRoute(
-      path: '/reports',
-      pageBuilder: (context, state) =>
-          _buildTransitionPage(state: state, child: const ReportPage()),
-    ),
-    GoRoute(
-      path: '/notifications',
-      pageBuilder: (context, state) =>
-          _buildTransitionPage(state: state, child: const NotificationsPage()),
-    ),
+    GoRoute(path: '/financial-overview', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const FinancialOverviewDetailPage())),
+    GoRoute(path: '/profile', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const ProfilePage())),
+    GoRoute(path: '/ai', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const AIPage())),
+    GoRoute(path: '/add-income', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const MoneyFormPage(income: true))),
+    GoRoute(path: '/add-expense', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const MoneyFormPage(income: false))),
+    GoRoute(path: '/budget', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const BudgetPage())),
+    GoRoute(path: '/installments', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const InstallmentPage())),
+    GoRoute(path: '/reports', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const ReportPage())),
+    GoRoute(path: '/notifications', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const NotificationsPage())),
   ],
-
-  errorBuilder: (context, state) {
-    return Scaffold(
-      body: Center(
-        child: Text('404\n${state.uri}', textAlign: TextAlign.center),
-      ),
-    );
-  },
+  errorBuilder: (context, state) => Scaffold(body: Center(child: Text('404\n${state.uri}', textAlign: TextAlign.center))),
 );
 
-CustomTransitionPage<void> _buildTransitionPage({
-  required GoRouterState state,
-  required Widget child,
-}) {
+CustomTransitionPage<void> _buildTransitionPage({required GoRouterState state, required Widget child}) {
   return CustomTransitionPage<void>(
     key: state.pageKey,
     child: child,
     transitionDuration: const Duration(milliseconds: 360),
     reverseTransitionDuration: const Duration(milliseconds: 260),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInCubic,
-      );
-
+      final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
       return FadeTransition(
         opacity: curved,
         child: SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0.04, .03),
-            end: Offset.zero,
-          ).animate(curved),
+          position: Tween<Offset>(begin: const Offset(0.04, .03), end: Offset.zero).animate(curved),
           child: child,
         ),
       );
