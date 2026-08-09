@@ -19,37 +19,31 @@ class GoalsPage extends StatefulWidget {
 class _GoalsPageState extends State<GoalsPage> {
   final PageController _pageController = PageController();
   int _selectedTab = 0;
-
   final goals = const [
     _GoalData('Dana Darurat', 'Wishlist', 10000000, 50000000, LucideIcons.shieldCheck),
     _GoalData('Liburan ke Jepang', 'Saving', 7000000, 20000000, LucideIcons.plane),
     _GoalData('SPayLater', 'Debt', 1250000, 2500000, LucideIcons.creditCard),
     _GoalData('DP Rumah', 'Wishlist', 18000000, 60000000, LucideIcons.house),
   ];
-
   @override
   void dispose() { _pageController.dispose(); super.dispose(); }
-
   void _selectTab(int index) {
     if (index == _selectedTab) return;
     setState(() => _selectedTab = index);
     _pageController.animateToPage(index, duration: const Duration(milliseconds: 280), curve: Curves.easeOutCubic);
   }
-
   @override
-  Widget build(BuildContext context) {
-    return PremiumScaffold(
-      child: Padding(
-        padding: AppSpacing.screen.copyWith(bottom: 0),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const _GoalsHeader(),
-          const SizedBox(height: 10),
-          _GoalsOverview(goals: goals),
-          const SizedBox(height: 10),
-          _GoalTabs(selected: _selectedTab, onSelected: _selectTab),
-          const SizedBox(height: 7),
-          Expanded(
-            child: PageView(
+  Widget build(BuildContext context) => PremiumScaffold(
+        child: Padding(
+          padding: AppSpacing.screen.copyWith(bottom: 0),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const _GoalsHeader(),
+            const SizedBox(height: 10),
+            _GoalsOverview(goals: goals),
+            const SizedBox(height: 10),
+            _GoalTabs(selected: _selectedTab, onSelected: _selectTab),
+            const SizedBox(height: 7),
+            Expanded(child: PageView(
               controller: _pageController,
               physics: const BouncingScrollPhysics(),
               onPageChanged: (index) { if (index != _selectedTab) setState(() => _selectedTab = index); },
@@ -59,12 +53,10 @@ class _GoalsPageState extends State<GoalsPage> {
                 _GoalList(goals: goals.where((g) => g.type == 'Saving').toList()),
                 _GoalList(goals: goals.where((g) => g.type == 'Debt').toList()),
               ],
-            ),
-          ),
-        ]),
-      ),
-    );
-  }
+            )),
+          ]),
+        ),
+      );
 }
 
 class _GoalsHeader extends StatelessWidget {
@@ -84,21 +76,15 @@ class _GoalsOverview extends StatelessWidget {
     final saved = goals.fold<double>(0, (sum, goal) => sum + goal.saved);
     final target = goals.fold<double>(0, (sum, goal) => sum + goal.target);
     final progress = target == 0 ? 0.0 : (saved / target).clamp(0.0, 1.0);
-    return PremiumCard(
-      padding: const EdgeInsets.fromLTRB(14, 11, 14, 11),
-      borderRadius: AppRadius.radiusXL,
-      child: Row(children: [
-        SizedBox(width: 58, height: 58, child: Stack(alignment: Alignment.center, children: [
-          CircularProgressIndicator(value: progress, strokeWidth: 6, backgroundColor: AppColors.border.withValues(alpha: .35), valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight)),
-          Text('${(progress * 100).round()}%', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w800)),
-        ])),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Progress semua goals', style: AppTypography.caption), const SizedBox(height: 2), Text('${rupiah(saved)} tersimpan', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)), const SizedBox(height: 1), Text('dari ${rupiah(target)} target', style: AppTypography.caption)])),
-        Text('${goals.length}', style: AppTypography.heading3.copyWith(color: AppColors.primaryLight)),
-        const SizedBox(width: 3),
-        Text('goals', style: AppTypography.caption),
-      ]),
-    );
+    return PremiumCard(padding: const EdgeInsets.fromLTRB(14, 11, 14, 11), borderRadius: AppRadius.radiusXL, child: Row(children: [
+      SizedBox(width: 58, height: 58, child: Stack(alignment: Alignment.center, children: [
+        CircularProgressIndicator(value: progress, strokeWidth: 6, backgroundColor: AppColors.border.withValues(alpha: .35), valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight)),
+        Text('${(progress * 100).round()}%', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w800)),
+      ])),
+      const SizedBox(width: 12),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Progress semua goals', style: AppTypography.caption), const SizedBox(height: 2), Text('${rupiah(saved)} tersimpan', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)), const SizedBox(height: 1), Text('dari ${rupiah(target)} target', style: AppTypography.caption)])),
+      Text('${goals.length}', style: AppTypography.heading3.copyWith(color: AppColors.primaryLight)), const SizedBox(width: 3), Text('goals', style: AppTypography.caption),
+    ]));
   }
 }
 
@@ -108,26 +94,13 @@ class _GoalTabs extends StatelessWidget {
   final ValueChanged<int> onSelected;
   static const labels = ['Semua', 'Wishlist', 'Saving', 'Debt'];
   @override
-  Widget build(BuildContext context) => Container(
-        height: 44,
-        padding: const EdgeInsets.all(3),
-        decoration: BoxDecoration(color: AppColors.card.withValues(alpha: .72), borderRadius: AppRadius.radiusLG, border: Border.all(color: AppColors.border.withValues(alpha: .3))),
-        child: LayoutBuilder(builder: (context, constraints) {
-          final itemWidth = constraints.maxWidth / labels.length;
-          return Stack(children: [
-            AnimatedAlign(
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeOutCubic,
-              alignment: Alignment(-1 + (selected * 2 / (labels.length - 1)), 0),
-              child: Container(width: itemWidth, height: 38, decoration: BoxDecoration(gradient: AppGradients.primary, borderRadius: AppRadius.radiusMD, boxShadow: AppShadows.glow)),
-            ),
-            Row(children: List.generate(labels.length, (index) {
-              final active = selected == index;
-              return Expanded(child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: () => onSelected(index), child: Center(child: AnimatedDefaultTextStyle(duration: const Duration(milliseconds: 180), curve: Curves.easeOutCubic, style: AppTypography.caption.copyWith(color: active ? Colors.white : AppColors.textSecondary, fontWeight: active ? FontWeight.w800 : FontWeight.w600), child: Text(labels[index], maxLines: 1, overflow: TextOverflow.ellipsis))));
-            })),
-          ]);
-        }),
-      );
+  Widget build(BuildContext context) => Container(height: 44, padding: const EdgeInsets.all(3), decoration: BoxDecoration(color: AppColors.card.withValues(alpha: .72), borderRadius: AppRadius.radiusLG, border: Border.all(color: AppColors.border.withValues(alpha: .3))), child: LayoutBuilder(builder: (context, constraints) {
+        final itemWidth = constraints.maxWidth / labels.length;
+        return Stack(children: [
+          AnimatedAlign(duration: const Duration(milliseconds: 280), curve: Curves.easeOutCubic, alignment: Alignment(-1 + (selected * 2 / (labels.length - 1)), 0), child: Container(width: itemWidth, height: 38, decoration: BoxDecoration(gradient: AppGradients.primary, borderRadius: AppRadius.radiusMD, boxShadow: AppShadows.glow))),
+          Row(children: List.generate(labels.length, (index) { final active = selected == index; return Expanded(child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: () => onSelected(index), child: Center(child: AnimatedDefaultTextStyle(duration: const Duration(milliseconds: 180), curve: Curves.easeOutCubic, style: AppTypography.caption.copyWith(color: active ? Colors.white : AppColors.textSecondary, fontWeight: active ? FontWeight.w800 : FontWeight.w600), child: Text(labels[index], maxLines: 1, overflow: TextOverflow.ellipsis)))); })),
+        ]);
+      }));
 }
 
 class _GoalList extends StatelessWidget {
@@ -141,9 +114,7 @@ class _GoalList extends StatelessWidget {
         itemCount: goals.length + (showInsight ? 1 : 0),
         separatorBuilder: (_, _) => const SizedBox(height: 7),
         itemBuilder: (context, index) {
-          if (showInsight && index == goals.length) {
-            return const ContextAIInsight(message: 'Dana Darurat sudah menjadi prioritas. Saat sebuah goal selesai, Nexora bisa menyarankan mengalihkan dana ke target yang masih relevan.');
-          }
+          if (showInsight && index == goals.length) return const ContextAIInsight(message: 'Dana Darurat sudah menjadi prioritas. Saat sebuah goal selesai, Nexora bisa menyarankan mengalihkan dana ke target yang masih relevan.');
           return _GoalCard(goal: goals[index]);
         },
       );
@@ -156,23 +127,19 @@ class _GoalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = goal.progress;
     final status = progress >= .75 ? 'On track' : progress >= .4 ? 'Berjalan' : 'Perlu dorongan';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadius.radiusXL, border: Border.all(color: AppColors.border.withValues(alpha: .5)), boxShadow: AppShadows.card),
-      child: Row(children: [
-        Container(width: 42, height: 42, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .12), borderRadius: AppRadius.radiusLG), child: Icon(goal.icon, color: AppColors.primaryLight, size: 21)),
-        const SizedBox(width: 9),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [Expanded(child: Text(goal.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800))), Text('${(progress * 100).round()}%', style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800))]),
-          const SizedBox(height: 1),
-          Row(children: [Text(goal.type, style: AppTypography.caption), const SizedBox(width: 6), Container(padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1), decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .10), borderRadius: AppRadius.radiusPill), child: Text(status, style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontSize: 9, fontWeight: FontWeight.w700)))]),
-          const SizedBox(height: 6),
-          const AnimatedProgressBar(value: .0, color: AppColors.primaryLight),
-          const SizedBox(height: 4),
-          Text('${rupiah(goal.saved)} / ${rupiah(goal.target)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption),
-        ]),
+    return Container(padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9), decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadius.radiusXL, border: Border.all(color: AppColors.border.withValues(alpha: .5)), boxShadow: AppShadows.card), child: Row(children: [
+      Container(width: 42, height: 42, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .12), borderRadius: AppRadius.radiusLG), child: Icon(goal.icon, color: AppColors.primaryLight, size: 21)),
+      const SizedBox(width: 9),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Expanded(child: Text(goal.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800))), Text('${(progress * 100).round()}%', style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800))]),
+        const SizedBox(height: 1),
+        Row(children: [Text(goal.type, style: AppTypography.caption), const SizedBox(width: 6), Container(padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1), decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .10), borderRadius: AppRadius.radiusPill), child: Text(status, style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontSize: 9, fontWeight: FontWeight.w700)))]),
+        const SizedBox(height: 6),
+        AnimatedProgressBar(value: progress, color: AppColors.primaryLight),
+        const SizedBox(height: 4),
+        Text('${rupiah(goal.saved)} / ${rupiah(goal.target)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption),
       ]),
-    );
+    ]));
   }
 }
 
