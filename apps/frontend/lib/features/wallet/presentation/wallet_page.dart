@@ -37,7 +37,6 @@ class _WalletPageState extends ConsumerState<WalletPage> {
     return PremiumScaffold(
       child: walletsAsync.when(
         loading: () => const _WalletLoadingState(),
-
         error: (error, stackTrace) {
           return _WalletErrorState(
             message: error.toString(),
@@ -46,7 +45,6 @@ class _WalletPageState extends ConsumerState<WalletPage> {
             },
           );
         },
-
         data: (_) {
           if (visibleWallets.isEmpty) {
             return _WalletEmptyContent(onAddWallet: widget.onAddWallet);
@@ -68,60 +66,41 @@ class _WalletPageState extends ConsumerState<WalletPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  PremiumEntrance(
-                    child: WalletHeader(
-                      totalBalance: totalBalance,
-                      isBalanceVisible: _isBalanceVisible,
-                      onToggleBalance: () {
-                        setState(() {
-                          _isBalanceVisible = !_isBalanceVisible;
-                        });
-                      },
-                      onAddWallet: widget.onAddWallet,
-                      onRefresh: () {
-                        ref.read(walletProvider.notifier).refreshWallets();
-                      },
-                    ),
+                  WalletHeader(
+                    totalBalance: totalBalance,
+                    isBalanceVisible: _isBalanceVisible,
+                    onToggleBalance: () {
+                      setState(() {
+                        _isBalanceVisible = !_isBalanceVisible;
+                      });
+                    },
+                    onAddWallet: widget.onAddWallet,
+                    onRefresh: () {
+                      ref.read(walletProvider.notifier).refreshWallets();
+                    },
                   ),
-
                   AppSpacing.gapLG,
-
-                  if (primaryWallet != null)
-                    PremiumEntrance(
-                      delay: const Duration(milliseconds: 80),
-                      child: WalletCard(
-                        wallet: primaryWallet,
-                        onTap: () {
-                          widget.onWalletTap?.call(primaryWallet.id);
-                        },
-                      ),
-                    ),
-
-                  if (primaryWallet != null) AppSpacing.gapLG,
-
-                  PremiumEntrance(
-                    delay: const Duration(milliseconds: 140),
-                    child: WalletSummaryCard(
-                      wallets: visibleWallets,
-                      onCategoryTap: (type) {
-                        // Filter wallet dapat ditambahkan
-                        // di tahap berikutnya.
+                  if (primaryWallet != null) ...[
+                    WalletCard(
+                      wallet: primaryWallet,
+                      onTap: () {
+                        widget.onWalletTap?.call(primaryWallet.id);
                       },
                     ),
+                    AppSpacing.gapLG,
+                  ],
+                  WalletSummaryCard(
+                    wallets: visibleWallets,
+                    onCategoryTap: (type) {
+                      // Filter wallet dapat ditambahkan di tahap berikutnya.
+                    },
                   ),
-
                   AppSpacing.gapLG,
-
-                  PremiumEntrance(
-                    delay: const Duration(milliseconds: 190),
-                    child: _WalletSectionHeader(
-                      title: 'Semua Wallet',
-                      count: visibleWallets.length,
-                    ),
+                  _WalletSectionHeader(
+                    title: 'Semua Wallet',
+                    count: visibleWallets.length,
                   ),
-
                   AppSpacing.gapMD,
-
                   for (var index = 0; index < visibleWallets.length; index++)
                     Padding(
                       padding: EdgeInsets.only(
@@ -129,14 +108,11 @@ class _WalletPageState extends ConsumerState<WalletPage> {
                             ? 0
                             : AppSpacing.sm,
                       ),
-                      child: PremiumEntrance(
-                        delay: Duration(milliseconds: 230 + (index * 45)),
-                        child: WalletAccountTile(
-                          wallet: visibleWallets[index],
-                          onTap: () {
-                            widget.onWalletTap?.call(visibleWallets[index].id);
-                          },
-                        ),
+                      child: WalletAccountTile(
+                        wallet: visibleWallets[index],
+                        onTap: () {
+                          widget.onWalletTap?.call(visibleWallets[index].id);
+                        },
                       ),
                     ),
                 ],
@@ -185,44 +161,32 @@ class _WalletLoadingState extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PremiumEntrance(child: ShimmerSkeleton(width: 150, height: 30)),
-
           SizedBox(height: 8),
-
           PremiumEntrance(
             delay: Duration(milliseconds: 40),
             child: ShimmerSkeleton(width: 220, height: 18),
           ),
-
           SizedBox(height: 24),
-
           PremiumEntrance(
             delay: Duration(milliseconds: 80),
             child: ShimmerSkeleton(height: 220),
           ),
-
           SizedBox(height: 20),
-
           PremiumEntrance(
             delay: Duration(milliseconds: 120),
             child: ShimmerSkeleton(height: 230),
           ),
-
           SizedBox(height: 20),
-
           PremiumEntrance(
             delay: Duration(milliseconds: 160),
             child: ShimmerSkeleton(height: 76),
           ),
-
           SizedBox(height: 10),
-
           PremiumEntrance(
             delay: Duration(milliseconds: 200),
             child: ShimmerSkeleton(height: 76),
           ),
-
           SizedBox(height: 10),
-
           PremiumEntrance(
             delay: Duration(milliseconds: 240),
             child: ShimmerSkeleton(height: 76),
@@ -272,7 +236,6 @@ class _WalletSectionHeader extends StatelessWidget {
             style: AppTypography.heading3.copyWith(fontWeight: FontWeight.w800),
           ),
         ),
-
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
