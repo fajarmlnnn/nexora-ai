@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -10,6 +11,7 @@ import '../../../core/widgets/card/n_card.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 import '../../dashboard/models/ai_insight.dart';
+import '../../dashboard/models/budget_item.dart';
 
 class BudgetPage extends ConsumerWidget {
   const BudgetPage({super.key});
@@ -48,7 +50,7 @@ class BudgetPage extends ConsumerWidget {
             Row(
               children: [
                 IconButton(
-                  onPressed: () => Navigator.of(context).maybePop(),
+                  onPressed: () => context.pop(),
                   icon: const Icon(LucideIcons.arrowLeft, size: 20),
                   tooltip: 'Kembali',
                   padding: EdgeInsets.zero,
@@ -60,7 +62,10 @@ class BudgetPage extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Budget', style: AppTypography.heading1),
-                      Text('Ringkasan Budget Mei 2024', style: AppTypography.bodySmall),
+                      Text(
+                        'Ringkasan Budget Mei 2024',
+                        style: AppTypography.bodySmall,
+                      ),
                     ],
                   ),
                 ),
@@ -86,14 +91,16 @@ class BudgetPage extends ConsumerWidget {
 class _BudgetOverview extends StatelessWidget {
   const _BudgetOverview({required this.items});
 
-  final List<dynamic> items;
+  final List<BudgetItem> items;
 
   @override
   Widget build(BuildContext context) {
     final totalLimit = items.fold<double>(0, (sum, item) => sum + item.limit);
     final totalSpent = items.fold<double>(0, (sum, item) => sum + item.spent);
     final remaining = (totalLimit - totalSpent).clamp(0.0, double.infinity);
-    final progress = totalLimit <= 0 ? 0.0 : (totalSpent / totalLimit).clamp(0.0, 1.0);
+    final progress = totalLimit <= 0
+        ? 0.0
+        : (totalSpent / totalLimit).clamp(0.0, 1.0);
     final percentage = (progress * 100).round();
 
     return NCard(
@@ -143,7 +150,12 @@ class _BudgetOverview extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _OverviewMetric(label: 'Terpakai', value: rupiah(totalSpent))),
+              Expanded(
+                child: _OverviewMetric(
+                  label: 'Terpakai',
+                  value: rupiah(totalSpent),
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: _OverviewMetric(
@@ -228,7 +240,7 @@ class _StatusBadge extends StatelessWidget {
 class _SpendingBreakdown extends StatelessWidget {
   const _SpendingBreakdown({required this.items});
 
-  final List<dynamic> items;
+  final List<BudgetItem> items;
 
   @override
   Widget build(BuildContext context) {
@@ -239,10 +251,12 @@ class _SpendingBreakdown extends StatelessWidget {
       children: [
         Text('Spending Breakdown', style: AppTypography.heading3),
         const SizedBox(height: 10),
-        ...visible.map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 9),
-              child: _BudgetRow(item: item),
-            )),
+        ...visible.map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(bottom: 9),
+            child: _BudgetRow(item: item),
+          ),
+        ),
       ],
     );
   }
@@ -251,7 +265,7 @@ class _SpendingBreakdown extends StatelessWidget {
 class _BudgetRow extends StatelessWidget {
   const _BudgetRow({required this.item});
 
-  final dynamic item;
+  final BudgetItem item;
 
   @override
   Widget build(BuildContext context) {
@@ -286,7 +300,9 @@ class _BudgetRow extends StatelessWidget {
                       item.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700),
+                      style: AppTypography.labelLarge.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     FittedBox(
@@ -296,7 +312,9 @@ class _BudgetRow extends StatelessWidget {
                         '${rupiah(item.spent)} / ${rupiah(item.limit)}',
                         maxLines: 1,
                         softWrap: false,
-                        style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textMuted,
+                        ),
                       ),
                     ),
                   ],
@@ -360,7 +378,9 @@ class _NexoraBudgetInsight extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: AppColors.primary.withValues(alpha: .06),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: .14)),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: .14),
+                    ),
                   ),
                 ),
                 const NexoraRobot(size: 46),
@@ -373,9 +393,15 @@ class _NexoraBudgetInsight extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.card,
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.primary.withValues(alpha: .22)),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: .22),
+                      ),
                     ),
-                    child: Icon(statusIcon, size: 10, color: AppColors.primaryLight),
+                    child: Icon(
+                      statusIcon,
+                      size: 10,
+                      color: AppColors.primaryLight,
+                    ),
                   ),
                 ),
               ],
@@ -388,7 +414,11 @@ class _NexoraBudgetInsight extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(LucideIcons.sparkles, size: 13, color: AppColors.primaryLight),
+                    const Icon(
+                      LucideIcons.sparkles,
+                      size: 13,
+                      color: AppColors.primaryLight,
+                    ),
                     const SizedBox(width: 5),
                     Text(
                       'Nexora AI',
@@ -404,7 +434,9 @@ class _NexoraBudgetInsight extends StatelessWidget {
                   insight.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700),
+                  style: AppTypography.labelLarge.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
