@@ -5,6 +5,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
 import '../../../core/widgets/premium_widgets.dart';
+import '../../../core/widgets/scrolling_text.dart';
 import '../models/dashboard_summary.dart';
 
 class BalanceCard extends StatelessWidget {
@@ -43,16 +44,12 @@ class BalanceCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        rupiah(summary.totalBalance),
-                        style: AppTypography.heading2.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -.4,
-                        ),
+                    ScrollingText(
+                      text: rupiah(summary.totalBalance),
+                      style: AppTypography.heading2.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -.4,
                       ),
                     ),
                   ],
@@ -348,15 +345,11 @@ class _FinanceBubble extends StatelessWidget {
 
                 const SizedBox(height: 2),
 
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    value,
-                    style: AppTypography.labelMedium.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
+                ScrollingText(
+                  text: value,
+                  style: AppTypography.labelMedium.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
 
