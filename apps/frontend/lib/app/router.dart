@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/ai/presentation/ai_page.dart';
 import '../features/budget/presentation/budget_page.dart';
 import '../features/dashboard/presentation/dashboard_page.dart';
-import '../features/dashboard/presentation/financial_overview_detail_page.dart';
+import '../features/dashboard/presentation/financial_overview_realtime_page.dart';
 import '../features/forms/presentation/money_form_page.dart';
 import '../features/goals/presentation/goals_page.dart';
 import '../features/installment/presentation/installment_page.dart';
@@ -31,7 +31,7 @@ final appRouter = GoRouter(
         StatefulShellBranch(routes: [GoRoute(path: '/goals', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const GoalsPage()))]),
       ],
     ),
-    GoRoute(path: '/financial-overview', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const FinancialOverviewDetailPage())),
+    GoRoute(path: '/financial-overview', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const FinancialOverviewRealtimePage())),
     GoRoute(path: '/profile', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const ProfilePage())),
     GoRoute(path: '/ai', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const AIPage())),
     GoRoute(path: '/add-income', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const MoneyFormPage(income: true))),
