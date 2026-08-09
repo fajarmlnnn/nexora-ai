@@ -85,7 +85,7 @@ class _ScrollingTextState extends State<ScrollingText>
 
         final sequence = TweenSequence<double>([
           TweenSequenceItem(
-            tween: const ConstantTween(0),
+            tween: ConstantTween(0),
             weight: 18,
           ),
           TweenSequenceItem(
@@ -93,7 +93,7 @@ class _ScrollingTextState extends State<ScrollingText>
             weight: 58,
           ),
           TweenSequenceItem(
-            tween: const ConstantTween(0),
+            tween: ConstantTween(0),
             weight: 18,
           ),
           TweenSequenceItem(
@@ -101,7 +101,7 @@ class _ScrollingTextState extends State<ScrollingText>
             weight: 58,
           ),
           TweenSequenceItem(
-            tween: const ConstantTween(0),
+            tween: ConstantTween(0),
             weight: 18,
           ),
         ]);
