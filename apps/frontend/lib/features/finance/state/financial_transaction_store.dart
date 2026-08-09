@@ -31,7 +31,6 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
               ))
           .toList(growable: false);
     } catch (_) {
-      // Corrupt local data must never prevent the app from opening.
       state = _seedTransactions;
     }
   }
@@ -39,6 +38,38 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
   Future<void> add(TransactionModel transaction) async {
     state = [transaction, ...state];
     await _persist();
+  }
+
+  /// Records a transfer without changing total assets or cashflow.
+  /// The wallet controller applies the negative delta to the source and
+  /// positive delta to the destination from the same transaction record.
+  Future<void> transfer({
+    required String sourceWalletId,
+    required String destinationWalletId,
+    required double amount,
+    String title = 'Transfer antar wallet',
+    String? note,
+  }) async {
+    if (sourceWalletId == destinationWalletId) {
+      throw ArgumentError('Wallet sumber dan tujuan harus berbeda.');
+    }
+    if (amount <= 0) {
+      throw ArgumentError('Nominal transfer harus lebih besar dari nol.');
+    }
+
+    final transaction = TransactionModel(
+      id: 'transfer-${DateTime.now().microsecondsSinceEpoch}',
+      title: title.trim().isEmpty ? 'Transfer antar wallet' : title.trim(),
+      amount: amount,
+      type: TransactionType.transfer,
+      category: TransactionCategory.other,
+      date: DateTime.now(),
+      note: note?.trim().isEmpty == true ? null : note?.trim(),
+      sourceAccount: sourceWalletId,
+      destinationAccount: destinationWalletId,
+    );
+
+    await add(transaction);
   }
 
   Future<void> delete(String id) async {
