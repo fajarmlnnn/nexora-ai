@@ -46,6 +46,7 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
   @override
   Widget build(BuildContext context) {
     final transactions = ref.watch(recentTransactionsProvider);
+
     return PremiumScaffold(
       child: Padding(
         padding: AppSpacing.screen.copyWith(bottom: 0),
@@ -84,7 +85,7 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
                 ),
                 data: (items) {
                   final query = _query.toLowerCase();
-                  final expanded = [...items, ..._extraTransactions()]
+                  final visible = items
                       .where((item) => filter == null || item.type == filter)
                       .where(
                         (item) =>
@@ -98,7 +99,7 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
                       .toList()
                     ..sort((a, b) => b.date.compareTo(a.date));
 
-                  if (expanded.isEmpty) {
+                  if (visible.isEmpty) {
                     return _NoResults(query: _query);
                   }
 
@@ -110,7 +111,7 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
                       top: 8,
                       bottom: AppSpacing.bottomNav(context) + 28,
                     ),
-                    children: _buildGroups(expanded),
+                    children: _buildGroups(visible),
                   );
                 },
               ),
@@ -344,6 +345,7 @@ class _FilterTabs extends StatelessWidget {
           final itemWidth = constraints.maxWidth / 4;
           final index = _index();
           return Stack(
+            clipBehavior: Clip.none,
             children: [
               AnimatedPositioned(
                 left: itemWidth * index,
@@ -368,26 +370,10 @@ class _FilterTabs extends StatelessWidget {
               ),
               Row(
                 children: [
-                  _Tab(
-                    label: 'Semua',
-                    selected: selected == null,
-                    onTap: () => onChanged(null),
-                  ),
-                  _Tab(
-                    label: 'Masuk',
-                    selected: selected == TransactionType.income,
-                    onTap: () => onChanged(TransactionType.income),
-                  ),
-                  _Tab(
-                    label: 'Keluar',
-                    selected: selected == TransactionType.expense,
-                    onTap: () => onChanged(TransactionType.expense),
-                  ),
-                  _Tab(
-                    label: 'Transfer',
-                    selected: selected == TransactionType.transfer,
-                    onTap: () => onChanged(TransactionType.transfer),
-                  ),
+                  _Tab(label: 'Semua', selected: selected == null, onTap: () => onChanged(null)),
+                  _Tab(label: 'Masuk', selected: selected == TransactionType.income, onTap: () => onChanged(TransactionType.income)),
+                  _Tab(label: 'Keluar', selected: selected == TransactionType.expense, onTap: () => onChanged(TransactionType.expense)),
+                  _Tab(label: 'Transfer', selected: selected == TransactionType.transfer, onTap: () => onChanged(TransactionType.transfer)),
                 ],
               ),
             ],
@@ -418,11 +404,7 @@ class _Tab extends StatelessWidget {
               color: selected ? Colors.white : AppColors.textSecondary,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
             ),
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         ),
       ),
@@ -438,7 +420,6 @@ class _Group extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (items.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -446,19 +427,9 @@ class _Group extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(0, 9, 0, 8),
           child: Row(
             children: [
-              Text(
-                title,
-                style: AppTypography.labelLarge.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+              Text(title, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
               const SizedBox(width: 7),
-              Expanded(
-                child: Divider(
-                  color: AppColors.border.withValues(alpha: .35),
-                  height: 1,
-                ),
-              ),
+              Expanded(child: Divider(color: AppColors.border.withValues(alpha: .35), height: 1)),
             ],
           ),
         ),
@@ -487,15 +458,11 @@ class _TransactionTileState extends State<_TransactionTile> {
   bool _open = false;
 
   void _dragUpdate(DragUpdateDetails details) {
-    setState(() {
-      _offset = (_offset + details.delta.dx).clamp(-_actionWidth, 0.0);
-    });
+    setState(() => _offset = (_offset + details.delta.dx).clamp(-_actionWidth, 0.0));
   }
 
   void _dragEnd(DragEndDetails details) {
-    final shouldOpen =
-        _offset.abs() >= _openThreshold ||
-        details.velocity.pixelsPerSecond.dx < -450;
+    final shouldOpen = _offset.abs() >= _openThreshold || details.velocity.pixelsPerSecond.dx < -450;
     setState(() {
       _open = shouldOpen;
       _offset = shouldOpen ? -_actionWidth : 0;
@@ -510,11 +477,7 @@ class _TransactionTileState extends State<_TransactionTile> {
         : item.isExpense
             ? AppColors.danger
             : AppColors.primaryLight;
-    final prefix = item.isIncome
-        ? '+'
-        : item.isExpense
-            ? '-'
-            : '↔';
+    final prefix = item.isIncome ? '+' : item.isExpense ? '-' : '↔';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 7),
@@ -534,11 +497,7 @@ class _TransactionTileState extends State<_TransactionTile> {
                 child: AnimatedOpacity(
                   duration: const Duration(milliseconds: 100),
                   opacity: _offset < -8 ? 1 : .35,
-                  child: const Icon(
-                    LucideIcons.trash2,
-                    color: AppColors.danger,
-                    size: 20,
-                  ),
+                  child: const Icon(LucideIcons.trash2, color: AppColors.danger, size: 20),
                 ),
               ),
             ),
@@ -552,19 +511,11 @@ class _TransactionTileState extends State<_TransactionTile> {
                 onHorizontalDragUpdate: _dragUpdate,
                 onHorizontalDragEnd: _dragEnd,
                 onTap: () {
-                  if (_open) {
-                    setState(() {
-                      _open = false;
-                      _offset = 0;
-                    });
-                  }
+                  if (_open) setState(() { _open = false; _offset = 0; });
                 },
                 child: PremiumCard(
                   borderRadius: AppRadius.radiusXL,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 11,
-                    vertical: 10,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
                   child: Row(
                     children: [
                       Container(
@@ -575,9 +526,7 @@ class _TransactionTileState extends State<_TransactionTile> {
                           borderRadius: AppRadius.radiusLG,
                         ),
                         child: Icon(
-                          item.isTransfer
-                              ? LucideIcons.arrowLeftRight
-                              : _icon(item.category),
+                          item.isTransfer ? LucideIcons.arrowLeftRight : _icon(item.category),
                           color: color,
                           size: 21,
                         ),
@@ -588,60 +537,23 @@ class _TransactionTileState extends State<_TransactionTile> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              item.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.labelMedium.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                            Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700)),
                             const SizedBox(height: 1),
                             Row(
                               children: [
-                                Flexible(
-                                  child: Text(
-                                    item.isTransfer
-                                        ? 'Transfer'
-                                        : _categoryLabel(item.category),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTypography.caption,
-                                  ),
-                                ),
+                                Flexible(child: Text(item.isTransfer ? 'Transfer' : _categoryLabel(item.category), maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption)),
                                 const SizedBox(width: 5),
-                                Container(
-                                  width: 3,
-                                  height: 3,
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.textMuted,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
+                                Container(width: 3, height: 3, decoration: const BoxDecoration(color: AppColors.textMuted, shape: BoxShape.circle)),
                                 const SizedBox(width: 5),
-                                Flexible(
-                                  child: Text(
-                                    DateFormat('dd MMM').format(item.date),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTypography.caption,
-                                  ),
-                                ),
+                                Flexible(child: Text(DateFormat('dd MMM').format(item.date), maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption)),
                               ],
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        '$prefix${rupiah(item.amount)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.end,
-                        style: AppTypography.labelMedium.copyWith(
-                          color: color,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      Flexible(
+                        child: Text('$prefix${rupiah(item.amount)}', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.end, style: AppTypography.labelMedium.copyWith(color: color, fontWeight: FontWeight.w800)),
                       ),
                     ],
                   ),
@@ -670,31 +582,13 @@ class _NoResults extends StatelessWidget {
             Container(
               width: 58,
               height: 58,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: .12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                LucideIcons.searchX,
-                color: AppColors.primaryLight,
-                size: 25,
-              ),
+              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .12), shape: BoxShape.circle),
+              child: const Icon(LucideIcons.searchX, color: AppColors.primaryLight, size: 25),
             ),
             const SizedBox(height: 12),
-            Text(
-              'Transaksi tidak ditemukan',
-              style: AppTypography.labelLarge.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+            Text('Transaksi tidak ditemukan', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
-            Text(
-              query.isEmpty
-                  ? 'Belum ada transaksi pada filter ini.'
-                  : 'Coba gunakan kata kunci lain.',
-              textAlign: TextAlign.center,
-              style: AppTypography.caption,
-            ),
+            Text(query.isEmpty ? 'Belum ada transaksi pada filter ini.' : 'Coba gunakan kata kunci lain.', textAlign: TextAlign.center, style: AppTypography.caption),
           ],
         ),
       ),
@@ -703,11 +597,7 @@ class _NoResults extends StatelessWidget {
 }
 
 class _SheetOption extends StatelessWidget {
-  const _SheetOption({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+  const _SheetOption({required this.label, required this.selected, required this.onTap});
 
   final String label;
   final bool selected;
@@ -719,15 +609,8 @@ class _SheetOption extends StatelessWidget {
       dense: true,
       contentPadding: EdgeInsets.zero,
       onTap: onTap,
-      title: Text(
-        label,
-        style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
-      ),
-      trailing: Icon(
-        selected ? LucideIcons.circleCheck : LucideIcons.circle,
-        size: 20,
-        color: selected ? AppColors.primaryLight : AppColors.textMuted,
-      ),
+      title: Text(label, style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600)),
+      trailing: Icon(selected ? LucideIcons.circleCheck : LucideIcons.circle, size: 20, color: selected ? AppColors.primaryLight : AppColors.textMuted),
     );
   }
 }
@@ -745,42 +628,18 @@ IconData _icon(TransactionCategory c) => switch (c) {
       TransactionCategory.other => LucideIcons.circleDollarSign,
     };
 
-List<TransactionModel> _extraTransactions() => [
-      TransactionModel(
-        id: '4',
-        title: 'Grab Bike',
-        amount: 27000,
-        type: TransactionType.expense,
-        category: TransactionCategory.transport,
-        date: DateTime.now(),
-      ),
-      TransactionModel(
-        id: '5',
-        title: 'Coffee',
-        amount: 18000,
-        type: TransactionType.expense,
-        category: TransactionCategory.food,
-        date: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-      TransactionModel(
-        id: '6',
-        title: 'Freelance Project',
-        amount: 3500000,
-        type: TransactionType.income,
-        category: TransactionCategory.investment,
-        date: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-      TransactionModel(
-        id: '7',
-        title: 'Monthly Groceries',
-        amount: 650000,
-        type: TransactionType.expense,
-        category: TransactionCategory.shopping,
-        date: DateTime.now().subtract(const Duration(days: 2)),
-      ),
-    ];
-
 String _categoryLabel(TransactionCategory category) {
-  final name = category.name;
-  return '${name[0].toUpperCase()}${name.substring(1)}';
+  final labels = <TransactionCategory, String>{
+    TransactionCategory.food: 'Makan & Minum',
+    TransactionCategory.transport: 'Transportasi',
+    TransactionCategory.shopping: 'Belanja',
+    TransactionCategory.salary: 'Gaji',
+    TransactionCategory.investment: 'Investasi',
+    TransactionCategory.bills: 'Tagihan',
+    TransactionCategory.entertainment: 'Hiburan',
+    TransactionCategory.health: 'Kesehatan',
+    TransactionCategory.education: 'Pendidikan',
+    TransactionCategory.other: 'Lainnya',
+  };
+  return labels[category] ?? 'Lainnya';
 }
