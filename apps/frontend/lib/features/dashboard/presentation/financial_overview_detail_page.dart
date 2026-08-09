@@ -7,8 +7,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/context_ai_insight.dart';
 import '../../../core/widgets/card/n_card.dart';
 import '../../../core/widgets/premium_widgets.dart';
-import '../../wallet/controllers/wallet_controller.dart';
-import '../controllers/dashboard_controller.dart';
+import '../../dashboard/controllers/dashboard_controller.dart';
 import '../controllers/financial_overview_controller.dart';
 import '../models/transaction_model.dart';
 
@@ -17,18 +16,10 @@ class FinancialOverviewDetailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final totalAssets = ref.watch(totalWalletBalanceProvider);
-    final goalsSaved = ref.watch(totalGoalSavedProvider);
-    final goalsTarget = ref.watch(totalGoalTargetProvider);
-    final liabilities = ref.watch(totalInstallmentRemainingProvider);
-    final dueThisPeriod = ref.watch(installmentDueThisPeriodProvider);
+    final financial = ref.watch(financialStateSnapshotProvider);
     final transactionsAsync = ref.watch(recentTransactionsProvider);
-
-    final netWorth = totalAssets - liabilities;
-    final goalProgress = goalsTarget <= 0
-        ? 0.0
-        : (goalsSaved / goalsTarget).clamp(0.0, 1.0);
-    final available = totalAssets - goalsSaved - dueThisPeriod;
+    final goals = ref.watch(financialGoalsProvider);
+    final installments = ref.watch(activeInstallmentsProvider);
 
     return PremiumScaffold(
       child: ListView(
@@ -41,12 +32,7 @@ class FinancialOverviewDetailPage extends ConsumerWidget {
                 icon: const Icon(LucideIcons.arrowLeft, size: 20),
               ),
               const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  'Financial Overview',
-                  style: AppTypography.heading2,
-                ),
-              ),
+              Expanded(child: Text('Financial Overview', style: AppTypography.heading2)),
             ],
           ),
           const SizedBox(height: 10),
@@ -61,30 +47,20 @@ class FinancialOverviewDetailPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Net Worth',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                Text('Net Worth', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
                 const SizedBox(height: 6),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    rupiah(netWorth),
-                    style: AppTypography.heading1.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    rupiah(financial.netWorth),
+                    style: AppTypography.heading1.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Total aset dikurangi seluruh kewajiban yang masih tercatat.',
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -92,151 +68,94 @@ class FinancialOverviewDetailPage extends ConsumerWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              Expanded(
-                child: _MetricCard(
-                  label: 'Total Aset',
-                  value: rupiah(totalAssets),
-                  icon: LucideIcons.wallet,
-                  accent: AppColors.primaryLight,
-                ),
-              ),
+              Expanded(child: _MetricCard(label: 'Total Aset', value: rupiah(financial.totalAssets), icon: LucideIcons.wallet, accent: AppColors.primaryLight)),
               const SizedBox(width: 8),
-              Expanded(
-                child: _MetricCard(
-                  label: 'Kewajiban',
-                  value: rupiah(liabilities),
-                  icon: LucideIcons.creditCard,
-                  accent: AppColors.danger,
-                ),
-              ),
+              Expanded(child: _MetricCard(label: 'Kewajiban', value: rupiah(financial.liabilities), icon: LucideIcons.creditCard, accent: AppColors.danger)),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(
-                child: _MetricCard(
-                  label: 'Goal Terkumpul',
-                  value: rupiah(goalsSaved),
-                  icon: LucideIcons.target,
-                  accent: AppColors.primaryLight,
-                ),
-              ),
+              Expanded(child: _MetricCard(label: 'Goal Terkumpul', value: rupiah(financial.goalSaved), icon: LucideIcons.target, accent: AppColors.primaryLight)),
               const SizedBox(width: 8),
-              Expanded(
-                child: _MetricCard(
-                  label: 'Jatuh Tempo',
-                  value: rupiah(dueThisPeriod),
-                  icon: LucideIcons.calendarClock,
-                  accent: AppColors.warning,
-                ),
-              ),
+              Expanded(child: _MetricCard(label: 'Jatuh Tempo', value: rupiah(financial.dueThisPeriod), icon: LucideIcons.calendarClock, accent: AppColors.warning)),
             ],
           ),
           const SizedBox(height: 14),
           _SectionCard(
             title: 'Aset Wallet',
-            trailing: rupiah(totalAssets),
+            trailing: rupiah(financial.totalAssets),
             child: const Text(
-              'Nilai ini mengikuti total saldo wallet dari shared wallet state.',
+              'Satu sumber angka untuk seluruh wallet yang terlihat. Goal tidak mengurangi Total Aset.',
               style: AppTypography.bodySmall,
             ),
           ),
           const SizedBox(height: 10),
           _SectionCard(
             title: 'Goals',
-            trailing: '${(goalProgress * 100).round()}%',
+            trailing: '${(financial.goalProgress * 100).round()}%',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(99),
                   child: LinearProgressIndicator(
-                    value: goalProgress,
+                    value: financial.goalProgress,
                     minHeight: 7,
                     backgroundColor: AppColors.border.withValues(alpha: .35),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      AppColors.primaryLight,
-                    ),
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  '${rupiah(goalsSaved)} dari ${rupiah(goalsTarget)} target',
-                  style: AppTypography.bodySmall,
-                ),
+                Text('${rupiah(financial.goalSaved)} dari ${rupiah(financial.goalTarget)} target', style: AppTypography.bodySmall),
+                const SizedBox(height: 4),
+                Text('${financial.completedGoals} goal selesai dari ${goals.length} goal', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
               ],
             ),
           ),
           const SizedBox(height: 10),
           _SectionCard(
             title: 'Cicilan & Kewajiban',
-            trailing: rupiah(liabilities),
+            trailing: rupiah(financial.liabilities),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Jatuh tempo periode ini: ${rupiah(dueThisPeriod)}',
-                  style: AppTypography.bodySmall,
-                ),
+                Text('Jatuh tempo periode ini: ${rupiah(financial.dueThisPeriod)}', style: AppTypography.bodySmall),
                 const SizedBox(height: 8),
-                ...ref.watch(installmentsProvider).map(
-                      (installment) => Padding(
+                if (installments.isEmpty)
+                  const Text('Tidak ada cicilan aktif.', style: AppTypography.bodySmall)
+                else
+                  ...installments.map((item) => Padding(
                         padding: const EdgeInsets.only(bottom: 7),
                         child: Row(
                           children: [
-                            Expanded(
-                              child: Text(
-                                installment.title,
-                                style: AppTypography.bodySmall,
-                              ),
-                            ),
-                            Text(
-                              rupiah(installment.remaining),
-                              style: AppTypography.labelMedium.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                            Expanded(child: Text(item.title, style: AppTypography.bodySmall)),
+                            Text(rupiah(item.remaining), style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700)),
                           ],
                         ),
-                      ),
-                    ),
+                      )),
               ],
             ),
           ),
           const SizedBox(height: 10),
           _SectionCard(
             title: 'Available (estimasi)',
-            trailing: rupiah(available),
-            child: const Text(
-              'Saldo wallet dikurangi dana yang sudah terkumpul di goals dan kewajiban periode ini. Ini bukan saldo bank dan bukan transaksi baru.',
+            trailing: rupiah(financial.available),
+            child: Text(
+              financial.available < 0
+                  ? 'Nilai negatif berarti alokasi goal dan kewajiban periode ini melebihi saldo wallet. Prioritaskan kewajiban sebelum pengeluaran non-esensial.'
+                  : 'Estimasi dana bebas setelah mempertimbangkan dana yang sudah dialokasikan ke goals dan kewajiban periode ini. Ini bukan saldo bank baru.',
               style: AppTypography.bodySmall,
             ),
           ),
           const SizedBox(height: 10),
           transactionsAsync.when(
-            loading: () => const _SectionCard(
-              title: 'Cashflow',
-              trailing: 'Memuat…',
-              child: ShimmerSkeleton(height: 48),
-            ),
-            error: (error, _) => _SectionCard(
-              title: 'Cashflow',
-              trailing: '—',
-              child: Text(
-                'Data transaksi belum tersedia: $error',
-                style: AppTypography.bodySmall,
-              ),
-            ),
+            loading: () => const _SectionCard(title: 'Cashflow', trailing: 'Memuat…', child: ShimmerSkeleton(height: 48)),
+            error: (error, _) => _SectionCard(title: 'Cashflow', trailing: '—', child: Text('Data transaksi belum tersedia: $error', style: AppTypography.bodySmall)),
             data: (transactions) {
-              final income = transactions
-                  .where((item) => item.type == TransactionType.income)
-                  .fold<double>(0, (sum, item) => sum + item.amount);
-              final expense = transactions
-                  .where((item) => item.type == TransactionType.expense)
-                  .fold<double>(0, (sum, item) => sum + item.amount);
+              final income = transactions.where((item) => item.type == TransactionType.income).fold<double>(0, (sum, item) => sum + item.amount);
+              final expense = transactions.where((item) => item.type == TransactionType.expense).fold<double>(0, (sum, item) => sum + item.amount);
               final netCashflow = income - expense;
-
               return _SectionCard(
                 title: 'Cashflow',
                 trailing: rupiah(netCashflow),
@@ -248,82 +167,41 @@ class FinancialOverviewDetailPage extends ConsumerWidget {
                     const Divider(height: 18),
                     _CashflowRow(label: 'Net Cashflow', value: netCashflow, strong: true),
                     const SizedBox(height: 6),
-                    Text(
-                      '${transactions.length} transaksi dalam sumber data saat ini.',
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
+                    Text('${transactions.length} transaksi dalam sumber data saat ini.', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
                   ],
                 ),
               );
             },
           ),
           const SizedBox(height: 14),
-          _buildAiInsight(
-            totalAssets: totalAssets,
-            liabilities: liabilities,
-            dueThisPeriod: dueThisPeriod,
-            goalsSaved: goalsSaved,
-            goalsTarget: goalsTarget,
-            available: available,
+          ContextAIInsight(
+            title: 'Financial Overview',
+            message: _aiMessage(financial),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAiInsight({
-    required double totalAssets,
-    required double liabilities,
-    required double dueThisPeriod,
-    required double goalsSaved,
-    required double goalsTarget,
-    required double available,
-  }) {
-    final debtRatio = totalAssets <= 0 ? 0.0 : liabilities / totalAssets;
-    final goalProgress = goalsTarget <= 0 ? 0.0 : goalsSaved / goalsTarget;
-
-    final String message;
-    if (available < 0) {
-      message =
-          'Kewajiban periode ini dan alokasi goals melebihi saldo wallet yang tersedia. Prioritaskan kewajiban Rp${_compactRupiah(dueThisPeriod)} sebelum menambah pengeluaran non-esensial.';
-    } else if (debtRatio >= .5) {
-      message =
-          'Total kewajiban masih cukup besar dibanding aset wallet. Sebaiknya hindari menambah cicilan baru dan fokus menjaga cashflow tetap positif.';
-    } else if (goalProgress >= .8) {
-      message =
-          'Goals sudah mencapai ${(goalProgress * 100).round()}%. Pertahankan kontribusi, tetapi tetap sisakan ruang untuk kewajiban dan kebutuhan rutin.';
-    } else {
-      message =
-          'Kondisi finansial terlihat cukup seimbang. Nexora akan terus membandingkan wallet, goals, cicilan, dan transaksi untuk memberi saran yang lebih kontekstual.';
+  String _aiMessage(FinancialStateSnapshot financial) {
+    if (financial.available < 0) {
+      return 'Alokasi goals dan kewajiban periode ini melebihi saldo wallet. Prioritaskan cicilan dan kebutuhan wajib sebelum menambah pengeluaran baru.';
     }
-
-    return ContextAIInsight(
-      title: 'Financial Overview',
-      message: message,
-    );
-  }
-
-  String _compactRupiah(double value) {
-    final absolute = value.abs();
-    if (absolute >= 1000000) {
-      return 'Rp${(value / 1000000).toStringAsFixed(1)} jt';
+    if (financial.completedGoals > 0) {
+      return '${financial.completedGoals} goal sudah tercapai. Saat ada dana baru, Nexora bisa menyarankan mengalihkannya ke dana darurat, investasi, atau target berikutnya tanpa mengurangi Total Aset.';
     }
-    if (absolute >= 1000) {
-      return 'Rp${(value / 1000).toStringAsFixed(0)} rb';
+    if (financial.debtRatio >= .5) {
+      return 'Kewajiban masih cukup besar dibanding aset wallet. Fokus menjaga cashflow positif dan hindari menambah cicilan baru untuk sementara.';
     }
-    return 'Rp${value.toStringAsFixed(0)}';
+    if (financial.goalProgress >= .8) {
+      return 'Progress goals sudah ${(financial.goalProgress * 100).round()}%. Pertahankan kontribusi sambil tetap menyisakan ruang untuk kebutuhan rutin dan kewajiban.';
+    }
+    return 'Kondisi finansial sedang dipantau dari wallet, goals, cicilan, dan transaksi. Nexora akan menyesuaikan saran ketika salah satu komponen berubah.';
   }
 }
 
 class _MetricCard extends StatelessWidget {
-  const _MetricCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.accent,
-  });
+  const _MetricCard({required this.label, required this.value, required this.icon, required this.accent});
 
   final String label;
   final String value;
@@ -341,29 +219,16 @@ class _MetricCard extends StatelessWidget {
           Container(
             width: 30,
             height: 30,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: .10),
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: accent.withValues(alpha: .10), shape: BoxShape.circle),
             child: Icon(icon, size: 15, color: accent),
           ),
           const SizedBox(height: 8),
-          Text(
-            label,
-            style: AppTypography.caption.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
+          Text(label, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
           const SizedBox(height: 3),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: AppTypography.labelLarge.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+            child: Text(value, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
           ),
         ],
       ),
@@ -400,11 +265,7 @@ class _CashflowRow extends StatelessWidget {
 }
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.title,
-    required this.trailing,
-    required this.child,
-  });
+  const _SectionCard({required this.title, required this.trailing, required this.child});
 
   final String title;
   final String trailing;
@@ -420,23 +281,13 @@ class _SectionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: AppTypography.labelLarge.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+              Expanded(child: Text(title, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700))),
               Flexible(
                 child: Text(
                   trailing,
                   textAlign: TextAlign.end,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.labelMedium.copyWith(
-                    color: AppColors.primaryLight,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: AppTypography.labelMedium.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800),
                 ),
               ),
             ],
