@@ -78,7 +78,7 @@ class BudgetPage extends ConsumerWidget {
             AppSpacing.gapLG,
             insightAsync.when(
               loading: () => const ShimmerSkeleton(height: 104),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
               data: (insight) => _NexoraBudgetInsight(insight: insight),
             ),
           ],
