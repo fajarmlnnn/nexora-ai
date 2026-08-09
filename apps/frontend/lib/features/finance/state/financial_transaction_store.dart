@@ -13,7 +13,7 @@ final financialTransactionStoreProvider =
 );
 
 class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
-  FinancialTransactionStore() : super(_seedTransactions);
+  FinancialTransactionStore() : super(const []);
 
   static const openingBalance = 12553000.0;
   static const monthlyBudget = 5000000.0;
@@ -25,13 +25,24 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
 
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;
-      state = decoded
-          .map((item) => TransactionModel.fromJson(
-                Map<String, dynamic>.from(item as Map),
-              ))
+      final loaded = decoded
+          .map(
+            (item) => TransactionModel.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .where((transaction) => !_isLegacyDemo(transaction))
           .toList(growable: false);
+
+      state = loaded;
+
+      // Persist the migrated list so removed demo records cannot return.
+      if (loaded.length != decoded.length) {
+        await _persist();
+      }
     } catch (_) {
-      state = _seedTransactions;
+      state = const [];
+      await _persist();
     }
   }
 
@@ -73,7 +84,9 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
   }
 
   Future<void> delete(String id) async {
-    state = state.where((transaction) => transaction.id != id).toList(growable: false);
+    state = state
+        .where((transaction) => transaction.id != id)
+        .toList(growable: false);
     await _persist();
   }
 
@@ -85,7 +98,7 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
   }
 
   Future<void> clearAndRestoreDemoData() async {
-    state = _seedTransactions;
+    state = const [];
     await _persist();
   }
 
@@ -97,32 +110,11 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
     );
   }
 
-  static final _seedTransactions = <TransactionModel>[
-    TransactionModel(
-      id: 'seed-salary-may',
-      title: 'Gaji Bulan Mei',
-      amount: 15000000,
-      type: TransactionType.income,
-      category: TransactionCategory.salary,
-      date: DateTime.now(),
-    ),
-    TransactionModel(
-      id: 'seed-lunch',
-      title: 'Makan Siang',
-      amount: 35000,
-      type: TransactionType.expense,
-      category: TransactionCategory.food,
-      date: DateTime.now(),
-    ),
-    TransactionModel(
-      id: 'seed-coffee',
-      title: 'Kopi',
-      amount: 18000,
-      type: TransactionType.expense,
-      category: TransactionCategory.shopping,
-      date: DateTime.now(),
-    ),
-  ];
+  bool _isLegacyDemo(TransactionModel transaction) {
+    return transaction.id == 'seed-salary-may' ||
+        transaction.id == 'seed-lunch' ||
+        transaction.id == 'seed-coffee';
+  }
 }
 
 extension FinancialTransactionCalculations on List<TransactionModel> {
@@ -149,7 +141,8 @@ extension FinancialTransactionCalculations on List<TransactionModel> {
     final now = DateTime.now();
     return fold<double>(
       0,
-      (sum, item) => sum +
+      (sum, item) =>
+          sum +
           (item.date.year == now.year &&
                   item.date.month == now.month &&
                   predicate(item)
