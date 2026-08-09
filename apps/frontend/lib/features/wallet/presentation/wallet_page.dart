@@ -56,67 +56,64 @@ class _WalletPageState extends ConsumerState<WalletPage> {
             onRefresh: () {
               return ref.read(walletProvider.notifier).refreshWallets();
             },
-            child: SingleChildScrollView(
+            child: ListView(
               physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics(),
               ),
               padding: AppSpacing.screen.copyWith(
                 bottom: AppSpacing.bottomNav(context),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  WalletHeader(
-                    totalBalance: totalBalance,
-                    isBalanceVisible: _isBalanceVisible,
-                    onToggleBalance: () {
-                      setState(() {
-                        _isBalanceVisible = !_isBalanceVisible;
-                      });
-                    },
-                    onAddWallet: widget.onAddWallet,
-                    onRefresh: () {
-                      ref.read(walletProvider.notifier).refreshWallets();
+              children: [
+                WalletHeader(
+                  totalBalance: totalBalance,
+                  isBalanceVisible: _isBalanceVisible,
+                  onToggleBalance: () {
+                    setState(() {
+                      _isBalanceVisible = !_isBalanceVisible;
+                    });
+                  },
+                  onAddWallet: widget.onAddWallet,
+                  onRefresh: () {
+                    ref.read(walletProvider.notifier).refreshWallets();
+                  },
+                ),
+                AppSpacing.gapLG,
+                if (primaryWallet != null) ...[
+                  WalletCard(
+                    wallet: primaryWallet,
+                    onTap: () {
+                      widget.onWalletTap?.call(primaryWallet.id);
                     },
                   ),
                   AppSpacing.gapLG,
-                  if (primaryWallet != null) ...[
-                    WalletCard(
-                      wallet: primaryWallet,
+                ],
+                WalletSummaryCard(
+                  wallets: visibleWallets,
+                  onCategoryTap: (type) {
+                    // Filter wallet dapat ditambahkan di tahap berikutnya.
+                  },
+                ),
+                AppSpacing.gapLG,
+                _WalletSectionHeader(
+                  title: 'Semua Wallet',
+                  count: visibleWallets.length,
+                ),
+                AppSpacing.gapMD,
+                for (var index = 0; index < visibleWallets.length; index++)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index == visibleWallets.length - 1
+                          ? 0
+                          : AppSpacing.sm,
+                    ),
+                    child: WalletAccountTile(
+                      wallet: visibleWallets[index],
                       onTap: () {
-                        widget.onWalletTap?.call(primaryWallet.id);
+                        widget.onWalletTap?.call(visibleWallets[index].id);
                       },
                     ),
-                    AppSpacing.gapLG,
-                  ],
-                  WalletSummaryCard(
-                    wallets: visibleWallets,
-                    onCategoryTap: (type) {
-                      // Filter wallet dapat ditambahkan di tahap berikutnya.
-                    },
                   ),
-                  AppSpacing.gapLG,
-                  _WalletSectionHeader(
-                    title: 'Semua Wallet',
-                    count: visibleWallets.length,
-                  ),
-                  AppSpacing.gapMD,
-                  for (var index = 0; index < visibleWallets.length; index++)
-                    Padding(
-                      padding: EdgeInsets.only(
-                        bottom: index == visibleWallets.length - 1
-                            ? 0
-                            : AppSpacing.sm,
-                      ),
-                      child: WalletAccountTile(
-                        wallet: visibleWallets[index],
-                        onTap: () {
-                          widget.onWalletTap?.call(visibleWallets[index].id);
-                        },
-                      ),
-                    ),
-                ],
-              ),
+              ],
             ),
           );
         },
