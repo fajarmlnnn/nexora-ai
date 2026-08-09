@@ -9,6 +9,8 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../../dashboard/models/transaction_model.dart';
 import '../../finance/state/financial_transaction_store.dart';
+import '../../wallet/controllers/wallet_controller.dart';
+import '../../wallet/models/wallet_model.dart';
 
 class MoneyFormPage extends ConsumerStatefulWidget {
   const MoneyFormPage({super.key, required this.income});
@@ -23,6 +25,7 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
   late final TextEditingController _amountController;
   final TextEditingController _titleController = TextEditingController();
   TransactionCategory _category = TransactionCategory.other;
+  String? _walletId;
   bool _saving = false;
 
   @override
@@ -51,6 +54,13 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
       return;
     }
 
+    final wallets = ref.read(visibleWalletsProvider);
+    final selectedWalletId = _walletId ?? ref.read(primaryWalletProvider)?.id;
+    if (selectedWalletId == null || wallets.isEmpty) {
+      _showError('Pilih wallet terlebih dahulu.');
+      return;
+    }
+
     setState(() => _saving = true);
     try {
       final transaction = TransactionModel(
@@ -62,6 +72,7 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
         type: widget.income ? TransactionType.income : TransactionType.expense,
         category: _category,
         date: DateTime.now(),
+        walletId: selectedWalletId,
       );
 
       await ref.read(financialTransactionStoreProvider.notifier).add(transaction);
@@ -81,6 +92,9 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
   @override
   Widget build(BuildContext context) {
     final accent = widget.income ? AppColors.success : AppColors.danger;
+    final walletsAsync = ref.watch(walletProvider);
+    final wallets = ref.watch(visibleWalletsProvider);
+    final selectedWallet = _selectedWallet(wallets);
 
     return PremiumScaffold(
       bottomPadding: false,
@@ -133,6 +147,13 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
             onTap: _selectCategory,
           ),
           _SelectionCard(
+            label: 'Wallet',
+            value: walletsAsync.isLoading
+                ? 'Memuat wallet...'
+                : selectedWallet?.name ?? 'Pilih wallet',
+            onTap: wallets.isEmpty ? null : _selectWallet,
+          ),
+          _SelectionCard(
             label: 'Tanggal',
             value: 'Hari ini',
             onTap: () {},
@@ -162,6 +183,44 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
         ],
       ),
     );
+  }
+
+  WalletModel? _selectedWallet(List<WalletModel> wallets) {
+    final id = _walletId ?? ref.read(primaryWalletProvider)?.id;
+    if (id == null) return null;
+
+    for (final wallet in wallets) {
+      if (wallet.id == id) return wallet;
+    }
+    return null;
+  }
+
+  Future<void> _selectWallet() async {
+    final wallets = ref.read(visibleWalletsProvider);
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.card,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.only(bottom: 16),
+          children: [
+            for (final wallet in wallets)
+              ListTile(
+                leading: Icon(wallet.icon, color: wallet.color),
+                title: Text(wallet.name),
+                subtitle: Text(wallet.maskedAccount),
+                trailing: wallet.id == (_walletId ?? ref.read(primaryWalletProvider)?.id)
+                    ? const Icon(LucideIcons.check, color: AppColors.primaryLight)
+                    : null,
+                onTap: () => Navigator.pop(context, wallet.id),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (selected != null) setState(() => _walletId = selected);
   }
 
   Future<void> _selectCategory() async {
@@ -244,11 +303,11 @@ class _InputCard extends StatelessWidget {
 }
 
 class _SelectionCard extends StatelessWidget {
-  const _SelectionCard({required this.label, required this.value, required this.onTap});
+  const _SelectionCard({required this.label, required this.value, this.onTap});
 
   final String label;
   final String value;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
