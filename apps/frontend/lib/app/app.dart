@@ -20,8 +20,8 @@ class NexoraApp extends StatelessWidget {
           children: [
             child ?? const SizedBox.shrink(),
             const Positioned(
-              right: 10,
-              bottom: 88,
+              right: 12,
+              bottom: 96,
               child: NexoraMascotOverlay(),
             ),
           ],
