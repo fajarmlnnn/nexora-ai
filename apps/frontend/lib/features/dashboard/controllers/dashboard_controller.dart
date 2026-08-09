@@ -16,7 +16,7 @@ final financialTransactionsProvider = Provider<List<TransactionModel>>((ref) {
   return ref.watch(financialTransactionStoreProvider);
 });
 
-final dashboardSummaryProvider = Provider<DashboardSummary>((ref) {
+final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
   final transactions = ref.watch(financialTransactionsProvider);
 
   return DashboardSummary(
@@ -30,7 +30,7 @@ final dashboardSummaryProvider = Provider<DashboardSummary>((ref) {
   );
 });
 
-final recentTransactionsProvider = Provider<List<TransactionModel>>((ref) {
+final recentTransactionsProvider = FutureProvider<List<TransactionModel>>((ref) async {
   final transactions = ref.watch(financialTransactionsProvider);
   final sorted = [...transactions]
     ..sort((a, b) => b.date.compareTo(a.date));
@@ -42,10 +42,10 @@ final budgetItemsProvider = FutureProvider<List<BudgetItem>>((ref) async {
   return repository.getBudgetItems();
 });
 
-final dashboardProvider = Provider<DashboardData>((ref) {
-  final summary = ref.watch(dashboardSummaryProvider);
-  final budgets = ref.watch(budgetItemsProvider).valueOrNull ?? const <BudgetItem>[];
-  final transactions = ref.watch(recentTransactionsProvider);
+final dashboardProvider = FutureProvider<DashboardData>((ref) async {
+  final summary = await ref.watch(dashboardSummaryProvider.future);
+  final budgets = await ref.watch(budgetItemsProvider.future);
+  final transactions = await ref.watch(recentTransactionsProvider.future);
 
   return DashboardData(
     summary: summary,
