@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -6,41 +7,32 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/premium_widgets.dart';
+import '../../dashboard/controllers/financial_overview_controller.dart';
 
-class InstallmentPage extends StatelessWidget {
+class InstallmentPage extends ConsumerWidget {
   const InstallmentPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final installments = ref.watch(installmentsProvider);
+    final remaining = ref.watch(totalInstallmentRemainingProvider);
+    final dueThisPeriod = ref.watch(installmentDueThisPeriodProvider);
+
     return PremiumScaffold(
       child: ListView(
         padding: AppSpacing.screen,
-        children: const [
+        children: [
           Text('Cicilan & Tagihan', style: AppTypography.heading1),
-          SizedBox(height: 20),
-          _InstallmentCard(
-            title: 'SPayLater',
-            amount: 'Rp 250.000 / bulan',
-            status: '3 hari lagi',
-            remaining: 'Sisa Rp 1.250.000',
-            color: AppColors.danger,
+          const SizedBox(height: 6),
+          Text(
+            'Sisa kewajiban ${rupiah(remaining)} • Jatuh tempo periode ini ${rupiah(dueThisPeriod)}',
+            style: AppTypography.bodySmall,
           ),
-          _InstallmentCard(
-            title: 'Kredit Motor',
-            amount: 'Rp 850.000 / bulan',
-            status: '11 hari lagi',
-            remaining: 'Sisa Rp 6.800.000',
-            color: AppColors.warning,
-          ),
-          _InstallmentCard(
-            title: 'Kredit Laptop',
-            amount: 'Rp 600.000 / bulan',
-            status: 'Sudah dibayar',
-            remaining: 'Sisa Rp 1.200.000',
-            color: AppColors.success,
-          ),
-          SizedBox(height: 20),
-          EmptyStateCard(
+          const SizedBox(height: 16),
+          for (final installment in installments)
+            _InstallmentCard(installment: installment),
+          const SizedBox(height: 6),
+          const EmptyStateCard(
             icon: LucideIcons.calendarPlus,
             title: 'Tambah cicilan',
             message: 'Pantau jatuh tempo agar tidak terkena denda.',
@@ -53,22 +45,17 @@ class InstallmentPage extends StatelessWidget {
 }
 
 class _InstallmentCard extends StatelessWidget {
-  const _InstallmentCard({
-    required this.title,
-    required this.amount,
-    required this.status,
-    required this.remaining,
-    required this.color,
-  });
+  const _InstallmentCard({required this.installment});
 
-  final String title;
-  final String amount;
-  final String status;
-  final String remaining;
-  final Color color;
+  final InstallmentSnapshot installment;
 
   @override
   Widget build(BuildContext context) {
+    final color = installment.isPaid ? AppColors.success : AppColors.warning;
+    final status = installment.isPaid
+        ? 'Sudah dibayar'
+        : '${installment.dueInDays} hari lagi';
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: PremiumCard(
@@ -81,9 +68,9 @@ class _InstallmentCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: AppTypography.labelLarge),
-                  Text(amount, style: AppTypography.bodySmall),
-                  Text(remaining, style: AppTypography.caption),
+                  Text(installment.title, style: AppTypography.labelLarge),
+                  Text('${rupiah(installment.monthlyAmount)} / bulan', style: AppTypography.bodySmall),
+                  Text('Sisa ${rupiah(installment.remaining)}', style: AppTypography.caption),
                 ],
               ),
             ),
@@ -94,10 +81,7 @@ class _InstallmentCard extends StatelessWidget {
                 borderRadius: AppRadius.radiusLG,
                 border: Border.all(color: color.withValues(alpha: .45)),
               ),
-              child: Text(
-                status,
-                style: AppTypography.caption.copyWith(color: color),
-              ),
+              child: Text(status, style: AppTypography.caption.copyWith(color: color)),
             ),
           ],
         ),
