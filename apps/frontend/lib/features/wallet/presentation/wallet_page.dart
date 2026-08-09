@@ -35,88 +35,90 @@ class _WalletPageState extends ConsumerState<WalletPage> {
     final visibleWallets = ref.watch(visibleWalletsProvider);
 
     return PremiumScaffold(
-      child: walletsAsync.when(
-        loading: () => const _WalletLoadingState(),
-        error: (error, stackTrace) {
-          return _WalletErrorState(
-            message: error.toString(),
-            onRetry: () {
-              ref.read(walletProvider.notifier).refreshWallets();
-            },
-          );
-        },
-        data: (_) {
-          if (visibleWallets.isEmpty) {
-            return _WalletEmptyContent(onAddWallet: widget.onAddWallet);
-          }
+      child: SizedBox.expand(
+        child: walletsAsync.when(
+          loading: () => const _WalletLoadingState(),
+          error: (error, stackTrace) {
+            return _WalletErrorState(
+              message: error.toString(),
+              onRetry: () {
+                ref.read(walletProvider.notifier).refreshWallets();
+              },
+            );
+          },
+          data: (_) {
+            if (visibleWallets.isEmpty) {
+              return _WalletEmptyContent(onAddWallet: widget.onAddWallet);
+            }
 
-          return RefreshIndicator(
-            color: AppColors.primary,
-            backgroundColor: AppColors.card,
-            onRefresh: () {
-              return ref.read(walletProvider.notifier).refreshWallets();
-            },
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
-              ),
-              padding: AppSpacing.screen.copyWith(
-                bottom: AppSpacing.bottomNav(context),
-              ),
-              children: [
-                WalletHeader(
-                  totalBalance: totalBalance,
-                  isBalanceVisible: _isBalanceVisible,
-                  onToggleBalance: () {
-                    setState(() {
-                      _isBalanceVisible = !_isBalanceVisible;
-                    });
-                  },
-                  onAddWallet: widget.onAddWallet,
-                  onRefresh: () {
-                    ref.read(walletProvider.notifier).refreshWallets();
-                  },
+            return RefreshIndicator(
+              color: AppColors.primary,
+              backgroundColor: AppColors.card,
+              onRefresh: () {
+                return ref.read(walletProvider.notifier).refreshWallets();
+              },
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
                 ),
-                AppSpacing.gapLG,
-                if (primaryWallet != null) ...[
-                  WalletCard(
-                    wallet: primaryWallet,
-                    onTap: () {
-                      widget.onWalletTap?.call(primaryWallet.id);
+                padding: AppSpacing.screen.copyWith(
+                  bottom: AppSpacing.bottomNav(context),
+                ),
+                children: [
+                  WalletHeader(
+                    totalBalance: totalBalance,
+                    isBalanceVisible: _isBalanceVisible,
+                    onToggleBalance: () {
+                      setState(() {
+                        _isBalanceVisible = !_isBalanceVisible;
+                      });
+                    },
+                    onAddWallet: widget.onAddWallet,
+                    onRefresh: () {
+                      ref.read(walletProvider.notifier).refreshWallets();
                     },
                   ),
                   AppSpacing.gapLG,
-                ],
-                WalletSummaryCard(
-                  wallets: visibleWallets,
-                  onCategoryTap: (type) {
-                    // Filter wallet dapat ditambahkan di tahap berikutnya.
-                  },
-                ),
-                AppSpacing.gapLG,
-                _WalletSectionHeader(
-                  title: 'Semua Wallet',
-                  count: visibleWallets.length,
-                ),
-                AppSpacing.gapMD,
-                for (var index = 0; index < visibleWallets.length; index++)
-                  Padding(
-                    padding: EdgeInsets.only(
-                      bottom: index == visibleWallets.length - 1
-                          ? 0
-                          : AppSpacing.sm,
-                    ),
-                    child: WalletAccountTile(
-                      wallet: visibleWallets[index],
+                  if (primaryWallet != null) ...[
+                    WalletCard(
+                      wallet: primaryWallet,
                       onTap: () {
-                        widget.onWalletTap?.call(visibleWallets[index].id);
+                        widget.onWalletTap?.call(primaryWallet.id);
                       },
                     ),
+                    AppSpacing.gapLG,
+                  ],
+                  WalletSummaryCard(
+                    wallets: visibleWallets,
+                    onCategoryTap: (type) {
+                      // Filter wallet dapat ditambahkan di tahap berikutnya.
+                    },
                   ),
-              ],
-            ),
-          );
-        },
+                  AppSpacing.gapLG,
+                  _WalletSectionHeader(
+                    title: 'Semua Wallet',
+                    count: visibleWallets.length,
+                  ),
+                  AppSpacing.gapMD,
+                  for (var index = 0; index < visibleWallets.length; index++)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index == visibleWallets.length - 1
+                            ? 0
+                            : AppSpacing.sm,
+                      ),
+                      child: WalletAccountTile(
+                        wallet: visibleWallets[index],
+                        onTap: () {
+                          widget.onWalletTap?.call(visibleWallets[index].id);
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
