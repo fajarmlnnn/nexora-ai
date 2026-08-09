@@ -16,47 +16,14 @@ class GoalsPage extends StatefulWidget {
   State<GoalsPage> createState() => _GoalsPageState();
 }
 
-class _GoalsPageState extends State<GoalsPage>
-    with SingleTickerProviderStateMixin {
+class _GoalsPageState extends State<GoalsPage> with SingleTickerProviderStateMixin {
   late final TabController _controller = TabController(length: 4, vsync: this);
 
   final goals = const [
-    _GoalData(
-      'Dana Darurat',
-      'Wishlist',
-      0.62,
-      10000000,
-      50000000,
-      LucideIcons.laptop,
-      AppColors.primary,
-    ),
-    _GoalData(
-      'Liburan ke Jepang',
-      'Saving',
-      0.78,
-      7000000,
-      20000000,
-      LucideIcons.shieldCheck,
-      AppColors.success,
-    ),
-    _GoalData(
-      'SPayLater',
-      'Debt',
-      0.44,
-      1250000,
-      2500000,
-      LucideIcons.creditCard,
-      AppColors.danger,
-    ),
-    _GoalData(
-      'DP Rumah',
-      'Wishlist',
-      0.36,
-      18000000,
-      60000000,
-      LucideIcons.plane,
-      AppColors.info,
-    ),
+    _GoalData('Dana Darurat', 'Wishlist', 10000000, 50000000, LucideIcons.shieldCheck, AppColors.primary),
+    _GoalData('Liburan ke Jepang', 'Saving', 7000000, 20000000, LucideIcons.plane, AppColors.success),
+    _GoalData('SPayLater', 'Debt', 1250000, 2500000, LucideIcons.creditCard, AppColors.danger),
+    _GoalData('DP Rumah', 'Wishlist', 18000000, 60000000, LucideIcons.house, AppColors.info),
   ];
 
   @override
@@ -68,71 +35,25 @@ class _GoalsPageState extends State<GoalsPage>
   @override
   Widget build(BuildContext context) {
     return PremiumScaffold(
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: AppSpacing.bottomNav(context) - 6),
-        child: FloatingActionButton(
-          heroTag: 'goals-add',
-          onPressed: () {},
-          backgroundColor: AppColors.primary,
-          shape: const CircleBorder(),
-          child: const Icon(LucideIcons.plus, color: Colors.white),
-        ),
-      ),
       child: Padding(
-        padding: AppSpacing.screen,
+        padding: AppSpacing.screen.copyWith(bottom: 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Goals', style: AppTypography.heading1),
-            AppSpacing.gapXS,
-            Text(
-              'Track dreams, savings, and debt in one place.',
-              style: AppTypography.bodyMedium,
-            ),
-            AppSpacing.gapLG,
-            Container(
-              height: 52,
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: AppRadius.radiusXL,
-              ),
-              child: TabBar(
-                controller: _controller,
-                indicator: BoxDecoration(
-                  gradient: AppGradients.primary,
-                  borderRadius: AppRadius.radiusLG,
-                ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                dividerColor: Colors.transparent,
-                labelStyle: AppTypography.labelMedium.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-                unselectedLabelColor: AppColors.textSecondary,
-                tabs: const [
-                  Tab(text: 'All'),
-                  Tab(text: 'Wishlist'),
-                  Tab(text: 'Saving'),
-                  Tab(text: 'Debt'),
-                ],
-              ),
-            ),
-            AppSpacing.gapLG,
+            _GoalsHeader(),
+            const SizedBox(height: 12),
+            _GoalsOverview(goals: goals),
+            const SizedBox(height: 12),
+            _GoalTabs(controller: _controller),
+            const SizedBox(height: 8),
             Expanded(
               child: TabBarView(
                 controller: _controller,
                 children: [
-                  _GoalList(goals: goals, showCelebration: true),
-                  _GoalList(
-                    goals: goals.where((g) => g.type == 'Wishlist').toList(),
-                  ),
-                  _GoalList(
-                    goals: goals.where((g) => g.type == 'Saving').toList(),
-                  ),
-                  _GoalList(
-                    goals: goals.where((g) => g.type == 'Debt').toList(),
-                  ),
+                  _GoalList(goals: goals, showInsight: true),
+                  _GoalList(goals: goals.where((g) => g.type == 'Wishlist').toList()),
+                  _GoalList(goals: goals.where((g) => g.type == 'Saving').toList()),
+                  _GoalList(goals: goals.where((g) => g.type == 'Debt').toList()),
                 ],
               ),
             ),
@@ -143,52 +64,150 @@ class _GoalsPageState extends State<GoalsPage>
   }
 }
 
-class _GoalList extends StatelessWidget {
-  const _GoalList({required this.goals, this.showCelebration = false});
-  final List<_GoalData> goals;
-  final bool showCelebration;
+class _GoalsHeader extends StatelessWidget {
+  const _GoalsHeader();
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: EdgeInsets.only(bottom: AppSpacing.bottomNav(context)),
-      itemCount: goals.length + (showCelebration ? 1 : 0),
-      separatorBuilder: (_, _) => AppSpacing.gapMD,
-      itemBuilder: (context, index) {
-        if (showCelebration && index == goals.length) {
-          return const _CelebrationCard();
-        }
-        return _GoalCard(goal: goals[index]);
-      },
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Goals', style: AppTypography.heading1),
+              const SizedBox(height: 1),
+              Text('Rencanakan target finansialmu', style: AppTypography.bodySmall),
+            ],
+          ),
+        ),
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.border.withValues(alpha: .45)),
+          ),
+          child: const Icon(LucideIcons.plus, color: AppColors.primaryLight, size: 20),
+        ),
+      ],
     );
   }
 }
 
-class _CelebrationCard extends StatelessWidget {
-  const _CelebrationCard();
+class _GoalsOverview extends StatelessWidget {
+  const _GoalsOverview({required this.goals});
+  final List<_GoalData> goals;
 
   @override
   Widget build(BuildContext context) {
+    final saved = goals.fold<double>(0, (sum, goal) => sum + goal.saved);
+    final target = goals.fold<double>(0, (sum, goal) => sum + goal.target);
+    final progress = target == 0 ? 0.0 : (saved / target).clamp(0.0, 1.0);
+
     return PremiumCard(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      borderRadius: AppRadius.radiusXL,
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF20273A), Color(0xFF171D2B)],
+      ),
       child: Row(
         children: [
-          const NexoraRobot(size: 86),
-          AppSpacing.hGapMD,
+          SizedBox(
+            width: 58,
+            height: 58,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 6,
+                  backgroundColor: AppColors.border.withValues(alpha: .35),
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                ),
+                Text('${(progress * 100).round()}%', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w800)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Kamu Hebat! 🎉', style: AppTypography.heading3),
-                AppSpacing.gapXS,
-                Text(
-                  'Tabunganmu bulan ini naik 18% dibanding bulan lalu. Pertahankan ritmenya.',
-                  style: AppTypography.bodySmall,
-                ),
+                Text('Progress semua goals', style: AppTypography.caption),
+                const SizedBox(height: 2),
+                Text('${rupiah(saved)} tersimpan', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 1),
+                Text('dari ${rupiah(target)} target', style: AppTypography.caption),
               ],
             ),
           ),
+          Text('${goals.length}', style: AppTypography.heading3.copyWith(color: AppColors.primaryLight)),
+          const SizedBox(width: 3),
+          Text('goals', style: AppTypography.caption),
         ],
       ),
+    );
+  }
+}
+
+class _GoalTabs extends StatelessWidget {
+  const _GoalTabs({required this.controller});
+  final TabController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppColors.card.withValues(alpha: .72),
+        borderRadius: AppRadius.radiusLG,
+        border: Border.all(color: AppColors.border.withValues(alpha: .3)),
+      ),
+      child: TabBar(
+        controller: controller,
+        indicator: BoxDecoration(
+          gradient: AppGradients.primary,
+          borderRadius: AppRadius.radiusMD,
+          boxShadow: AppShadows.glow,
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        labelPadding: EdgeInsets.zero,
+        labelStyle: AppTypography.caption.copyWith(fontWeight: FontWeight.w800),
+        labelColor: Colors.white,
+        unselectedLabelColor: AppColors.textSecondary,
+        tabs: const [
+          Tab(text: 'Semua'),
+          Tab(text: 'Wishlist'),
+          Tab(text: 'Saving'),
+          Tab(text: 'Debt'),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoalList extends StatelessWidget {
+  const _GoalList({required this.goals, this.showInsight = false});
+  final List<_GoalData> goals;
+  final bool showInsight;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      physics: const BouncingScrollPhysics(),
+      padding: EdgeInsets.only(top: 2, bottom: AppSpacing.bottomNav(context) + 20),
+      itemCount: goals.length + (showInsight ? 1 : 0),
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        if (showInsight && index == goals.length) return const _GoalInsight();
+        return _GoalCard(goal: goals[index]);
+      },
     );
   }
 }
@@ -199,27 +218,29 @@ class _GoalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 260),
-      padding: const EdgeInsets.all(16),
+    final progress = goal.progress;
+    final status = progress >= .75 ? 'On track' : progress >= .4 ? 'Berjalan' : 'Perlu dorongan';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: AppRadius.radiusXL,
-        border: Border.all(color: AppColors.border.withValues(alpha: .55)),
+        border: Border.all(color: AppColors.border.withValues(alpha: .5)),
         boxShadow: AppShadows.card,
       ),
       child: Row(
         children: [
           Container(
-            width: 62,
-            height: 62,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
-              color: goal.color.withValues(alpha: .16),
-              borderRadius: AppRadius.radiusXL,
+              color: goal.color.withValues(alpha: .13),
+              borderRadius: AppRadius.radiusLG,
             ),
-            child: Icon(goal.icon, color: goal.color, size: 30),
+            child: Icon(goal.icon, color: goal.color, size: 23),
           ),
-          AppSpacing.hGapMD,
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,32 +248,30 @@ class _GoalCard extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(goal.title, style: AppTypography.labelLarge),
+                      child: Text(goal.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800)),
                     ),
-                    Text(
-                      '${(goal.progress * 100).round()}%',
-                      style: AppTypography.labelMedium.copyWith(
-                        color: goal.color,
+                    Text('${(progress * 100).round()}%', style: AppTypography.caption.copyWith(color: goal.color, fontWeight: FontWeight.w800)),
+                  ],
+                ),
+                const SizedBox(height: 1),
+                Row(
+                  children: [
+                    Text(goal.type, style: AppTypography.caption),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: goal.color.withValues(alpha: .10),
+                        borderRadius: AppRadius.radiusPill,
                       ),
+                      child: Text(status, style: AppTypography.caption.copyWith(color: goal.color, fontSize: 9, fontWeight: FontWeight.w700)),
                     ),
                   ],
                 ),
-                AppSpacing.gapXXS,
-                Text(goal.type, style: AppTypography.bodySmall),
-                AppSpacing.gapSM,
-                AnimatedProgressBar(value: goal.progress, color: goal.color),
-                AppSpacing.gapXS,
-                Text(
-                  '${rupiah(goal.saved)} / ${rupiah(goal.target)}',
-                  style: AppTypography.caption,
-                ),
-                AppSpacing.gapXS,
-                Text(
-                  'AI: ${goal.suggestion}',
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.primaryLight,
-                  ),
-                ),
+                const SizedBox(height: 6),
+                AnimatedProgressBar(value: progress, color: goal.color),
+                const SizedBox(height: 4),
+                Text('${rupiah(goal.saved)} / ${rupiah(goal.target)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption),
               ],
             ),
           ),
@@ -262,26 +281,44 @@ class _GoalCard extends StatelessWidget {
   }
 }
 
+class _GoalInsight extends StatelessWidget {
+  const _GoalInsight();
+
+  @override
+  Widget build(BuildContext context) {
+    return PremiumCard(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      borderRadius: AppRadius.radiusXL,
+      child: Row(
+        children: [
+          const NexoraRobot(size: 48),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Nexora Insight', style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 2),
+                Text('Prioritaskan Dana Darurat agar fondasi keuanganmu lebih aman.', maxLines: 2, overflow: TextOverflow.ellipsis, style: AppTypography.caption),
+              ],
+            ),
+          ),
+          const Icon(LucideIcons.chevronRight, size: 18, color: AppColors.textMuted),
+        ],
+      ),
+    );
+  }
+}
+
 class _GoalData {
-  const _GoalData(
-    this.title,
-    this.type,
-    this.progress,
-    this.saved,
-    this.target,
-    this.icon,
-    this.color,
-  );
+  const _GoalData(this.title, this.type, this.saved, this.target, this.icon, this.color);
+
   final String title;
   final String type;
-  final double progress;
   final double saved;
   final double target;
   final IconData icon;
-  String get suggestion {
-    final monthly = ((target - saved) / 8).round();
-    return 'kontribusi ${rupiah(monthly)}/bulan, estimasi selesai Feb 2027';
-  }
-
   final Color color;
+
+  double get progress => target <= 0 ? 0 : (saved / target).clamp(0.0, 1.0);
 }
