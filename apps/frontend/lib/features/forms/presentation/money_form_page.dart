@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -26,6 +27,7 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
   final TextEditingController _titleController = TextEditingController();
   TransactionCategory _category = TransactionCategory.other;
   String? _walletId;
+  DateTime _selectedDate = DateTime.now();
   bool _saving = false;
 
   @override
@@ -71,7 +73,7 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
         amount: amount,
         type: widget.income ? TransactionType.income : TransactionType.expense,
         category: _category,
-        date: DateTime.now(),
+        date: _selectedDate,
         walletId: selectedWalletId,
       );
 
@@ -82,6 +84,32 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
       if (mounted) _showError('Gagal menyimpan transaksi: $error');
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _selectDate() async {
+    final today = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(today.year + 10, 12, 31),
+      locale: const Locale('id', 'ID'),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: AppColors.primaryLight,
+              surface: AppColors.card,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && mounted) {
+      setState(() => _selectedDate = picked);
     }
   }
 
@@ -155,8 +183,8 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
           ),
           _SelectionCard(
             label: 'Tanggal',
-            value: 'Hari ini',
-            onTap: () {},
+            value: DateFormat('dd MMM yyyy', 'id_ID').format(_selectedDate),
+            onTap: _selectDate,
           ),
           AppSpacing.gapMD,
           FilledButton.icon(
