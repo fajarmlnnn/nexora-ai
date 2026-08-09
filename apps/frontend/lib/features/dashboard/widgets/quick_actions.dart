@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -21,16 +22,15 @@ class QuickActions extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-
           const SizedBox(height: 12),
-
-          const Row(
+          Row(
             children: [
               Expanded(
                 child: _ActionItem(
                   icon: LucideIcons.plus,
                   label: 'Tambah',
                   color: AppColors.primaryLight,
+                  onTap: () => context.push('/add-expense'),
                 ),
               ),
               Expanded(
@@ -39,6 +39,7 @@ class QuickActions extends StatelessWidget {
                   label: 'Scan',
                   color: AppColors.primaryLight,
                   isNew: true,
+                  onTap: () {},
                 ),
               ),
               Expanded(
@@ -46,6 +47,7 @@ class QuickActions extends StatelessWidget {
                   icon: LucideIcons.walletMinimal,
                   label: 'Budget',
                   color: AppColors.primaryLight,
+                  onTap: () => context.push('/budget'),
                 ),
               ),
               Expanded(
@@ -53,6 +55,7 @@ class QuickActions extends StatelessWidget {
                   icon: LucideIcons.send,
                   label: 'Transfer',
                   color: AppColors.primaryLight,
+                  onTap: () => context.push('/transfer'),
                 ),
               ),
             ],
@@ -68,12 +71,14 @@ class _ActionItem extends StatefulWidget {
     required this.icon,
     required this.label,
     required this.color,
+    required this.onTap,
     this.isNew = false,
   });
 
   final IconData icon;
   final String label;
   final Color color;
+  final VoidCallback onTap;
   final bool isNew;
 
   @override
@@ -85,16 +90,14 @@ class _ActionItemState extends State<_ActionItem> {
 
   void _setPressed(bool value) {
     if (!mounted) return;
-
-    setState(() {
-      _pressed = value;
-    });
+    setState(() => _pressed = value);
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
+      onTap: widget.onTap,
       onTapDown: (_) => _setPressed(true),
       onTapUp: (_) => _setPressed(false),
       onTapCancel: () => _setPressed(false),
@@ -124,7 +127,6 @@ class _ActionItemState extends State<_ActionItem> {
                     size: 20,
                   ),
                 ),
-
                 if (widget.isNew)
                   Positioned(
                     top: -5,
@@ -154,9 +156,7 @@ class _ActionItemState extends State<_ActionItem> {
                   ),
               ],
             ),
-
             const SizedBox(height: 7),
-
             Text(
               widget.label,
               maxLines: 1,
