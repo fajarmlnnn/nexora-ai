@@ -89,27 +89,49 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
 
   Future<void> _selectDate() async {
     final today = DateTime.now();
+    final initialDate = DateUtils.dateOnly(_selectedDate);
+    final firstDate = DateTime(2020, 1, 1);
+    final lastDate = DateTime(today.year + 10, 12, 31);
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(today.year + 10, 12, 31),
+      initialDate: initialDate.isBefore(firstDate)
+          ? firstDate
+          : initialDate.isAfter(lastDate)
+              ? lastDate
+              : initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
       locale: const Locale('id', 'ID'),
-      builder: (context, child) {
+      helpText: widget.income ? 'Pilih tanggal pemasukan' : 'Pilih tanggal pengeluaran',
+      cancelText: 'Batal',
+      confirmText: 'Pilih',
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
+      builder: (dialogContext, child) {
+        final baseTheme = Theme.of(dialogContext);
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
+          data: baseTheme.copyWith(
+            brightness: Brightness.dark,
+            colorScheme: baseTheme.colorScheme.copyWith(
+              brightness: Brightness.dark,
               primary: AppColors.primaryLight,
+              onPrimary: Colors.white,
               surface: AppColors.card,
+              onSurface: Colors.white,
+            ),
+            dialogTheme: baseTheme.dialogTheme.copyWith(
+              backgroundColor: AppColors.card,
+              surfaceTintColor: Colors.transparent,
             ),
           ),
-          child: child!,
+          child: child ?? const SizedBox.shrink(),
         );
       },
     );
 
     if (picked != null && mounted) {
-      setState(() => _selectedDate = picked);
+      setState(() => _selectedDate = DateUtils.dateOnly(picked));
     }
   }
 
