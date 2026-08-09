@@ -18,7 +18,7 @@ class NexoraApp extends StatelessWidget {
         return Stack(
           fit: StackFit.expand,
           children: [
-            if (child != null) child,
+            child ?? const SizedBox.shrink(),
             const Positioned(
               right: 10,
               bottom: 88,
