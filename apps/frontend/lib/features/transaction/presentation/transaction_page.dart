@@ -22,12 +22,25 @@ class TransactionPage extends ConsumerStatefulWidget {
 class _TransactionPageState extends ConsumerState<TransactionPage> {
   TransactionType? filter;
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _transactionScrollController = ScrollController();
   String _query = '';
 
   @override
   void dispose() {
     _searchController.dispose();
+    _transactionScrollController.dispose();
     super.dispose();
+  }
+
+  void _setFilter(TransactionType? value) {
+    setState(() => filter = value);
+    if (_transactionScrollController.hasClients) {
+      _transactionScrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   @override
@@ -36,9 +49,7 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
 
     return PremiumScaffold(
       child: Padding(
-        padding: AppSpacing.screen.copyWith(
-          bottom: AppSpacing.bottomNav(context) + 8,
-        ),
+        padding: AppSpacing.screen.copyWith(bottom: 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -50,14 +61,16 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
               onFilter: () => _showFilterSheet(context),
             ),
             const SizedBox(height: 10),
-            _FilterTabs(
-              selected: filter,
-              onChanged: (value) => setState(() => filter = value),
-            ),
-            const SizedBox(height: 14),
+            _FilterTabs(selected: filter, onChanged: _setFilter),
+            const SizedBox(height: 10),
             Expanded(
               child: transactions.when(
                 loading: () => ListView.separated(
+                  controller: _transactionScrollController,
+                  padding: EdgeInsets.only(
+                    top: 8,
+                    bottom: AppSpacing.bottomNav(context) + 28,
+                  ),
                   itemCount: 6,
                   separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (_, _) => const ShimmerSkeleton(height: 68),
@@ -78,27 +91,24 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
                         (item) =>
                             query.isEmpty ||
                             item.title.toLowerCase().contains(query) ||
-                            _categoryLabel(item.category)
-                                .toLowerCase()
-                                .contains(query),
+                            _categoryLabel(item.category).toLowerCase().contains(query),
                       )
                       .toList();
 
                   if (expanded.isEmpty) return _NoResults(query: _query);
 
                   return ListView(
+                    key: ValueKey(filter),
+                    controller: _transactionScrollController,
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.only(top: 2, bottom: 20),
+                    padding: EdgeInsets.only(
+                      top: 8,
+                      bottom: AppSpacing.bottomNav(context) + 28,
+                    ),
                     children: [
                       _Group(title: 'Hari ini', items: expanded.take(4).toList()),
-                      _Group(
-                        title: 'Kemarin',
-                        items: expanded.skip(4).take(2).toList(),
-                      ),
-                      _Group(
-                        title: 'Sebelumnya',
-                        items: expanded.skip(6).toList(),
-                      ),
+                      _Group(title: 'Kemarin', items: expanded.skip(4).take(2).toList()),
+                      _Group(title: 'Sebelumnya', items: expanded.skip(6).toList()),
                     ],
                   );
                 },
@@ -125,16 +135,13 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Filter transaksi',
-                style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800),
-              ),
+              Text('Filter transaksi', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
               const SizedBox(height: 12),
               _SheetOption(
                 label: 'Semua transaksi',
                 selected: filter == null,
                 onTap: () {
-                  setState(() => filter = null);
+                  _setFilter(null);
                   Navigator.pop(sheetContext);
                 },
               ),
@@ -142,7 +149,7 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
                 label: 'Pemasukan',
                 selected: filter == TransactionType.income,
                 onTap: () {
-                  setState(() => filter = TransactionType.income);
+                  _setFilter(TransactionType.income);
                   Navigator.pop(sheetContext);
                 },
               ),
@@ -150,7 +157,7 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
                 label: 'Pengeluaran',
                 selected: filter == TransactionType.expense,
                 onTap: () {
-                  setState(() => filter = TransactionType.expense);
+                  _setFilter(TransactionType.expense);
                   Navigator.pop(sheetContext);
                 },
               ),
@@ -189,11 +196,7 @@ class _TransactionHeader extends StatelessWidget {
             child: const SizedBox(
               width: 44,
               height: 44,
-              child: Icon(
-                LucideIcons.slidersHorizontal,
-                size: 20,
-                color: AppColors.textSecondary,
-              ),
+              child: Icon(LucideIcons.slidersHorizontal, size: 20, color: AppColors.textSecondary),
             ),
           ),
         ),
@@ -203,12 +206,7 @@ class _TransactionHeader extends StatelessWidget {
 }
 
 class _SearchBar extends StatelessWidget {
-  const _SearchBar({
-    required this.controller,
-    required this.onChanged,
-    this.onFilter,
-  });
-
+  const _SearchBar({required this.controller, required this.onChanged, this.onFilter});
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   final VoidCallback? onFilter;
@@ -253,11 +251,7 @@ class _SearchBar extends StatelessWidget {
           const SizedBox(width: 5),
           GestureDetector(
             onTap: onFilter,
-            child: const Icon(
-              LucideIcons.listFilter,
-              color: AppColors.primaryLight,
-              size: 19,
-            ),
+            child: const Icon(LucideIcons.listFilter, color: AppColors.primaryLight, size: 19),
           ),
         ],
       ),
@@ -270,29 +264,57 @@ class _FilterTabs extends StatelessWidget {
   final TransactionType? selected;
   final ValueChanged<TransactionType?> onChanged;
 
+  Alignment _alignment() {
+    if (selected == TransactionType.income) return Alignment.center;
+    if (selected == TransactionType.expense) return Alignment.centerRight;
+    return Alignment.centerLeft;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 52,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: AppColors.card.withValues(alpha: .68),
         borderRadius: AppRadius.radiusLG,
         border: Border.all(color: AppColors.border.withValues(alpha: .28)),
       ),
-      child: Row(
-        children: [
-          _Tab(label: 'Semua', selected: selected == null, onTap: () => onChanged(null)),
-          _Tab(
-            label: 'Pemasukan',
-            selected: selected == TransactionType.income,
-            onTap: () => onChanged(TransactionType.income),
-          ),
-          _Tab(
-            label: 'Pengeluaran',
-            selected: selected == TransactionType.expense,
-            onTap: () => onChanged(TransactionType.expense),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final itemWidth = constraints.maxWidth / 3;
+          return Stack(
+            children: [
+              AnimatedAlign(
+                alignment: _alignment(),
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                child: Container(
+                  width: itemWidth,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.primary,
+                    borderRadius: AppRadius.radiusMD,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: .22),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  _Tab(label: 'Semua', selected: selected == null, onTap: () => onChanged(null)),
+                  _Tab(label: 'Pemasukan', selected: selected == TransactionType.income, onTap: () => onChanged(TransactionType.income)),
+                  _Tab(label: 'Pengeluaran', selected: selected == TransactionType.expense, onTap: () => onChanged(TransactionType.expense)),
+                ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -308,25 +330,17 @@ class _Tab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          height: 38,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            gradient: selected ? AppGradients.primary : null,
-            color: selected ? null : Colors.transparent,
-            borderRadius: AppRadius.radiusMD,
-          ),
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+        child: Center(
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
             style: AppTypography.caption.copyWith(
               color: selected ? Colors.white : AppColors.textSecondary,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
             ),
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         ),
       ),
@@ -342,25 +356,16 @@ class _Group extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(0, 7, 0, 7),
+          padding: const EdgeInsets.fromLTRB(0, 9, 0, 8),
           child: Row(
             children: [
-              Text(
-                title,
-                style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800),
-              ),
+              Text(title, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
               const SizedBox(width: 7),
-              Expanded(
-                child: Divider(
-                  color: AppColors.border.withValues(alpha: .35),
-                  height: 1,
-                ),
-              ),
+              Expanded(child: Divider(color: AppColors.border.withValues(alpha: .35), height: 1)),
             ],
           ),
         ),
@@ -371,11 +376,6 @@ class _Group extends StatelessWidget {
   }
 }
 
-/// Compact swipe interaction.
-/// The previous Dismissible immediately snapped back because deletion was
-/// intentionally disabled with `confirmDismiss: false`. This version behaves
-/// like a modern mail/finance list: the card follows the finger, reveals a
-/// compact action area, then settles with a soft curve.
 class _TransactionTile extends StatefulWidget {
   const _TransactionTile({required this.item});
   final TransactionModel item;
@@ -388,30 +388,19 @@ class _TransactionTileState extends State<_TransactionTile> {
   static const double _actionWidth = 76;
   static const double _openThreshold = 34;
   static const Duration _settleDuration = Duration(milliseconds: 190);
-
   double _offset = 0;
   bool _open = false;
 
   void _dragUpdate(DragUpdateDetails details) {
-    setState(() {
-      _offset = (_offset + details.delta.dx).clamp(-_actionWidth, 0.0);
-    });
+    setState(() => _offset = (_offset + details.delta.dx).clamp(-_actionWidth, 0.0));
   }
 
   void _dragEnd(DragEndDetails details) {
     final shouldOpen = _offset.abs() >= _openThreshold || details.velocity.pixelsPerSecond.dx < -450;
-    _settle(shouldOpen);
-  }
-
-  void _settle(bool open) {
     setState(() {
-      _open = open;
-      _offset = open ? -_actionWidth : 0;
+      _open = shouldOpen;
+      _offset = shouldOpen ? -_actionWidth : 0;
     });
-  }
-
-  void _toggle() {
-    if (_open) _settle(false);
   }
 
   @override
@@ -436,12 +425,8 @@ class _TransactionTileState extends State<_TransactionTile> {
                 padding: const EdgeInsets.only(right: 18),
                 child: AnimatedOpacity(
                   duration: const Duration(milliseconds: 100),
-                  opacity: _offset < -8 ? 1 : 0.35,
-                  child: const Icon(
-                    LucideIcons.trash2,
-                    color: AppColors.danger,
-                    size: 20,
-                  ),
+                  opacity: _offset < -8 ? 1 : .35,
+                  child: const Icon(LucideIcons.trash2, color: AppColors.danger, size: 20),
                 ),
               ),
             ),
@@ -454,7 +439,9 @@ class _TransactionTileState extends State<_TransactionTile> {
                 behavior: HitTestBehavior.opaque,
                 onHorizontalDragUpdate: _dragUpdate,
                 onHorizontalDragEnd: _dragEnd,
-                onTap: _toggle,
+                onTap: () {
+                  if (_open) setState(() { _open = false; _offset = 0; });
+                },
                 child: PremiumCard(
                   borderRadius: AppRadius.radiusXL,
                   padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
@@ -475,59 +462,22 @@ class _TransactionTileState extends State<_TransactionTile> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              item.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.labelMedium.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                            Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700)),
                             const SizedBox(height: 1),
                             Row(
                               children: [
-                                Flexible(
-                                  child: Text(
-                                    _categoryLabel(item.category),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTypography.caption,
-                                  ),
-                                ),
+                                Flexible(child: Text(_categoryLabel(item.category), maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption)),
                                 const SizedBox(width: 5),
-                                Container(
-                                  width: 3,
-                                  height: 3,
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.textMuted,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
+                                Container(width: 3, height: 3, decoration: const BoxDecoration(color: AppColors.textMuted, shape: BoxShape.circle)),
                                 const SizedBox(width: 5),
-                                Flexible(
-                                  child: Text(
-                                    DateFormat('dd MMM').format(item.date),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTypography.caption,
-                                  ),
-                                ),
+                                Flexible(child: Text(DateFormat('dd MMM').format(item.date), maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption)),
                               ],
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        '${item.isIncome ? '+' : '-'}${rupiah(item.amount)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.end,
-                        style: AppTypography.labelMedium.copyWith(
-                          color: color,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
+                      Text('${item.isIncome ? '+' : '-'}${rupiah(item.amount)}', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.end, style: AppTypography.labelMedium.copyWith(color: color, fontWeight: FontWeight.w800)),
                     ],
                   ),
                 ),
@@ -554,29 +504,13 @@ class _NoResults extends StatelessWidget {
             Container(
               width: 58,
               height: 58,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: .12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                LucideIcons.searchX,
-                color: AppColors.primaryLight,
-                size: 25,
-              ),
+              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .12), shape: BoxShape.circle),
+              child: const Icon(LucideIcons.searchX, color: AppColors.primaryLight, size: 25),
             ),
             const SizedBox(height: 12),
-            Text(
-              'Transaksi tidak ditemukan',
-              style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800),
-            ),
+            Text('Transaksi tidak ditemukan', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
-            Text(
-              query.isEmpty
-                  ? 'Belum ada transaksi pada filter ini.'
-                  : 'Coba gunakan kata kunci lain.',
-              textAlign: TextAlign.center,
-              style: AppTypography.caption,
-            ),
+            Text(query.isEmpty ? 'Belum ada transaksi pada filter ini.' : 'Coba gunakan kata kunci lain.', textAlign: TextAlign.center, style: AppTypography.caption),
           ],
         ),
       ),
@@ -585,12 +519,7 @@ class _NoResults extends StatelessWidget {
 }
 
 class _SheetOption extends StatelessWidget {
-  const _SheetOption({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
+  const _SheetOption({required this.label, required this.selected, required this.onTap});
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -601,66 +530,31 @@ class _SheetOption extends StatelessWidget {
       dense: true,
       contentPadding: EdgeInsets.zero,
       onTap: onTap,
-      title: Text(
-        label,
-        style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
-      ),
-      trailing: Icon(
-        selected ? LucideIcons.circleCheck : LucideIcons.circle,
-        size: 20,
-        color: selected ? AppColors.primaryLight : AppColors.textMuted,
-      ),
+      title: Text(label, style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600)),
+      trailing: Icon(selected ? LucideIcons.circleCheck : LucideIcons.circle, size: 20, color: selected ? AppColors.primaryLight : AppColors.textMuted),
     );
   }
 }
 
 IconData _icon(TransactionCategory c) => switch (c) {
-      TransactionCategory.food => LucideIcons.utensils,
-      TransactionCategory.transport => LucideIcons.car,
-      TransactionCategory.shopping => LucideIcons.shoppingBag,
-      TransactionCategory.salary => LucideIcons.wallet,
-      TransactionCategory.investment => LucideIcons.chartColumn,
-      TransactionCategory.bills => LucideIcons.receiptText,
-      TransactionCategory.entertainment => LucideIcons.gamepad2,
-      TransactionCategory.health => LucideIcons.heartPulse,
-      TransactionCategory.education => LucideIcons.graduationCap,
-      TransactionCategory.other => LucideIcons.circleDollarSign,
-    };
+  TransactionCategory.food => LucideIcons.utensils,
+  TransactionCategory.transport => LucideIcons.car,
+  TransactionCategory.shopping => LucideIcons.shoppingBag,
+  TransactionCategory.salary => LucideIcons.wallet,
+  TransactionCategory.investment => LucideIcons.chartColumn,
+  TransactionCategory.bills => LucideIcons.receiptText,
+  TransactionCategory.entertainment => LucideIcons.gamepad2,
+  TransactionCategory.health => LucideIcons.heartPulse,
+  TransactionCategory.education => LucideIcons.graduationCap,
+  TransactionCategory.other => LucideIcons.circleDollarSign,
+};
 
 List<TransactionModel> _extraTransactions() => [
-      TransactionModel(
-        id: '4',
-        title: 'Grab Bike',
-        amount: 27000,
-        type: TransactionType.expense,
-        category: TransactionCategory.transport,
-        date: DateTime.now(),
-      ),
-      TransactionModel(
-        id: '5',
-        title: 'Coffee',
-        amount: 18000,
-        type: TransactionType.expense,
-        category: TransactionCategory.food,
-        date: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-      TransactionModel(
-        id: '6',
-        title: 'Freelance Project',
-        amount: 3500000,
-        type: TransactionType.income,
-        category: TransactionCategory.investment,
-        date: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-      TransactionModel(
-        id: '7',
-        title: 'Monthly Groceries',
-        amount: 650000,
-        type: TransactionType.expense,
-        category: TransactionCategory.shopping,
-        date: DateTime.now().subtract(const Duration(days: 2)),
-      ),
-    ];
+  TransactionModel(id: '4', title: 'Grab Bike', amount: 27000, type: TransactionType.expense, category: TransactionCategory.transport, date: DateTime.now()),
+  TransactionModel(id: '5', title: 'Coffee', amount: 18000, type: TransactionType.expense, category: TransactionCategory.food, date: DateTime.now().subtract(const Duration(days: 1))),
+  TransactionModel(id: '6', title: 'Freelance Project', amount: 3500000, type: TransactionType.income, category: TransactionCategory.investment, date: DateTime.now().subtract(const Duration(days: 1))),
+  TransactionModel(id: '7', title: 'Monthly Groceries', amount: 650000, type: TransactionType.expense, category: TransactionCategory.shopping, date: DateTime.now().subtract(const Duration(days: 2))),
+];
 
 String _categoryLabel(TransactionCategory category) {
   final name = category.name;
