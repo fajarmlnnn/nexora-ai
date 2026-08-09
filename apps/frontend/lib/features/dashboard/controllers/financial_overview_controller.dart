@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../wallet/controllers/wallet_controller.dart';
+
 class FinancialGoalSnapshot {
   const FinancialGoalSnapshot({
     required this.id,
@@ -385,5 +387,41 @@ final installmentDueThisPeriodProvider = Provider<double>((ref) {
 });
 
 final activeInstallmentsProvider = Provider<List<InstallmentSnapshot>>((ref) {
-  return ref.watch(installmentsProvider).where((item) => item.remaining > 0).toList(growable: false);
+  return ref.watch(installmentsProvider)
+      .where((item) => item.remaining > 0)
+      .toList(growable: false);
+});
+
+class FinancialStateSnapshot {
+  const FinancialStateSnapshot({
+    required this.totalAssets,
+    required this.goalSaved,
+    required this.goalTarget,
+    required this.completedGoals,
+    required this.liabilities,
+    required this.dueThisPeriod,
+  });
+
+  final double totalAssets;
+  final double goalSaved;
+  final double goalTarget;
+  final int completedGoals;
+  final double liabilities;
+  final double dueThisPeriod;
+
+  double get netWorth => totalAssets - liabilities;
+  double get goalProgress => goalTarget <= 0 ? 0 : (goalSaved / goalTarget).clamp(0.0, 1.0);
+  double get available => totalAssets - goalSaved - dueThisPeriod;
+  double get debtRatio => totalAssets <= 0 ? 0 : liabilities / totalAssets;
+}
+
+final financialStateSnapshotProvider = Provider<FinancialStateSnapshot>((ref) {
+  return FinancialStateSnapshot(
+    totalAssets: ref.watch(totalWalletBalanceProvider),
+    goalSaved: ref.watch(totalGoalSavedProvider),
+    goalTarget: ref.watch(totalGoalTargetProvider),
+    completedGoals: ref.watch(completedGoalsProvider),
+    liabilities: ref.watch(totalInstallmentRemainingProvider),
+    dueThisPeriod: ref.watch(installmentDueThisPeriodProvider),
+  );
 });
