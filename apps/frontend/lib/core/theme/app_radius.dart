@@ -22,4 +22,6 @@ abstract final class AppRadius {
   static const BorderRadius radiusXL = BorderRadius.all(Radius.circular(xl));
 
   static const BorderRadius radiusXXL = BorderRadius.all(Radius.circular(xxl));
+
+  static const BorderRadius radiusPill = BorderRadius.all(Radius.circular(999));
 }
