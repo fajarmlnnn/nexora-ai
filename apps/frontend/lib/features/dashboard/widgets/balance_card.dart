@@ -44,11 +44,11 @@ class BalanceCard extends ConsumerWidget {
       (item) => item.isExpense,
     );
 
-    final changeText = trend.hasComparison
+    final balanceText = trend.hasComparison
         ? '${trend.changePercent >= 0 ? '+' : '-'}${trend.changePercent.abs().toStringAsFixed(1)}%'
         : 'Baru';
-    final changeSubtext = trend.hasComparison ? 'vs awal bulan' : 'Data baru';
-    final changeColor = trend.hasComparison
+    final balanceSubtext = trend.hasComparison ? 'vs awal bulan' : 'Data baru';
+    final balanceColor = trend.hasComparison
         ? (trend.changePercent >= 0 ? AppColors.success : AppColors.danger)
         : AppColors.primaryLight;
 
@@ -76,15 +76,15 @@ class BalanceCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        changeText,
+                        balanceText,
                         style: AppTypography.caption.copyWith(
-                          color: changeColor,
+                          color: balanceColor,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        changeSubtext,
+                        balanceSubtext,
                         style: AppTypography.caption.copyWith(
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
@@ -94,38 +94,26 @@ class BalanceCard extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Total Balance',
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            rupiah(balance),
-                            style: AppTypography.heading2.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+              const SizedBox(height: 12),
+              Text(
+                'Total Balance',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 3),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  rupiah(balance),
+                  style: AppTypography.heading2.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -.4,
                   ),
-                ],
+                ),
               ),
               const SizedBox(height: 10),
               _BalanceTrendChart(
@@ -204,7 +192,7 @@ class _BalanceHeader extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: .35),
+                  color: AppColors.primary.withValues(alpha: .25),
                   blurRadius: 8,
                 ),
               ],
@@ -232,7 +220,7 @@ class _BalanceTrendChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasEnoughData = points.length >= 2;
     return SizedBox(
-      height: 88,
+      height: 82,
       width: double.infinity,
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -265,8 +253,8 @@ class _BalanceTrendPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (points.isEmpty || size.width <= 0 || size.height <= 0) return;
 
-    final minValue = points.reduce(math.min);
-    final maxValue = points.reduce(math.max);
+    final minValue = math.min(0, points.reduce(math.min));
+    final maxValue = math.max(0, points.reduce(math.max));
     final range = (maxValue - minValue).abs() < 0.0001 ? 1.0 : (maxValue - minValue);
 
     const paddingX = 6.0;
@@ -296,6 +284,12 @@ class _BalanceTrendPainter extends CustomPainter {
       ..lineTo(offsets.first.dx, size.height - 1)
       ..close();
 
+    final zeroY = yForValue(0);
+    final baselinePaint = Paint()
+      ..color = Colors.white.withValues(alpha: .06)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
     final linePaint = Paint()
       ..color = accent
       ..style = PaintingStyle.stroke
@@ -309,15 +303,16 @@ class _BalanceTrendPainter extends CustomPainter {
       ..strokeWidth = 4.0
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.4);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
 
     final fillPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [accent.withValues(alpha: .16), accent.withValues(alpha: 0)],
+        colors: [accent.withValues(alpha: .14), accent.withValues(alpha: 0)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
+    canvas.drawLine(Offset(paddingX, zeroY), Offset(size.width - paddingX, zeroY), baselinePaint);
     canvas.drawPath(areaPath, fillPaint);
     canvas.drawPath(linePath, glowPaint);
     canvas.drawPath(linePath, linePaint);
@@ -326,10 +321,10 @@ class _BalanceTrendPainter extends CustomPainter {
     final dotPaint = Paint()..color = accent;
     final dotGlowPaint = Paint()
       ..color = accent.withValues(alpha: .22)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 
-    canvas.drawCircle(last, 5.6, dotGlowPaint);
-    canvas.drawCircle(last, 3.0, dotPaint);
+    canvas.drawCircle(last, 5.2, dotGlowPaint);
+    canvas.drawCircle(last, 2.8, dotPaint);
   }
 
   Path _buildSmoothPath(List<Offset> points) {
@@ -338,23 +333,22 @@ class _BalanceTrendPainter extends CustomPainter {
     }
 
     final path = Path()..moveTo(points.first.dx, points.first.dy);
-
     for (var i = 0; i < points.length - 1; i++) {
-      final p0 = i > 0 ? points[i - 1] : points[i];
-      final p1 = points[i];
-      final p2 = points[i + 1];
-      final p3 = i + 2 < points.length ? points[i + 2] : p2;
+      final current = points[i];
+      final next = points[i + 1];
+      final previous = i > 0 ? points[i - 1] : current;
+      final next2 = i + 2 < points.length ? points[i + 2] : next;
 
       final c1 = Offset(
-        p1.dx + (p2.dx - p0.dx) / 6,
-        p1.dy + (p2.dy - p0.dy) / 6,
+        current.dx + (next.dx - previous.dx) / 6,
+        current.dy + (next.dy - previous.dy) / 6,
       );
       final c2 = Offset(
-        p2.dx - (p3.dx - p1.dx) / 6,
-        p2.dy - (p3.dy - p1.dy) / 6,
+        next.dx - (next2.dx - current.dx) / 6,
+        next.dy - (next2.dy - current.dy) / 6,
       );
 
-      path.cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, p2.dx, p2.dy);
+      path.cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, next.dx, next.dy);
     }
 
     return path;
@@ -397,13 +391,13 @@ class _FinanceBubble extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 30,
-              height: 30,
+              width: 28,
+              height: 28,
               decoration: BoxDecoration(
                 color: accent.withValues(alpha: .08),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 15, color: accent),
+              child: Icon(icon, size: 14, color: accent),
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -449,48 +443,46 @@ class _FinanceBubble extends StatelessWidget {
 
 _BalanceTrend _buildBalanceTrend(List<TransactionModel> transactions, double currentBalance) {
   final now = DateUtils.dateOnly(DateTime.now());
-  final currentMonthTransactions = transactions
+  final monthTransactions = transactions.asMap().entries
       .where(
-        (item) =>
-            item.date.year == now.year &&
-            item.date.month == now.month &&
-            !item.isTransfer,
+        (entry) =>
+            entry.value.date.year == now.year &&
+            entry.value.date.month == now.month &&
+            !entry.value.isTransfer,
       )
+      .map((entry) => _IndexedTransaction(index: entry.key, transaction: entry.value))
       .toList()
-    ..sort((a, b) => a.date.compareTo(b.date));
+    ..sort((a, b) {
+      final dateCompare = a.transaction.date.compareTo(b.transaction.date);
+      if (dateCompare != 0) return dateCompare;
+      return a.index.compareTo(b.index);
+    });
 
-  final currentMonthIncome = currentMonthTransactions.fold<double>(
+  final currentMonthIncome = monthTransactions.fold<double>(
     0.0,
-    (sum, item) => sum + (item.isIncome ? item.amount : 0.0),
+    (sum, item) => sum + (item.transaction.isIncome ? item.transaction.amount : 0.0),
   );
-  final currentMonthExpense = currentMonthTransactions.fold<double>(
+  final currentMonthExpense = monthTransactions.fold<double>(
     0.0,
-    (sum, item) => sum + (item.isExpense ? item.amount : 0.0),
+    (sum, item) => sum + (item.transaction.isExpense ? item.transaction.amount : 0.0),
   );
 
   final monthStartBalance = currentBalance - currentMonthIncome + currentMonthExpense;
-  final monthBase = monthStartBalance <= 0 ? currentBalance : monthStartBalance;
-  final changePercent = monthBase <= 0
-      ? 0.0
-      : ((currentBalance - monthBase) / monthBase) * 100;
+  final comparisonBase = monthStartBalance.abs() < 1 ? currentBalance : monthStartBalance;
+  final changePercent = comparisonBase <= 0
+      ? (currentBalance > 0 ? 100.0 : 0.0)
+      : ((currentBalance - monthStartBalance) / comparisonBase) * 100;
 
-  final dailyDeltas = <int, double>{};
-  for (final transaction in currentMonthTransactions) {
-    final delta = transaction.isIncome
-        ? transaction.amount
-        : transaction.isExpense
-            ? -transaction.amount
+  final points = <double>[monthStartBalance];
+  var running = monthStartBalance;
+  for (final item in monthTransactions) {
+    final delta = item.transaction.isIncome
+        ? item.transaction.amount
+        : item.transaction.isExpense
+            ? -item.transaction.amount
             : 0.0;
-    dailyDeltas[transaction.date.day] =
-        (dailyDeltas[transaction.date.day] ?? 0.0) + delta;
-  }
-
-  final points = <double>[];
-  var balance = monthBase;
-  final dayCount = now.day < 2 ? 2 : now.day;
-  for (var day = 1; day <= dayCount; day++) {
-    balance += dailyDeltas[day] ?? 0.0;
-    points.add(balance);
+    running += delta;
+    points.add(running);
   }
 
   if (points.length == 1) {
@@ -498,7 +490,7 @@ _BalanceTrend _buildBalanceTrend(List<TransactionModel> transactions, double cur
   }
 
   return _BalanceTrend(
-    previousBalance: monthBase,
+    previousBalance: monthStartBalance,
     changePercent: changePercent,
     points: List<double>.unmodifiable(points),
   );
@@ -519,7 +511,9 @@ double _compareMonthlyPercent(
     predicate,
   );
 
-  if (previous <= 0) return 0.0;
+  if (previous <= 0) {
+    return current > 0 ? 100.0 : 0.0;
+  }
   return ((current - previous) / previous) * 100;
 }
 
@@ -559,4 +553,11 @@ class _BalanceTrend {
   final List<double> points;
 
   bool get hasComparison => previousBalance > 0;
+}
+
+class _IndexedTransaction {
+  const _IndexedTransaction({required this.index, required this.transaction});
+
+  final int index;
+  final TransactionModel transaction;
 }
