@@ -8,6 +8,8 @@ import '../models/dashboard_data.dart';
 import '../models/dashboard_summary.dart';
 import '../models/transaction_model.dart';
 
+export '../../budget/controllers/budget_controller.dart' show budgetItemsProvider;
+
 final financialTransactionsProvider = Provider<List<TransactionModel>>((ref) {
   return ref.watch(financialTransactionStoreProvider);
 });
