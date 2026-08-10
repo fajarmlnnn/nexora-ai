@@ -30,22 +30,27 @@ class BalanceCard extends ConsumerWidget {
     final transactions = ref.watch(financialTransactionsProvider);
 
     final trend = _buildBalanceTrend(transactions, balance);
-    final today = DateUtils.dateOnly(DateTime.now());
-    final yesterday = today.subtract(const Duration(days: 1));
-
-    final dailyIncomeChange = _comparePercent(
-      _sumForDay(transactions, today, (item) => item.isIncome),
-      _sumForDay(transactions, yesterday, (item) => item.isIncome),
+    final now = DateUtils.dateOnly(DateTime.now());
+    final monthlyIncomeChange = _compareMonthlyPercent(
+      transactions,
+      now.year,
+      now.month,
+      (item) => item.isIncome,
     );
-    final dailyExpenseChange = _comparePercent(
-      _sumForDay(transactions, today, (item) => item.isExpense),
-      _sumForDay(transactions, yesterday, (item) => item.isExpense),
+    final monthlyExpenseChange = _compareMonthlyPercent(
+      transactions,
+      now.year,
+      now.month,
+      (item) => item.isExpense,
     );
 
-    final balancePillColor = trend.changePercent >= 0
-        ? AppColors.success
-        : AppColors.danger;
-    final balancePillText = _formatPercent(trend.changePercent);
+    final changeText = trend.hasComparison
+        ? '${trend.changePercent >= 0 ? '+' : '-'}${trend.changePercent.abs().toStringAsFixed(1)}%'
+        : 'Baru';
+    final changeSubtext = trend.hasComparison ? 'vs awal bulan' : 'Data baru';
+    final changeColor = trend.hasComparison
+        ? (trend.changePercent >= 0 ? AppColors.success : AppColors.danger)
+        : AppColors.primaryLight;
 
     return Material(
       color: Colors.transparent,
@@ -59,54 +64,83 @@ class BalanceCard extends ConsumerWidget {
             colors: [Color(0xFF171525), Color(0xFF12121C), Color(0xFF0D0E15)],
           ),
           showBorder: true,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      'Total Balance',
-                      style: AppTypography.labelLarge.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w700,
+                  const _BalanceHeader(),
+                  const Spacer(),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        changeText,
+                        style: AppTypography.caption.copyWith(
+                          color: changeColor,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 2),
+                      Text(
+                        changeSubtext,
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                  _PercentPill(
-                    text: balancePillText,
-                    color: balancePillColor,
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Total Balance',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            rupiah(balance),
+                            style: AppTypography.heading2.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  rupiah(balance),
-                  style: AppTypography.heading2.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -.4,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
               _BalanceTrendChart(
                 points: trend.points,
                 accent: AppColors.primaryLight,
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               Row(
                 children: [
                   Expanded(
                     child: _FinanceBubble(
                       title: 'Income',
                       value: rupiah(summary.monthlyIncome),
-                      trendText: _formatPercent(dailyIncomeChange),
-                      trendColor: dailyIncomeChange >= 0
+                      trendText: _formatPercent(monthlyIncomeChange),
+                      trendColor: monthlyIncomeChange >= 0
                           ? AppColors.success
                           : AppColors.danger,
                       icon: Icons.arrow_downward_rounded,
@@ -118,8 +152,8 @@ class BalanceCard extends ConsumerWidget {
                     child: _FinanceBubble(
                       title: 'Expense',
                       value: rupiah(summary.monthlyExpense),
-                      trendText: _formatPercent(dailyExpenseChange),
-                      trendColor: dailyExpenseChange >= 0
+                      trendText: _formatPercent(monthlyExpenseChange),
+                      trendColor: monthlyExpenseChange >= 0
                           ? AppColors.danger
                           : AppColors.success,
                       icon: Icons.arrow_upward_rounded,
@@ -128,7 +162,7 @@ class BalanceCard extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -155,27 +189,36 @@ class BalanceCard extends ConsumerWidget {
   }
 }
 
-class _PercentPill extends StatelessWidget {
-  const _PercentPill({required this.text, required this.color});
-
-  final String text;
-  final Color color;
+class _BalanceHeader extends StatelessWidget {
+  const _BalanceHeader();
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: .08),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: color.withValues(alpha: .16)),
-        ),
-        child: Text(
-          text,
-          style: AppTypography.caption.copyWith(
-            color: color,
-            fontWeight: FontWeight.w800,
+  Widget build(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: .35),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
           ),
-        ),
+          const SizedBox(width: 8),
+          Text(
+            'Financial Overview',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       );
 }
 
@@ -189,16 +232,16 @@ class _BalanceTrendChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasEnoughData = points.length >= 2;
     return SizedBox(
-      height: 104,
+      height: 88,
       width: double.infinity,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: .03),
+          color: Colors.white.withValues(alpha: .02),
           borderRadius: AppRadius.radiusLG,
-          border: Border.all(color: Colors.white.withValues(alpha: .05)),
+          border: Border.all(color: Colors.white.withValues(alpha: .04)),
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 7),
           child: CustomPaint(
             painter: _BalanceTrendPainter(
               points: hasEnoughData ? points : const [0, 0],
@@ -226,8 +269,8 @@ class _BalanceTrendPainter extends CustomPainter {
     final maxValue = points.reduce(math.max);
     final range = (maxValue - minValue).abs() < 0.0001 ? 1.0 : (maxValue - minValue);
 
-    const paddingX = 8.0;
-    const paddingY = 8.0;
+    const paddingX = 6.0;
+    const paddingY = 6.0;
     final drawableWidth = math.max(size.width - paddingX * 2, 1);
     final drawableHeight = math.max(size.height - paddingY * 2, 1);
 
@@ -241,65 +284,80 @@ class _BalanceTrendPainter extends CustomPainter {
       return paddingY + (drawableHeight - (normalized * drawableHeight));
     }
 
+    final offsets = List<Offset>.generate(
+      points.length,
+      (index) => Offset(xForIndex(index), yForValue(points[index])),
+    );
+
+    final linePath = _buildSmoothPath(offsets);
+    final areaPath = Path()
+      ..addPath(linePath, Offset.zero)
+      ..lineTo(offsets.last.dx, size.height - 1)
+      ..lineTo(offsets.first.dx, size.height - 1)
+      ..close();
+
     final linePaint = Paint()
       ..color = accent
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.4
+      ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.6);
+      ..strokeJoin = StrokeJoin.round;
 
     final glowPaint = Paint()
-      ..color = accent.withValues(alpha: .24)
+      ..color = accent.withValues(alpha: .14)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 6.5
+      ..strokeWidth = 4.0
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-
-    final areaPath = Path();
-    final linePath = Path();
-
-    final start = Offset(xForIndex(0), yForValue(points.first));
-    linePath.moveTo(start.dx, start.dy);
-    areaPath.moveTo(start.dx, size.height - 2);
-    areaPath.lineTo(start.dx, start.dy);
-
-    for (var i = 1; i < points.length; i++) {
-      final point = Offset(xForIndex(i), yForValue(points[i]));
-      final previous = Offset(xForIndex(i - 1), yForValue(points[i - 1]));
-      final midX = (previous.dx + point.dx) / 2;
-      final midY = (previous.dy + point.dy) / 2;
-
-      linePath.quadraticBezierTo(previous.dx, previous.dy, midX, midY);
-      areaPath.quadraticBezierTo(previous.dx, previous.dy, midX, midY);
-      linePath.quadraticBezierTo(midX, midY, point.dx, point.dy);
-      areaPath.quadraticBezierTo(midX, midY, point.dx, point.dy);
-    }
-
-    areaPath
-      ..lineTo(xForIndex(points.length - 1), size.height - 2)
-      ..close();
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.4);
 
     final fillPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [accent.withValues(alpha: .30), accent.withValues(alpha: 0)],
+        colors: [accent.withValues(alpha: .16), accent.withValues(alpha: 0)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     canvas.drawPath(areaPath, fillPaint);
     canvas.drawPath(linePath, glowPaint);
     canvas.drawPath(linePath, linePaint);
 
-    final last = Offset(xForIndex(points.length - 1), yForValue(points.last));
+    final last = offsets.last;
     final dotPaint = Paint()..color = accent;
     final dotGlowPaint = Paint()
-      ..color = accent.withValues(alpha: .28)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+      ..color = accent.withValues(alpha: .22)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
 
-    canvas.drawCircle(last, 7.5, dotGlowPaint);
-    canvas.drawCircle(last, 3.8, dotPaint);
+    canvas.drawCircle(last, 5.6, dotGlowPaint);
+    canvas.drawCircle(last, 3.0, dotPaint);
+  }
+
+  Path _buildSmoothPath(List<Offset> points) {
+    if (points.length < 2) {
+      return Path()..moveTo(points.first.dx, points.first.dy);
+    }
+
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+
+    for (var i = 0; i < points.length - 1; i++) {
+      final p0 = i > 0 ? points[i - 1] : points[i];
+      final p1 = points[i];
+      final p2 = points[i + 1];
+      final p3 = i + 2 < points.length ? points[i + 2] : p2;
+
+      final c1 = Offset(
+        p1.dx + (p2.dx - p0.dx) / 6,
+        p1.dy + (p2.dy - p0.dy) / 6,
+      );
+      final c2 = Offset(
+        p2.dx - (p3.dx - p1.dx) / 6,
+        p2.dy - (p3.dy - p1.dy) / 6,
+      );
+
+      path.cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, p2.dx, p2.dy);
+    }
+
+    return path;
   }
 
   @override
@@ -327,27 +385,27 @@ class _FinanceBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: .035),
+          color: Colors.white.withValues(alpha: .03),
           borderRadius: AppRadius.radiusLG,
           border: Border.all(
-            color: Colors.white.withValues(alpha: .055),
+            color: Colors.white.withValues(alpha: .05),
           ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 32,
-              height: 32,
+              width: 30,
+              height: 30,
               decoration: BoxDecoration(
-                color: accent.withValues(alpha: .09),
+                color: accent.withValues(alpha: .08),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 16, color: accent),
+              child: Icon(icon, size: 15, color: accent),
             ),
-            const SizedBox(width: 9),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,7 +419,7 @@ class _FinanceBubble extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
@@ -373,7 +431,7 @@ class _FinanceBubble extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
                     trendText,
                     style: AppTypography.caption.copyWith(
@@ -411,20 +469,27 @@ _BalanceTrend _buildBalanceTrend(List<TransactionModel> transactions, double cur
   );
 
   final monthStartBalance = currentBalance - currentMonthIncome + currentMonthExpense;
-  final todayIncome = _sumForDay(transactions, now, (item) => item.isIncome);
-  final todayExpense = _sumForDay(transactions, now, (item) => item.isExpense);
-  final previousBalance = currentBalance - todayIncome + todayExpense;
-  final changePercent = _comparePercent(currentBalance, previousBalance);
+  final monthBase = monthStartBalance <= 0 ? currentBalance : monthStartBalance;
+  final changePercent = monthBase <= 0
+      ? 0.0
+      : ((currentBalance - monthBase) / monthBase) * 100;
 
-  final points = <double>[monthStartBalance];
-  var balance = monthStartBalance;
+  final dailyDeltas = <int, double>{};
   for (final transaction in currentMonthTransactions) {
     final delta = transaction.isIncome
         ? transaction.amount
         : transaction.isExpense
             ? -transaction.amount
             : 0.0;
-    balance += delta;
+    dailyDeltas[transaction.date.day] =
+        (dailyDeltas[transaction.date.day] ?? 0.0) + delta;
+  }
+
+  final points = <double>[];
+  var balance = monthBase;
+  final dayCount = now.day < 2 ? 2 : now.day;
+  for (var day = 1; day <= dayCount; day++) {
+    balance += dailyDeltas[day] ?? 0.0;
     points.add(balance);
   }
 
@@ -433,30 +498,47 @@ _BalanceTrend _buildBalanceTrend(List<TransactionModel> transactions, double cur
   }
 
   return _BalanceTrend(
-    previousBalance: previousBalance,
+    previousBalance: monthBase,
     changePercent: changePercent,
     points: List<double>.unmodifiable(points),
   );
 }
 
-double _sumForDay(
+double _compareMonthlyPercent(
   List<TransactionModel> transactions,
-  DateTime day,
+  int year,
+  int month,
   bool Function(TransactionModel transaction) predicate,
 ) {
-  return transactions.fold<double>(
-    0.0,
-    (sum, item) => _sameDay(item.date, day) && predicate(item) ? sum + item.amount : sum,
+  final current = _sumForMonth(transactions, year, month, predicate);
+  final previousDate = DateTime(year, month - 1);
+  final previous = _sumForMonth(
+    transactions,
+    previousDate.year,
+    previousDate.month,
+    predicate,
   );
-}
 
-double _comparePercent(double current, double previous) {
   if (previous <= 0) return 0.0;
   return ((current - previous) / previous) * 100;
 }
 
-bool _sameDay(DateTime a, DateTime b) {
-  return a.year == b.year && a.month == b.month && a.day == b.day;
+double _sumForMonth(
+  List<TransactionModel> transactions,
+  int year,
+  int month,
+  bool Function(TransactionModel transaction) predicate,
+) {
+  return transactions.fold<double>(
+    0.0,
+    (sum, item) =>
+        item.date.year == year &&
+        item.date.month == month &&
+        !item.isTransfer &&
+        predicate(item)
+            ? sum + item.amount
+            : sum,
+  );
 }
 
 String _formatPercent(double value) {
@@ -475,4 +557,6 @@ class _BalanceTrend {
   final double previousBalance;
   final double changePercent;
   final List<double> points;
+
+  bool get hasComparison => previousBalance > 0;
 }
