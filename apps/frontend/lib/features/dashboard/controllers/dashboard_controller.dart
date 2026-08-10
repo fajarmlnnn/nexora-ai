@@ -56,7 +56,7 @@ final dashboardProvider = FutureProvider<DashboardData>((ref) async {
   );
 });
 
-final aiInsightProvider = FutureProvider<AIInsight>((ref) async {
+final aiInsightProvider = Provider<AIInsight>((ref) {
   final transactions = ref.watch(financialTransactionsProvider);
   return _buildRealDataInsight(transactions);
 });
@@ -71,12 +71,15 @@ AIInsight _buildRealDataInsight(List<TransactionModel> transactions) {
   }
 
   final now = DateTime.now();
-  final currentMonth = transactions.where((item) =>
-      item.date.year == now.year && item.date.month == now.month);
+  final currentMonth = transactions.where(
+    (item) => item.date.year == now.year && item.date.month == now.month,
+  );
   final previousMonthDate = DateTime(now.year, now.month - 1);
-  final previousMonth = transactions.where((item) =>
-      item.date.year == previousMonthDate.year &&
-      item.date.month == previousMonthDate.month);
+  final previousMonth = transactions.where(
+    (item) =>
+        item.date.year == previousMonthDate.year &&
+        item.date.month == previousMonthDate.month,
+  );
 
   final currentExpense = currentMonth.fold<double>(
     0,
@@ -106,14 +109,16 @@ AIInsight _buildRealDataInsight(List<TransactionModel> transactions) {
   if (currentIncome > 0 && currentExpense == 0) {
     return const AIInsight(
       title: 'Nexora AI Insight',
-      message: 'Belum ada pengeluaran bulan ini. Insight perbandingan akan tersedia setelah data pengeluaran tercatat.',
+      message:
+          'Belum ada pengeluaran bulan ini. Insight perbandingan akan tersedia setelah data pengeluaran tercatat.',
       level: InsightLevel.positive,
     );
   }
 
   return const AIInsight(
     title: 'Nexora AI Insight',
-    message: 'Belum cukup data historis untuk membuat perbandingan. Lanjutkan pencatatan transaksi agar insight semakin akurat.',
+    message:
+        'Belum cukup data historis untuk membuat perbandingan. Lanjutkan pencatatan transaksi agar insight semakin akurat.',
     level: InsightLevel.positive,
   );
 }
