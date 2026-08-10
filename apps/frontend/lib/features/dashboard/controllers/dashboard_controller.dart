@@ -1,17 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../budget/controllers/budget_controller.dart';
 import '../../finance/state/financial_transaction_store.dart';
 import '../../wallet/controllers/wallet_controller.dart';
 import '../models/ai_insight.dart';
-import '../models/budget_item.dart';
 import '../models/dashboard_data.dart';
 import '../models/dashboard_summary.dart';
 import '../models/transaction_model.dart';
-import '../repositories/dashboard_repository.dart';
-
-final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
-  return const DashboardRepository();
-});
 
 final financialTransactionsProvider = Provider<List<TransactionModel>>((ref) {
   return ref.watch(financialTransactionStoreProvider);
@@ -25,8 +20,8 @@ final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
     totalBalance: totalBalance,
     monthlyIncome: transactions.monthlyIncome,
     monthlyExpense: transactions.monthlyExpense,
-    monthlyBudget: 0,
-    budgetUsed: 0,
+    monthlyBudget: ref.watch(totalBudgetLimitProvider),
+    budgetUsed: ref.watch(totalBudgetSpentProvider),
     currency: 'IDR',
     lastUpdated: DateTime.now(),
   );
@@ -37,11 +32,6 @@ final recentTransactionsProvider = FutureProvider<List<TransactionModel>>((ref) 
   final sorted = [...transactions]
     ..sort((a, b) => b.date.compareTo(a.date));
   return sorted;
-});
-
-final budgetItemsProvider = FutureProvider<List<BudgetItem>>((ref) async {
-  final repository = ref.watch(dashboardRepositoryProvider);
-  return repository.getBudgetItems();
 });
 
 final dashboardProvider = FutureProvider<DashboardData>((ref) async {
