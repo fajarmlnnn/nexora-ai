@@ -19,7 +19,7 @@ class BudgetPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final budgetsAsync = ref.watch(budgetItemsProvider);
-    final insightAsync = ref.watch(aiInsightProvider);
+    final insight = ref.watch(aiInsightProvider);
 
     return PremiumScaffold(
       child: budgetsAsync.when(
@@ -76,11 +76,7 @@ class BudgetPage extends ConsumerWidget {
             AppSpacing.gapLG,
             _SpendingBreakdown(items: items),
             AppSpacing.gapLG,
-            insightAsync.when(
-              loading: () => const ShimmerSkeleton(height: 104),
-              error: (_, _) => const SizedBox.shrink(),
-              data: (insight) => _NexoraBudgetInsight(insight: insight),
-            ),
+            _NexoraBudgetInsight(insight: insight),
           ],
         ),
       ),
