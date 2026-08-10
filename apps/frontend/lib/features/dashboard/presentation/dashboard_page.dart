@@ -38,9 +38,7 @@ class DashboardPage extends ConsumerWidget {
           ),
         ),
         data: (summary) => SingleChildScrollView(
-          padding: AppSpacing.screen.copyWith(
-            bottom: AppSpacing.bottomNav(context),
-          ),
+          padding: AppSpacing.screen.copyWith(bottom: AppSpacing.bottomNav(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -54,7 +52,7 @@ class DashboardPage extends ConsumerWidget {
                   onTap: () => context.push('/financial-overview'),
                 ),
               ),
-              AppSpacing.gapLG,
+              AppSpacing.gapMD,
               PremiumEntrance(
                 delay: const Duration(milliseconds: 150),
                 child: AIInsightCard(insight: insight),
@@ -68,27 +66,23 @@ class DashboardPage extends ConsumerWidget {
               PremiumEntrance(
                 delay: const Duration(milliseconds: 250),
                 child: budgetAsync.when(
-                  loading: () => const SizedBox.shrink(),
-                  error: (error, stackTrace) => const SizedBox.shrink(),
-                  data: (items) => items.isEmpty
-                      ? const SizedBox.shrink()
-                      : BudgetSummaryCard(items: items),
+                  loading: () => const ShimmerSkeleton(height: 180),
+                  error: (error, stackTrace) => const BudgetSummaryCard(items: []),
+                  data: (items) => BudgetSummaryCard(items: items),
                 ),
               ),
               AppSpacing.gapMD,
               PremiumEntrance(
                 delay: const Duration(milliseconds: 300),
                 child: transactionsAsync.when(
-                  loading: () => const ShimmerSkeleton(height: 190),
+                  loading: () => const ShimmerSkeleton(height: 205),
                   error: (error, stackTrace) => EmptyStateCard(
                     icon: LucideIcons.triangleAlert,
                     title: 'Transaksi belum tersedia',
                     message: error.toString(),
                     action: 'Coba Lagi',
                   ),
-                  data: (transactions) => RecentTransactionCard(
-                    transactions: transactions,
-                  ),
+                  data: (transactions) => RecentTransactionCard(transactions: transactions),
                 ),
               ),
             ],
@@ -104,33 +98,19 @@ class _DashboardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
-        padding: AppSpacing.screen.copyWith(
-          bottom: AppSpacing.bottomNav(context),
-        ),
+        padding: AppSpacing.screen.copyWith(bottom: AppSpacing.bottomNav(context)),
         child: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             PremiumEntrance(child: ShimmerSkeleton(width: 150, height: 26)),
             SizedBox(height: 18),
-            PremiumEntrance(
-              delay: Duration(milliseconds: 50),
-              child: ShimmerSkeleton(height: 270),
-            ),
+            PremiumEntrance(delay: Duration(milliseconds: 50), child: ShimmerSkeleton(height: 270)),
             SizedBox(height: 18),
-            PremiumEntrance(
-              delay: Duration(milliseconds: 150),
-              child: ShimmerSkeleton(height: 150),
-            ),
+            PremiumEntrance(delay: Duration(milliseconds: 150), child: ShimmerSkeleton(height: 150)),
             SizedBox(height: 18),
-            PremiumEntrance(
-              delay: Duration(milliseconds: 200),
-              child: ShimmerSkeleton(height: 110),
-            ),
+            PremiumEntrance(delay: Duration(milliseconds: 200), child: ShimmerSkeleton(height: 110)),
             SizedBox(height: 14),
-            PremiumEntrance(
-              delay: Duration(milliseconds: 300),
-              child: ShimmerSkeleton(height: 190),
-            ),
+            PremiumEntrance(delay: Duration(milliseconds: 300), child: ShimmerSkeleton(height: 190)),
           ],
         ),
       );
