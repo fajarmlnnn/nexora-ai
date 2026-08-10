@@ -78,16 +78,16 @@ AIInsight _buildRealDataInsight(List<TransactionModel> transactions) {
   );
 
   final currentExpense = currentMonth.fold<double>(
-    0,
-    (sum, item) => sum + (item.isExpense ? item.amount : 0),
+    0.0,
+    (sum, item) => sum + (item.isExpense ? item.amount : 0.0),
   );
   final previousExpense = previousMonth.fold<double>(
-    0,
-    (sum, item) => sum + (item.isExpense ? item.amount : 0),
+    0.0,
+    (sum, item) => sum + (item.isExpense ? item.amount : 0.0),
   );
   final currentIncome = currentMonth.fold<double>(
-    0,
-    (sum, item) => sum + (item.isIncome ? item.amount : 0),
+    0.0,
+    (sum, item) => sum + (item.isIncome ? item.amount : 0.0),
   );
 
   if (previousExpense > 0) {
@@ -132,17 +132,17 @@ _BalanceTrend _buildBalanceTrend(
     ..sort((a, b) => a.date.compareTo(b.date));
 
   final currentMonthIncome = currentMonthTransactions.fold<double>(
-    0,
-    (sum, item) => sum + (item.isIncome ? item.amount : 0),
+    0.0,
+    (sum, item) => sum + (item.isIncome ? item.amount : 0.0),
   );
   final currentMonthExpense = currentMonthTransactions.fold<double>(
-    0,
-    (sum, item) => sum + (item.isExpense ? item.amount : 0),
+    0.0,
+    (sum, item) => sum + (item.isExpense ? item.amount : 0.0),
   );
 
   final previousBalance = currentBalance - currentMonthIncome + currentMonthExpense;
   final changePercent = previousBalance <= 0
-      ? 0
+      ? 0.0
       : ((currentBalance - previousBalance) / previousBalance) * 100;
 
   final dailyDeltas = <int, double>{};
@@ -151,16 +151,16 @@ _BalanceTrend _buildBalanceTrend(
         ? transaction.amount
         : transaction.isExpense
             ? -transaction.amount
-            : 0;
+            : 0.0;
     dailyDeltas[transaction.date.day] =
-        (dailyDeltas[transaction.date.day] ?? 0) + delta;
+        (dailyDeltas[transaction.date.day] ?? 0.0) + delta;
   }
 
   var balance = previousBalance;
   final points = <double>[];
   final dayCount = now.day < 2 ? 2 : now.day;
   for (var day = 1; day <= dayCount; day++) {
-    balance += dailyDeltas[day] ?? 0;
+    balance += dailyDeltas[day] ?? 0.0;
     points.add(balance);
   }
 
