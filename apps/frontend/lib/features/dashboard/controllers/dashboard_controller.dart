@@ -56,7 +56,7 @@ final dashboardProvider = FutureProvider<DashboardData>((ref) async {
   );
 });
 
-final aiInsightProvider = Provider<AIInsight>((ref) {
+final aiInsightProvider = FutureProvider<AIInsight>((ref) async {
   final transactions = ref.watch(financialTransactionsProvider);
   return _buildRealDataInsight(transactions);
 });
