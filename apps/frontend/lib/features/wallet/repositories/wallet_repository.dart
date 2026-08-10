@@ -16,7 +16,7 @@ abstract interface class WalletRepository {
 class MockWalletRepository implements WalletRepository {
   MockWalletRepository();
 
-  final List<WalletModel> _wallets = [
+  List<WalletModel> _wallets = <WalletModel>[
     WalletModel(
       id: 'wallet_bca',
       name: 'BCA Utama',
@@ -59,14 +59,12 @@ class MockWalletRepository implements WalletRepository {
   @override
   Future<List<WalletModel>> getWallets() async {
     await _simulateDelay();
-
     return List<WalletModel>.unmodifiable(_wallets);
   }
 
   @override
   Future<WalletModel> getWallet(String id) async {
     await _simulateDelay();
-
     return _findWallet(id);
   }
 
@@ -78,7 +76,9 @@ class MockWalletRepository implements WalletRepository {
       throw StateError('Wallet dengan id "${wallet.id}" sudah ada.');
     }
 
-    _wallets.add(wallet);
+    // Jangan pernah mutate list yang mungkin berasal dari state/UI.
+    // Buat salinan growable sebelum menambahkan item.
+    _wallets = List<WalletModel>.from(_wallets)..add(wallet);
 
     return wallet;
   }
@@ -93,7 +93,9 @@ class MockWalletRepository implements WalletRepository {
       throw StateError('Wallet dengan id "${wallet.id}" tidak ditemukan.');
     }
 
-    _wallets[index] = wallet;
+    final updated = List<WalletModel>.from(_wallets);
+    updated[index] = wallet;
+    _wallets = updated;
 
     return wallet;
   }
@@ -108,7 +110,8 @@ class MockWalletRepository implements WalletRepository {
       throw StateError('Wallet dengan id "$id" tidak ditemukan.');
     }
 
-    _wallets.removeAt(index);
+    final updated = List<WalletModel>.from(_wallets)..removeAt(index);
+    _wallets = updated;
   }
 
   WalletModel _findWallet(String id) {
