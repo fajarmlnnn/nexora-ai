@@ -7,10 +7,11 @@ import '../repositories/wallet_repository.dart';
 
 /// Repository dependency.
 ///
-/// Saat backend Supabase siap, repository bisa diganti tanpa
-/// perlu mengubah widget Wallet.
+/// Wallet data is now backed by persistent local storage. The repository
+/// boundary stays intact so it can later be replaced by Supabase/API storage
+/// without changing the Wallet UI.
 final walletRepositoryProvider = Provider<WalletRepository>((ref) {
-  return MockWalletRepository();
+  return LocalWalletRepository();
 });
 
 /// Main wallet state.
