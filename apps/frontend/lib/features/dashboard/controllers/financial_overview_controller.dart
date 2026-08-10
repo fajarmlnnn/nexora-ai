@@ -125,67 +125,12 @@ class InstallmentSnapshot {
 const _goalsStorageKey = 'nexora_financial_goals_v1';
 const _installmentsStorageKey = 'nexora_installments_v1';
 
-List<FinancialGoalSnapshot> _defaultGoals() => const [
-      FinancialGoalSnapshot(
-        id: 'emergency-fund',
-        title: 'Dana Darurat',
-        type: 'Saving',
-        saved: 10000000,
-        target: 50000000,
-        icon: LucideIcons.shieldCheck,
-      ),
-      FinancialGoalSnapshot(
-        id: 'japan-trip',
-        title: 'Liburan ke Jepang',
-        type: 'Saving',
-        saved: 7000000,
-        target: 20000000,
-        icon: LucideIcons.plane,
-      ),
-      FinancialGoalSnapshot(
-        id: 'spaylater',
-        title: 'SPayLater',
-        type: 'Debt',
-        saved: 1250000,
-        target: 2500000,
-        icon: LucideIcons.creditCard,
-      ),
-      FinancialGoalSnapshot(
-        id: 'home-down-payment',
-        title: 'DP Rumah',
-        type: 'Wishlist',
-        saved: 18000000,
-        target: 60000000,
-        icon: LucideIcons.house,
-      ),
-    ];
-
-List<InstallmentSnapshot> _defaultInstallments() => const [
-      InstallmentSnapshot(
-        id: 'spaylater',
-        title: 'SPayLater',
-        monthlyAmount: 250000,
-        remaining: 1250000,
-        dueInDays: 3,
-        isPaid: false,
-      ),
-      InstallmentSnapshot(
-        id: 'motorcycle',
-        title: 'Kredit Motor',
-        monthlyAmount: 850000,
-        remaining: 6800000,
-        dueInDays: 11,
-        isPaid: false,
-      ),
-      InstallmentSnapshot(
-        id: 'laptop',
-        title: 'Kredit Laptop',
-        monthlyAmount: 600000,
-        remaining: 1200000,
-        dueInDays: 0,
-        isPaid: true,
-      ),
-    ];
+const _legacyDemoGoalIds = {
+  'emergency-fund',
+  'japan-trip',
+  'spaylater',
+  'home-down-payment',
+};
 
 IconData _goalIcon(String id) {
   switch (id) {
@@ -210,24 +155,36 @@ final financialGoalsProvider =
 class FinancialGoalsController extends Notifier<List<FinancialGoalSnapshot>> {
   @override
   List<FinancialGoalSnapshot> build() {
-    final initial = _defaultGoals();
-    _restore(initial);
-    return initial;
+    _restore();
+    return const [];
   }
 
-  Future<void> _restore(List<FinancialGoalSnapshot> fallback) async {
+  Future<void> _restore() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_goalsStorageKey);
     if (raw == null || raw.isEmpty) return;
+
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;
-      state = List.unmodifiable(
-        decoded.map((item) => FinancialGoalSnapshot.fromJson(
+      final loaded = decoded
+          .map(
+            (item) => FinancialGoalSnapshot.fromJson(
               Map<String, dynamic>.from(item as Map),
-            )),
-      );
+            ),
+          )
+          .where((goal) => !_legacyDemoGoalIds.contains(goal.id))
+          .toList(growable: false);
+
+      state = List.unmodifiable(loaded);
+
+      // Migrate old demo records out of persistent storage so they cannot
+      // reappear after a restart. New installs start with an empty goal list.
+      if (loaded.length != decoded.length) {
+        await _persist();
+      }
     } catch (_) {
-      state = List.unmodifiable(fallback);
+      state = const [];
+      await _persist();
     }
   }
 
@@ -239,17 +196,17 @@ class FinancialGoalsController extends Notifier<List<FinancialGoalSnapshot>> {
     );
   }
 
-  void replaceGoals(List<FinancialGoalSnapshot> goals) {
+  Future<void> replaceGoals(List<FinancialGoalSnapshot> goals) async {
     state = List.unmodifiable(goals);
-    _persist();
+    await _persist();
   }
 
-  void addGoal(FinancialGoalSnapshot goal) {
+  Future<void> addGoal(FinancialGoalSnapshot goal) async {
     state = List.unmodifiable([...state, goal]);
-    _persist();
+    await _persist();
   }
 
-  bool contribute(String id, double amount) {
+  Future<bool> contribute(String id, double amount) async {
     if (amount <= 0) return false;
     final index = state.indexWhere((goal) => goal.id == id);
     if (index < 0) return false;
@@ -259,11 +216,11 @@ class FinancialGoalsController extends Notifier<List<FinancialGoalSnapshot>> {
       goal.copyWith(saved: goal.saved + amount),
       ...state.skip(index + 1),
     ]);
-    _persist();
+    await _persist();
     return true;
   }
 
-  bool updateGoal(String id, {double? target, String? title}) {
+  Future<bool> updateGoal(String id, {double? target, String? title}) async {
     final index = state.indexWhere((goal) => goal.id == id);
     if (index < 0) return false;
     state = List.unmodifiable([
@@ -271,13 +228,13 @@ class FinancialGoalsController extends Notifier<List<FinancialGoalSnapshot>> {
       state[index].copyWith(target: target, title: title),
       ...state.skip(index + 1),
     ]);
-    _persist();
+    await _persist();
     return true;
   }
 
-  void removeGoal(String id) {
+  Future<void> removeGoal(String id) async {
     state = List.unmodifiable(state.where((goal) => goal.id != id));
-    _persist();
+    await _persist();
   }
 }
 
@@ -289,7 +246,7 @@ final installmentsProvider =
 class InstallmentsController extends Notifier<List<InstallmentSnapshot>> {
   @override
   List<InstallmentSnapshot> build() {
-    final initial = _defaultInstallments();
+    final initial = const <InstallmentSnapshot>[];
     _restore(initial);
     return initial;
   }
@@ -318,21 +275,22 @@ class InstallmentsController extends Notifier<List<InstallmentSnapshot>> {
     );
   }
 
-  void replaceInstallments(List<InstallmentSnapshot> installments) {
+  Future<void> replaceInstallments(List<InstallmentSnapshot> installments) async {
     state = List.unmodifiable(installments);
-    _persist();
+    await _persist();
   }
 
-  void addInstallment(InstallmentSnapshot installment) {
+  Future<void> addInstallment(InstallmentSnapshot installment) async {
     state = List.unmodifiable([...state, installment]);
-    _persist();
+    await _persist();
   }
 
-  bool payInstallment(String id, {double? amount}) {
+  Future<bool> payInstallment(String id, {double? amount}) async {
     final index = state.indexWhere((item) => item.id == id);
     if (index < 0) return false;
     final installment = state[index];
-    final payment = (amount ?? installment.monthlyAmount).clamp(0.0, installment.remaining);
+    final payment = (amount ?? installment.monthlyAmount)
+        .clamp(0.0, installment.remaining);
     if (payment <= 0) return false;
     final remaining = installment.remaining - payment;
     state = List.unmodifiable([
@@ -343,13 +301,13 @@ class InstallmentsController extends Notifier<List<InstallmentSnapshot>> {
       ),
       ...state.skip(index + 1),
     ]);
-    _persist();
+    await _persist();
     return true;
   }
 
-  void removeInstallment(String id) {
+  Future<void> removeInstallment(String id) async {
     state = List.unmodifiable(state.where((item) => item.id != id));
-    _persist();
+    await _persist();
   }
 }
 
@@ -368,7 +326,9 @@ final totalGoalTargetProvider = Provider<double>((ref) {
 });
 
 final completedGoalsProvider = Provider<int>((ref) {
-  return ref.watch(financialGoalsProvider).where((goal) => goal.isCompleted).length;
+  return ref.watch(financialGoalsProvider)
+      .where((goal) => goal.isCompleted)
+      .length;
 });
 
 final totalInstallmentRemainingProvider = Provider<double>((ref) {
@@ -410,7 +370,8 @@ class FinancialStateSnapshot {
   final double dueThisPeriod;
 
   double get netWorth => totalAssets - liabilities;
-  double get goalProgress => goalTarget <= 0 ? 0 : (goalSaved / goalTarget).clamp(0.0, 1.0);
+  double get goalProgress =>
+      goalTarget <= 0 ? 0 : (goalSaved / goalTarget).clamp(0.0, 1.0);
   double get available => totalAssets - goalSaved - dueThisPeriod;
   double get debtRatio => totalAssets <= 0 ? 0 : liabilities / totalAssets;
 }
