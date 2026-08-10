@@ -1,4 +1,7 @@
-import '../../../core/theme/app_colors.dart';
+import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/wallet_model.dart';
 
 abstract interface class WalletRepository {
@@ -13,115 +16,93 @@ abstract interface class WalletRepository {
   Future<void> deleteWallet(String id);
 }
 
-class MockWalletRepository implements WalletRepository {
-  MockWalletRepository();
+/// Local persistent wallet repository.
+///
+/// This is the production data source for the current offline build.
+/// A new installation starts with an empty wallet list; there are no
+/// hard-coded demo balances or accounts.
+class LocalWalletRepository implements WalletRepository {
+  static const _storageKey = 'nexora_wallets_v1';
 
-  final List<WalletModel> _wallets = [
-    WalletModel(
-      id: 'wallet_bca',
-      name: 'BCA Utama',
-      bankName: 'Bank Central Asia',
-      accountNumber: '1234567890',
-      balance: 12500000,
-      type: WalletType.bank,
-      color: AppColors.primary,
-      isPrimary: true,
-    ),
-    WalletModel(
-      id: 'wallet_mandiri',
-      name: 'Mandiri',
-      bankName: 'Bank Mandiri',
-      accountNumber: '9876543210',
-      balance: 8750000,
-      type: WalletType.bank,
-      color: AppColors.info,
-    ),
-    WalletModel(
-      id: 'wallet_gopay',
-      name: 'GoPay',
-      bankName: 'GoPay',
-      accountNumber: '081234567890',
-      balance: 1250000,
-      type: WalletType.ewallet,
-      color: AppColors.success,
-    ),
-    WalletModel(
-      id: 'wallet_cash',
-      name: 'Cash',
-      bankName: 'Tunai',
-      accountNumber: 'CASH',
-      balance: 600000,
-      type: WalletType.cash,
-      color: AppColors.warning,
-    ),
-  ];
+  Future<List<WalletModel>> _read() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_storageKey);
+    if (raw == null || raw.isEmpty) return const [];
+
+    try {
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      return decoded
+          .map(
+            (item) => WalletModel.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(growable: true);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> _write(List<WalletModel> wallets) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _storageKey,
+      jsonEncode(wallets.map((wallet) => wallet.toJson()).toList()),
+    );
+  }
 
   @override
   Future<List<WalletModel>> getWallets() async {
-    await _simulateDelay();
-
-    return List<WalletModel>.unmodifiable(_wallets);
+    return List<WalletModel>.unmodifiable(await _read());
   }
 
   @override
   Future<WalletModel> getWallet(String id) async {
-    await _simulateDelay();
-
-    return _findWallet(id);
+    final wallets = await _read();
+    return _findWallet(wallets, id);
   }
 
   @override
   Future<WalletModel> createWallet(WalletModel wallet) async {
-    await _simulateDelay();
-
-    if (_wallets.any((item) => item.id == wallet.id)) {
+    final wallets = await _read();
+    if (wallets.any((item) => item.id == wallet.id)) {
       throw StateError('Wallet dengan id "${wallet.id}" sudah ada.');
     }
 
-    _wallets.add(wallet);
-
+    wallets.add(wallet);
+    await _write(wallets);
     return wallet;
   }
 
   @override
   Future<WalletModel> updateWallet(WalletModel wallet) async {
-    await _simulateDelay();
-
-    final index = _wallets.indexWhere((item) => item.id == wallet.id);
-
+    final wallets = await _read();
+    final index = wallets.indexWhere((item) => item.id == wallet.id);
     if (index == -1) {
       throw StateError('Wallet dengan id "${wallet.id}" tidak ditemukan.');
     }
 
-    _wallets[index] = wallet;
-
+    wallets[index] = wallet;
+    await _write(wallets);
     return wallet;
   }
 
   @override
   Future<void> deleteWallet(String id) async {
-    await _simulateDelay();
-
-    final index = _wallets.indexWhere((item) => item.id == id);
-
+    final wallets = await _read();
+    final index = wallets.indexWhere((item) => item.id == id);
     if (index == -1) {
       throw StateError('Wallet dengan id "$id" tidak ditemukan.');
     }
 
-    _wallets.removeAt(index);
+    wallets.removeAt(index);
+    await _write(wallets);
   }
 
-  WalletModel _findWallet(String id) {
-    for (final wallet in _wallets) {
-      if (wallet.id == id) {
-        return wallet;
-      }
+  WalletModel _findWallet(List<WalletModel> wallets, String id) {
+    for (final wallet in wallets) {
+      if (wallet.id == id) return wallet;
     }
-
     throw StateError('Wallet dengan id "$id" tidak ditemukan.');
-  }
-
-  Future<void> _simulateDelay() {
-    return Future<void>.delayed(const Duration(milliseconds: 450));
   }
 }
