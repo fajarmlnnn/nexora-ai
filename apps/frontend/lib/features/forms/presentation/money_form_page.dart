@@ -14,9 +14,12 @@ import '../../wallet/controllers/wallet_controller.dart';
 import '../../wallet/models/wallet_model.dart';
 
 class MoneyFormPage extends ConsumerStatefulWidget {
-  const MoneyFormPage({super.key, required this.income});
+  const MoneyFormPage({super.key, required this.income, this.transaction});
 
   final bool income;
+  final TransactionModel? transaction;
+
+  bool get isEditing => transaction != null;
 
   @override
   ConsumerState<MoneyFormPage> createState() => _MoneyFormPageState();
@@ -25,19 +28,29 @@ class MoneyFormPage extends ConsumerStatefulWidget {
 class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
   late final TextEditingController _amountController;
   final TextEditingController _titleController = TextEditingController();
-  TransactionCategory _category = TransactionCategory.other;
+  late TransactionCategory _category;
   String? _walletId;
-  DateTime _selectedDate = DateTime.now();
+  late DateTime _selectedDate;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    _amountController = TextEditingController();
-    _titleController.text = widget.income ? 'Pemasukan' : 'Pengeluaran';
-    _category = widget.income
-        ? TransactionCategory.salary
-        : TransactionCategory.food;
+    final transaction = widget.transaction;
+    _amountController = TextEditingController(
+      text: transaction == null ? '' : _formatAmount(transaction.amount),
+    );
+    _titleController.text = transaction?.title ??
+        (widget.income ? 'Pemasukan' : 'Pengeluaran');
+    _category = transaction?.category ??
+        (widget.income ? TransactionCategory.salary : TransactionCategory.food);
+    _walletId = transaction?.walletId;
+    _selectedDate = transaction?.date ?? DateTime.now();
+  }
+
+  String _formatAmount(double amount) {
+    if (amount == amount.roundToDouble()) return amount.toInt().toString();
+    return amount.toString();
   }
 
   @override
@@ -65,8 +78,9 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
 
     setState(() => _saving = true);
     try {
+      final previous = widget.transaction;
       final transaction = TransactionModel(
-        id: 'tx-${DateTime.now().microsecondsSinceEpoch}',
+        id: previous?.id ?? 'tx-${DateTime.now().microsecondsSinceEpoch}',
         title: _titleController.text.trim().isEmpty
             ? (widget.income ? 'Pemasukan' : 'Pengeluaran')
             : _titleController.text.trim(),
@@ -75,9 +89,16 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
         category: _category,
         date: DateUtils.dateOnly(_selectedDate),
         walletId: selectedWalletId,
+        note: previous?.note,
       );
 
-      await ref.read(financialTransactionStoreProvider.notifier).add(transaction);
+      final store = ref.read(financialTransactionStoreProvider.notifier);
+      if (previous == null) {
+        await store.add(transaction);
+      } else {
+        await store.replace(transaction);
+      }
+
       if (!mounted) return;
       Navigator.pop(context, transaction);
     } catch (error) {
@@ -98,9 +119,6 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
             ? lastDate
             : current;
 
-    // Jangan memaksa locale id_ID pada DatePicker. Jika MaterialLocalizations
-    // aplikasi belum mendaftarkan locale tersebut, showDatePicker dapat gagal
-    // setelah barrier ditampilkan sehingga layar terlihat abu-abu.
     final picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
@@ -116,10 +134,8 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
       useRootNavigator: true,
       builder: (dialogContext, child) {
         if (child == null) return const SizedBox.shrink();
-
         final baseTheme = Theme.of(dialogContext);
         final scheme = baseTheme.colorScheme;
-
         return Theme(
           data: baseTheme.copyWith(
             brightness: Brightness.dark,
@@ -176,14 +192,18 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
           ),
           const SizedBox(height: 10),
           Text(
-            widget.income ? 'Tambah Pemasukan' : 'Tambah Pengeluaran',
+            widget.isEditing
+                ? (widget.income ? 'Edit Pemasukan' : 'Edit Pengeluaran')
+                : (widget.income ? 'Tambah Pemasukan' : 'Tambah Pengeluaran'),
             textAlign: TextAlign.center,
             style: AppTypography.heading1,
           ),
           Text(
-            widget.income
-                ? 'Catat pemasukan agar cashflow selalu akurat.'
-                : 'Catat pengeluaran sebelum budget bocor.',
+            widget.isEditing
+                ? 'Perbarui transaksi. Saldo dan ringkasan akan dihitung ulang.'
+                : widget.income
+                    ? 'Catat pemasukan agar cashflow selalu akurat.'
+                    : 'Catat pengeluaran sebelum budget bocor.',
             textAlign: TextAlign.center,
             style: AppTypography.bodySmall,
           ),
@@ -193,7 +213,7 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
             controller: _amountController,
             hint: 'Contoh: 150000',
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            autofocus: true,
+            autofocus: !widget.isEditing,
           ),
           _InputCard(
             label: 'Nama transaksi',
@@ -229,9 +249,11 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
             label: Text(
               _saving
                   ? 'Menyimpan...'
-                  : widget.income
-                      ? 'Simpan Pemasukan'
-                      : 'Simpan Pengeluaran',
+                  : widget.isEditing
+                      ? 'Simpan Perubahan'
+                      : widget.income
+                          ? 'Simpan Pemasukan'
+                          : 'Simpan Pengeluaran',
             ),
             style: FilledButton.styleFrom(
               backgroundColor: accent,
@@ -247,7 +269,6 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
   WalletModel? _selectedWallet(List<WalletModel> wallets) {
     final id = _walletId ?? ref.read(primaryWalletProvider)?.id;
     if (id == null) return null;
-
     for (final wallet in wallets) {
       if (wallet.id == id) return wallet;
     }
