@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
+import '../../budget/presentation/add_budget_sheet.dart';
 
-class QuickActions extends StatelessWidget {
+class QuickActions extends ConsumerWidget {
   const QuickActions({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return NCard(
       padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
       child: Column(
@@ -18,9 +20,7 @@ class QuickActions extends StatelessWidget {
         children: [
           Text(
             'Quick Actions',
-            style: AppTypography.labelLarge.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+            style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 12),
           Row(
@@ -47,7 +47,7 @@ class QuickActions extends StatelessWidget {
                   icon: LucideIcons.walletMinimal,
                   label: 'Budget',
                   color: AppColors.primaryLight,
-                  onTap: () => context.push('/budget'),
+                  onTap: () => showAddBudgetSheet(context, ref),
                 ),
               ),
               Expanded(
@@ -117,9 +117,7 @@ class _ActionItemState extends State<_ActionItem> {
                   decoration: BoxDecoration(
                     color: widget.color.withValues(alpha: .075),
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: widget.color.withValues(alpha: .13),
-                    ),
+                    border: Border.all(color: widget.color.withValues(alpha: .13)),
                   ),
                   child: Icon(
                     widget.icon,
@@ -132,16 +130,11 @@ class _ActionItemState extends State<_ActionItem> {
                     top: -5,
                     right: -7,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: .16),
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: .20),
-                        ),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: .20)),
                       ),
                       child: Text(
                         'NEW',
