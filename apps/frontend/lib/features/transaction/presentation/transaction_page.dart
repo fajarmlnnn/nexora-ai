@@ -11,6 +11,8 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 import '../../dashboard/models/transaction_model.dart';
+import '../../finance/state/financial_transaction_store.dart';
+import '../../forms/presentation/money_form_page.dart';
 
 class TransactionPage extends ConsumerStatefulWidget {
   const TransactionPage({super.key});
@@ -41,6 +43,63 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
         curve: Curves.easeOutCubic,
       );
     }
+  }
+
+  Future<void> _editTransaction(TransactionModel item) async {
+    if (item.isTransfer) {
+      _showMessage('Transfer belum bisa diedit. Hapus lalu buat transfer baru jika diperlukan.');
+      return;
+    }
+
+    await Navigator.of(context).push<TransactionModel>(
+      MaterialPageRoute(
+        builder: (_) => MoneyFormPage(
+          income: item.isIncome,
+          transaction: item,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteTransaction(TransactionModel item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.card,
+        title: const Text('Hapus transaksi?'),
+        content: Text(
+          'Transaksi "${item.title}" sebesar ${rupiah(item.amount)} akan dihapus. Saldo wallet dan ringkasan keuangan akan dihitung ulang.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || confirmed != true) return;
+
+    try {
+      await ref.read(financialTransactionStoreProvider.notifier).delete(item.id);
+      if (!mounted) return;
+      _showMessage('Transaksi berhasil dihapus.');
+    } catch (error) {
+      if (!mounted) return;
+      _showMessage('Gagal menghapus transaksi: $error');
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -139,7 +198,14 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
     }
 
     return groups.entries
-        .map((entry) => _Group(title: entry.key, items: entry.value))
+        .map(
+          (entry) => _Group(
+            title: entry.key,
+            items: entry.value,
+            onEdit: _editTransaction,
+            onDelete: _deleteTransaction,
+          ),
+        )
         .toList();
   }
 
@@ -413,10 +479,17 @@ class _Tab extends StatelessWidget {
 }
 
 class _Group extends StatelessWidget {
-  const _Group({required this.title, required this.items});
+  const _Group({
+    required this.title,
+    required this.items,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final String title;
   final List<TransactionModel> items;
+  final ValueChanged<TransactionModel> onEdit;
+  final ValueChanged<TransactionModel> onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -433,7 +506,12 @@ class _Group extends StatelessWidget {
             ],
           ),
         ),
-        for (final item in items) _TransactionTile(item: item),
+        for (final item in items)
+          _TransactionTile(
+            item: item,
+            onEdit: onEdit,
+            onDelete: onDelete,
+          ),
         const SizedBox(height: 4),
       ],
     );
@@ -441,9 +519,15 @@ class _Group extends StatelessWidget {
 }
 
 class _TransactionTile extends StatefulWidget {
-  const _TransactionTile({required this.item});
+  const _TransactionTile({
+    required this.item,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final TransactionModel item;
+  final ValueChanged<TransactionModel> onEdit;
+  final ValueChanged<TransactionModel> onDelete;
 
   @override
   State<_TransactionTile> createState() => _TransactionTileState();
@@ -466,6 +550,14 @@ class _TransactionTileState extends State<_TransactionTile> {
     setState(() {
       _open = shouldOpen;
       _offset = shouldOpen ? -_actionWidth : 0;
+    });
+  }
+
+  void _close() {
+    if (!_open) return;
+    setState(() {
+      _open = false;
+      _offset = 0;
     });
   }
 
@@ -494,10 +586,14 @@ class _TransactionTileState extends State<_TransactionTile> {
                 ),
                 alignment: Alignment.centerRight,
                 padding: const EdgeInsets.only(right: 18),
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 100),
-                  opacity: _offset < -8 ? 1 : .35,
-                  child: const Icon(LucideIcons.trash2, color: AppColors.danger, size: 20),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => widget.onDelete(item),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 100),
+                    opacity: _offset < -8 ? 1 : .35,
+                    child: const Icon(LucideIcons.trash2, color: AppColors.danger, size: 20),
+                  ),
                 ),
               ),
             ),
@@ -510,9 +606,7 @@ class _TransactionTileState extends State<_TransactionTile> {
                 behavior: HitTestBehavior.opaque,
                 onHorizontalDragUpdate: _dragUpdate,
                 onHorizontalDragEnd: _dragEnd,
-                onTap: () {
-                  if (_open) setState(() { _open = false; _offset = 0; });
-                },
+                onTap: _open ? _close : () => widget.onEdit(item),
                 child: PremiumCard(
                   borderRadius: AppRadius.radiusXL,
                   padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
