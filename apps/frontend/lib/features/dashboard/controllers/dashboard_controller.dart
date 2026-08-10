@@ -17,6 +17,7 @@ final financialTransactionsProvider = Provider<List<TransactionModel>>((ref) {
 final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
   final transactions = ref.watch(financialTransactionsProvider);
   final totalBalance = ref.watch(totalWalletBalanceProvider);
+  final balanceTrend = _buildBalanceTrend(transactions, totalBalance);
 
   return DashboardSummary(
     totalBalance: totalBalance,
@@ -26,6 +27,9 @@ final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
     budgetUsed: ref.watch(totalBudgetSpentProvider),
     currency: 'IDR',
     lastUpdated: DateTime.now(),
+    previousBalance: balanceTrend.previousBalance,
+    balanceChangePercent: balanceTrend.changePercent,
+    balanceTrendPoints: balanceTrend.points,
   );
 });
 
@@ -113,4 +117,72 @@ AIInsight _buildRealDataInsight(List<TransactionModel> transactions) {
         'Belum cukup data historis untuk membuat perbandingan. Lanjutkan pencatatan transaksi agar insight semakin akurat.',
     level: InsightLevel.positive,
   );
+}
+
+_BalanceTrend _buildBalanceTrend(
+  List<TransactionModel> transactions,
+  double currentBalance,
+) {
+  final now = DateTime.now();
+  final currentMonthTransactions = transactions
+      .where(
+        (item) => item.date.year == now.year && item.date.month == now.month,
+      )
+      .toList()
+    ..sort((a, b) => a.date.compareTo(b.date));
+
+  final currentMonthIncome = currentMonthTransactions.fold<double>(
+    0,
+    (sum, item) => sum + (item.isIncome ? item.amount : 0),
+  );
+  final currentMonthExpense = currentMonthTransactions.fold<double>(
+    0,
+    (sum, item) => sum + (item.isExpense ? item.amount : 0),
+  );
+
+  final previousBalance = currentBalance - currentMonthIncome + currentMonthExpense;
+  final changePercent = previousBalance <= 0
+      ? 0
+      : ((currentBalance - previousBalance) / previousBalance) * 100;
+
+  final dailyDeltas = <int, double>{};
+  for (final transaction in currentMonthTransactions) {
+    final delta = transaction.isIncome
+        ? transaction.amount
+        : transaction.isExpense
+            ? -transaction.amount
+            : 0;
+    dailyDeltas[transaction.date.day] =
+        (dailyDeltas[transaction.date.day] ?? 0) + delta;
+  }
+
+  var balance = previousBalance;
+  final points = <double>[];
+  final dayCount = now.day < 2 ? 2 : now.day;
+  for (var day = 1; day <= dayCount; day++) {
+    balance += dailyDeltas[day] ?? 0;
+    points.add(balance);
+  }
+
+  if (points.length == 1) {
+    points.add(points.first);
+  }
+
+  return _BalanceTrend(
+    previousBalance: previousBalance,
+    changePercent: changePercent,
+    points: List<double>.unmodifiable(points),
+  );
+}
+
+class _BalanceTrend {
+  const _BalanceTrend({
+    required this.previousBalance,
+    required this.changePercent,
+    required this.points,
+  });
+
+  final double previousBalance;
+  final double changePercent;
+  final List<double> points;
 }
