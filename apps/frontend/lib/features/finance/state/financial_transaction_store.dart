@@ -15,9 +15,6 @@ final financialTransactionStoreProvider =
 class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
   FinancialTransactionStore() : super(const []);
 
-  static const openingBalance = 12553000.0;
-  static const monthlyBudget = 5000000.0;
-
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_storageKey);
@@ -36,7 +33,6 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
 
       state = loaded;
 
-      // Persist the migrated list so removed demo records cannot return.
       if (loaded.length != decoded.length) {
         await _persist();
       }
@@ -51,9 +47,8 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
     await _persist();
   }
 
-  /// Records a transfer without changing total assets or cashflow.
-  /// The wallet controller applies the negative delta to the source and
-  /// positive delta to the destination from the same transaction record.
+  /// Records an internal wallet transfer. It never contributes to income,
+  /// expense, or net cashflow.
   Future<void> transfer({
     required String sourceWalletId,
     required String destinationWalletId,
@@ -97,6 +92,7 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
     await _persist();
   }
 
+  /// Clears persisted transactions. This method does not restore demo data.
   Future<void> clearAndRestoreDemoData() async {
     state = const [];
     await _persist();
@@ -128,10 +124,8 @@ extension FinancialTransactionCalculations on List<TransactionModel> {
         (sum, item) => sum + (item.isExpense ? item.amount : 0),
       );
 
+  /// Transfers are internal movements and therefore do not change cashflow.
   double get netCashflow => totalIncome - totalExpense;
-
-  double get currentBalance =>
-      FinancialTransactionStore.openingBalance + netCashflow;
 
   double get monthlyIncome => _inCurrentMonth((item) => item.isIncome);
 
