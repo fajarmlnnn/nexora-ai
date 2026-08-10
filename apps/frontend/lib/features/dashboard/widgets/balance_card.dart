@@ -1,15 +1,18 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
 import '../../../core/widgets/premium_widgets.dart';
+import '../controllers/dashboard_controller.dart';
 import '../models/dashboard_summary.dart';
+import '../models/transaction_model.dart';
 
-class BalanceCard extends StatelessWidget {
+class BalanceCard extends ConsumerWidget {
   const BalanceCard({
     super.key,
     required this.summary,
@@ -22,16 +25,27 @@ class BalanceCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final balance = totalBalance ?? summary.totalBalance;
-    final hasComparison = summary.hasBalanceComparison;
-    final changePercent = summary.balanceChangePercent;
-    final changeColor = hasComparison
-        ? (changePercent >= 0 ? AppColors.success : AppColors.danger)
-        : AppColors.primaryLight;
-    final changeText = hasComparison
-        ? '${changePercent >= 0 ? '+' : '-'}${changePercent.abs().toStringAsFixed(1)}%'
-        : 'Baru';
+    final transactions = ref.watch(financialTransactionsProvider);
+
+    final trend = _buildBalanceTrend(transactions, balance);
+    final today = DateUtils.dateOnly(DateTime.now());
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    final dailyIncomeChange = _comparePercent(
+      _sumForDay(transactions, today, (item) => item.isIncome),
+      _sumForDay(transactions, yesterday, (item) => item.isIncome),
+    );
+    final dailyExpenseChange = _comparePercent(
+      _sumForDay(transactions, today, (item) => item.isExpense),
+      _sumForDay(transactions, yesterday, (item) => item.isExpense),
+    );
+
+    final balancePillColor = trend.changePercent >= 0
+        ? AppColors.success
+        : AppColors.danger;
+    final balancePillText = _formatPercent(trend.changePercent);
 
     return Material(
       color: Colors.transparent,
@@ -51,23 +65,22 @@ class BalanceCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const _BalanceHeader(),
-                  const Spacer(),
-                  _RealtimePill(
-                    text: changeText,
-                    color: changeColor,
+                  Expanded(
+                    child: Text(
+                      'Total Balance',
+                      style: AppTypography.labelLarge.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  _PercentPill(
+                    text: balancePillText,
+                    color: balancePillColor,
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-              Text(
-                'Total Balance',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 10),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
@@ -80,19 +93,22 @@ class BalanceCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               _BalanceTrendChart(
-                points: summary.balanceTrendPoints,
+                points: trend.points,
                 accent: AppColors.primaryLight,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               Row(
                 children: [
                   Expanded(
                     child: _FinanceBubble(
                       title: 'Income',
                       value: rupiah(summary.monthlyIncome),
-                      status: summary.monthlyIncome > 0 ? 'Tercatat' : 'Belum ada data',
+                      trendText: _formatPercent(dailyIncomeChange),
+                      trendColor: dailyIncomeChange >= 0
+                          ? AppColors.success
+                          : AppColors.danger,
                       icon: Icons.arrow_downward_rounded,
                       accent: AppColors.success,
                     ),
@@ -102,7 +118,10 @@ class BalanceCard extends StatelessWidget {
                     child: _FinanceBubble(
                       title: 'Expense',
                       value: rupiah(summary.monthlyExpense),
-                      status: summary.monthlyExpense > 0 ? 'Tercatat' : 'Belum ada data',
+                      trendText: _formatPercent(dailyExpenseChange),
+                      trendColor: dailyExpenseChange >= 0
+                          ? AppColors.danger
+                          : AppColors.success,
                       icon: Icons.arrow_upward_rounded,
                       accent: AppColors.danger,
                     ),
@@ -136,41 +155,8 @@ class BalanceCard extends StatelessWidget {
   }
 }
 
-class _BalanceHeader extends StatelessWidget {
-  const _BalanceHeader();
-
-  @override
-  Widget build(BuildContext context) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: .45),
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Financial Overview',
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      );
-}
-
-class _RealtimePill extends StatelessWidget {
-  const _RealtimePill({required this.text, required this.color});
+class _PercentPill extends StatelessWidget {
+  const _PercentPill({required this.text, required this.color});
 
   final String text;
   final Color color;
@@ -203,7 +189,7 @@ class _BalanceTrendChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasEnoughData = points.length >= 2;
     return SizedBox(
-      height: 110,
+      height: 104,
       width: double.infinity,
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -213,29 +199,12 @@ class _BalanceTrendChart extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: CustomPaint(
-                  painter: _BalanceTrendPainter(
-                    points: hasEnoughData ? points : const [0, 0],
-                    accent: accent,
-                  ),
-                  child: const SizedBox.expand(),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                hasEnoughData
-                    ? 'Tren saldo real-time bulan ini'
-                    : 'Belum cukup data historis',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+          child: CustomPaint(
+            painter: _BalanceTrendPainter(
+              points: hasEnoughData ? points : const [0, 0],
+              accent: accent,
+            ),
+            child: const SizedBox.expand(),
           ),
         ),
       ),
@@ -257,8 +226,8 @@ class _BalanceTrendPainter extends CustomPainter {
     final maxValue = points.reduce(math.max);
     final range = (maxValue - minValue).abs() < 0.0001 ? 1.0 : (maxValue - minValue);
 
-    final paddingX = 8.0;
-    final paddingY = 8.0;
+    const paddingX = 8.0;
+    const paddingY = 8.0;
     final drawableWidth = math.max(size.width - paddingX * 2, 1);
     final drawableHeight = math.max(size.height - paddingY * 2, 1);
 
@@ -281,7 +250,7 @@ class _BalanceTrendPainter extends CustomPainter {
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.6);
 
     final glowPaint = Paint()
-      ..color = accent.withValues(alpha: .22)
+      ..color = accent.withValues(alpha: .24)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 6.5
       ..strokeCap = StrokeCap.round
@@ -300,14 +269,12 @@ class _BalanceTrendPainter extends CustomPainter {
       final point = Offset(xForIndex(i), yForValue(points[i]));
       final previous = Offset(xForIndex(i - 1), yForValue(points[i - 1]));
       final midX = (previous.dx + point.dx) / 2;
+      final midY = (previous.dy + point.dy) / 2;
 
-      if (i == 1) {
-        linePath.quadraticBezierTo(previous.dx, previous.dy, midX, (previous.dy + point.dy) / 2);
-        areaPath.quadraticBezierTo(previous.dx, previous.dy, midX, (previous.dy + point.dy) / 2);
-      }
-
-      linePath.quadraticBezierTo(previous.dx, previous.dy, point.dx, point.dy);
-      areaPath.quadraticBezierTo(previous.dx, previous.dy, point.dx, point.dy);
+      linePath.quadraticBezierTo(previous.dx, previous.dy, midX, midY);
+      areaPath.quadraticBezierTo(previous.dx, previous.dy, midX, midY);
+      linePath.quadraticBezierTo(midX, midY, point.dx, point.dy);
+      areaPath.quadraticBezierTo(midX, midY, point.dx, point.dy);
     }
 
     areaPath
@@ -318,7 +285,7 @@ class _BalanceTrendPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [accent.withValues(alpha: .32), accent.withValues(alpha: 0)],
+        colors: [accent.withValues(alpha: .30), accent.withValues(alpha: 0)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     canvas.drawPath(areaPath, fillPaint);
@@ -345,14 +312,16 @@ class _FinanceBubble extends StatelessWidget {
   const _FinanceBubble({
     required this.title,
     required this.value,
-    required this.status,
+    required this.trendText,
+    required this.trendColor,
     required this.icon,
     required this.accent,
   });
 
   final String title;
   final String value;
-  final String status;
+  final String trendText;
+  final Color trendColor;
   final IconData icon;
   final Color accent;
 
@@ -406,9 +375,9 @@ class _FinanceBubble extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    status,
+                    trendText,
                     style: AppTypography.caption.copyWith(
-                      color: accent.withValues(alpha: .78),
+                      color: trendColor,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -418,4 +387,92 @@ class _FinanceBubble extends StatelessWidget {
           ],
         ),
       );
+}
+
+_BalanceTrend _buildBalanceTrend(List<TransactionModel> transactions, double currentBalance) {
+  final now = DateUtils.dateOnly(DateTime.now());
+  final currentMonthTransactions = transactions
+      .where(
+        (item) =>
+            item.date.year == now.year &&
+            item.date.month == now.month &&
+            !item.isTransfer,
+      )
+      .toList()
+    ..sort((a, b) => a.date.compareTo(b.date));
+
+  final currentMonthIncome = currentMonthTransactions.fold<double>(
+    0.0,
+    (sum, item) => sum + (item.isIncome ? item.amount : 0.0),
+  );
+  final currentMonthExpense = currentMonthTransactions.fold<double>(
+    0.0,
+    (sum, item) => sum + (item.isExpense ? item.amount : 0.0),
+  );
+
+  final monthStartBalance = currentBalance - currentMonthIncome + currentMonthExpense;
+  final todayIncome = _sumForDay(transactions, now, (item) => item.isIncome);
+  final todayExpense = _sumForDay(transactions, now, (item) => item.isExpense);
+  final previousBalance = currentBalance - todayIncome + todayExpense;
+  final changePercent = _comparePercent(currentBalance, previousBalance);
+
+  final points = <double>[monthStartBalance];
+  var balance = monthStartBalance;
+  for (final transaction in currentMonthTransactions) {
+    final delta = transaction.isIncome
+        ? transaction.amount
+        : transaction.isExpense
+            ? -transaction.amount
+            : 0.0;
+    balance += delta;
+    points.add(balance);
+  }
+
+  if (points.length == 1) {
+    points.add(currentBalance);
+  }
+
+  return _BalanceTrend(
+    previousBalance: previousBalance,
+    changePercent: changePercent,
+    points: List<double>.unmodifiable(points),
+  );
+}
+
+double _sumForDay(
+  List<TransactionModel> transactions,
+  DateTime day,
+  bool Function(TransactionModel transaction) predicate,
+) {
+  return transactions.fold<double>(
+    0.0,
+    (sum, item) => _sameDay(item.date, day) && predicate(item) ? sum + item.amount : sum,
+  );
+}
+
+double _comparePercent(double current, double previous) {
+  if (previous <= 0) return 0.0;
+  return ((current - previous) / previous) * 100;
+}
+
+bool _sameDay(DateTime a, DateTime b) {
+  return a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+String _formatPercent(double value) {
+  if (value.abs() < 0.05) return '0.0%';
+  final sign = value > 0 ? '+' : '-';
+  return '$sign${value.abs().toStringAsFixed(1)}%';
+}
+
+class _BalanceTrend {
+  const _BalanceTrend({
+    required this.previousBalance,
+    required this.changePercent,
+    required this.points,
+  });
+
+  final double previousBalance;
+  final double changePercent;
+  final List<double> points;
 }
