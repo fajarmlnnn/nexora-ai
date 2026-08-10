@@ -6,19 +6,13 @@ import '../models/wallet_model.dart';
 
 abstract interface class WalletRepository {
   Future<List<WalletModel>> getWallets();
-
   Future<WalletModel> getWallet(String id);
-
   Future<WalletModel> createWallet(WalletModel wallet);
-
   Future<WalletModel> updateWallet(WalletModel wallet);
-
   Future<void> deleteWallet(String id);
 }
 
 /// Local persistent wallet repository.
-///
-/// This is the production data source for the current offline build.
 /// A new installation starts with an empty wallet list; there are no
 /// hard-coded demo balances or accounts.
 class LocalWalletRepository implements WalletRepository {
@@ -68,7 +62,6 @@ class LocalWalletRepository implements WalletRepository {
     if (wallets.any((item) => item.id == wallet.id)) {
       throw StateError('Wallet dengan id "${wallet.id}" sudah ada.');
     }
-
     wallets.add(wallet);
     await _write(wallets);
     return wallet;
@@ -81,7 +74,6 @@ class LocalWalletRepository implements WalletRepository {
     if (index == -1) {
       throw StateError('Wallet dengan id "${wallet.id}" tidak ditemukan.');
     }
-
     wallets[index] = wallet;
     await _write(wallets);
     return wallet;
@@ -94,7 +86,6 @@ class LocalWalletRepository implements WalletRepository {
     if (index == -1) {
       throw StateError('Wallet dengan id "$id" tidak ditemukan.');
     }
-
     wallets.removeAt(index);
     await _write(wallets);
   }
@@ -106,3 +97,8 @@ class LocalWalletRepository implements WalletRepository {
     throw StateError('Wallet dengan id "$id" tidak ditemukan.');
   }
 }
+
+/// Temporary source-compatible alias during the migration away from demo data.
+/// It uses LocalWalletRepository and contains no demo records.
+@Deprecated('Use LocalWalletRepository instead.')
+class MockWalletRepository extends LocalWalletRepository {}
