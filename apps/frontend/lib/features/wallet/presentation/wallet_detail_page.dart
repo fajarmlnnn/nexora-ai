@@ -110,12 +110,7 @@ class WalletDetailPage extends ConsumerWidget {
       const SizedBox(height: 14),
       _ActivityCard(income: monthIncome, expense: monthExpense, transferIn: monthTransferIn, transferOut: monthTransferOut),
       const SizedBox(height: 14),
-      PremiumCard(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Pengeluaran Terbesar', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800)),
-        const SizedBox(height: 8),
-        if (topSpending.isEmpty) Text('Belum cukup data pengeluaran bulan ini.', style: AppTypography.caption)
-        else ...topSpending.take(3).map((entry) => _FlowRow(label: entry.key.name, amount: entry.value, color: AppColors.danger)),
-      ])),
+      _TopSpendingCard(spending: topSpending, counts: spendingCounts, total: monthExpense),
       const SizedBox(height: 18),
       Row(children: [Expanded(child: Text('Transaksi Terbaru', style: AppTypography.heading3.copyWith(fontWeight: FontWeight.w800))), Text('${related.length} transaksi', style: AppTypography.caption)]),
       const SizedBox(height: 8),
@@ -227,29 +222,23 @@ class _TopSpendingCard extends StatelessWidget {
   final List<MapEntry<TransactionCategory, double>> spending;
   final Map<TransactionCategory, int> counts;
   final double total;
-
   @override
   Widget build(BuildContext context) {
     return PremiumCard(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [Expanded(child: Text('Pengeluaran Terbesar', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800))), Text('Bulan berjalan', style: AppTypography.caption)]),
       const SizedBox(height: 10),
-      if (spending.isEmpty || total <= 0)
-        Text('Belum cukup data pengeluaran bulan ini.', style: AppTypography.caption)
-      else
-        ...spending.take(3).map((entry) {
-          final percentage = (entry.value / total).clamp(0.0, 1.0);
-          final count = counts[entry.key] ?? 0;
-          return Padding(padding: const EdgeInsets.only(bottom: 12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Expanded(child: Text(_categoryLabel(entry.key), style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700))),
-              Text('${(percentage * 100).round()}%', style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800)),
-            ]),
-            const SizedBox(height: 5),
-            ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: percentage, minHeight: 5, backgroundColor: AppColors.border, valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight))),
-            const SizedBox(height: 5),
-            Row(children: [Expanded(child: Text('${rupiah(entry.value)} • $count transaksi', style: AppTypography.caption)), if (entry == spending.first) const _StatusChip(label: 'TERBESAR', color: AppColors.primaryLight)]),
-          ]));
-        }),
+      if (spending.isEmpty || total <= 0) Text('Belum cukup data pengeluaran bulan ini.', style: AppTypography.caption)
+      else ...spending.take(3).map((entry) {
+        final percentage = (entry.value / total).clamp(0.0, 1.0);
+        final count = counts[entry.key] ?? 0;
+        return Padding(padding: const EdgeInsets.only(bottom: 12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [Expanded(child: Text(_categoryLabel(entry.key), style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700))), Text('${(percentage * 100).round()}%', style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800))]),
+          const SizedBox(height: 5),
+          ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: percentage, minHeight: 5, backgroundColor: AppColors.border, valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight))),
+          const SizedBox(height: 5),
+          Row(children: [Expanded(child: Text('${rupiah(entry.value)} • $count transaksi', style: AppTypography.caption)), if (entry == spending.first) const _StatusChip(label: 'TERBESAR', color: AppColors.primaryLight)]),
+        ]));
+      }),
     ]));
   }
 }
