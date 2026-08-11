@@ -52,7 +52,7 @@ class _WalletPageState extends ConsumerState<WalletPage> {
                     Text('Semua Wallet', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
                     const SizedBox(height: 8),
                     for (final wallet in wallets) ...[
-                      _WalletTile(wallet: wallet),
+                      _WalletTile(wallet: wallet, totalBalance: total),
                       const SizedBox(height: 7),
                     ],
                     const SizedBox(height: 8),
@@ -106,7 +106,7 @@ class _TotalCard extends StatelessWidget {
       borderRadius: AppRadius.radiusXXL,
       gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF171525), Color(0xFF12121C), Color(0xFF0D0E15)]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [Text('Total Aset', style: AppTypography.bodySmall), const SizedBox(width: 6), GestureDetector(onTap: onToggle, child: Icon(visible ? LucideIcons.eye : LucideIcons.eyeOff, size: 17, color: AppColors.textSecondary)), const Spacer(), Text('REAL-TIME', style: AppTypography.caption.copyWith(color: AppColors.success, fontWeight: FontWeight.w800))]),
+        Row(children: [Text('Total Aset', style: AppTypography.bodySmall), const SizedBox(width: 6), GestureDetector(onTap: onToggle, child: Icon(visible ? LucideIcons.eye : LucideIcons.eyeOff, size: 17, color: AppColors.textSecondary)), const Spacer(), Text('100%', style: AppTypography.caption.copyWith(color: AppColors.success, fontWeight: FontWeight.w800))]),
         const SizedBox(height: 5),
         FittedBox(alignment: Alignment.centerLeft, fit: BoxFit.scaleDown, child: Text(visible ? rupiah(balance) : 'Rp •••••••', style: AppTypography.displaySmall.copyWith(fontWeight: FontWeight.w800, color: Colors.white))),
         const SizedBox(height: 4),
@@ -117,8 +117,27 @@ class _TotalCard extends StatelessWidget {
 }
 
 class _WalletTile extends StatelessWidget {
-  const _WalletTile({required this.wallet});
+  const _WalletTile({required this.wallet, required this.totalBalance});
   final WalletModel wallet;
+  final double totalBalance;
+
+  double get percentage {
+    if (totalBalance <= 0 || wallet.balance <= 0) return 0;
+    return (wallet.balance / totalBalance) * 100;
+  }
+
+  Color get accentColor {
+    switch (wallet.type) {
+      case WalletType.bank:
+        return AppColors.primary;
+      case WalletType.ewallet:
+        return AppColors.info;
+      case WalletType.cash:
+        return AppColors.warning;
+      case WalletType.investment:
+        return AppColors.success;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +150,7 @@ class _WalletTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           borderRadius: AppRadius.radiusXL,
           child: Row(children: [
-            Container(width: 42, height: 42, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .12), borderRadius: AppRadius.radiusLG), child: Icon(wallet.icon, color: AppColors.primaryLight, size: 21)),
+            Container(width: 42, height: 42, decoration: BoxDecoration(color: accentColor.withValues(alpha: .12), borderRadius: AppRadius.radiusLG), child: Icon(wallet.icon, color: accentColor, size: 21)),
             const SizedBox(width: 10),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [Flexible(child: Text(wallet.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800))), if (wallet.isPrimary) ...[const SizedBox(width: 5), Text('PRIMARY', style: TextStyle(color: AppColors.primaryLight, fontSize: 8, fontWeight: FontWeight.w800))]]),
@@ -139,7 +158,11 @@ class _WalletTile extends StatelessWidget {
               Text('${wallet.bankName} • ${wallet.maskedAccount}', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption),
             ])),
             const SizedBox(width: 8),
-            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [Text(rupiah(wallet.balance), style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800)), const Icon(LucideIcons.chevronRight, size: 15, color: AppColors.textSecondary)]),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text(rupiah(wallet.balance), style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 2),
+              Text('${percentage.toStringAsFixed(1)}%', style: AppTypography.caption.copyWith(color: accentColor, fontWeight: FontWeight.w800)),
+            ]),
           ]),
         ),
       ),
