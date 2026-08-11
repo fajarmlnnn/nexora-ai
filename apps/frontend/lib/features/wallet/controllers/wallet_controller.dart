@@ -78,7 +78,20 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
   }
 
   /// Hapus wallet.
+  ///
+  /// Wallet yang masih memiliki transaksi tidak boleh dihapus karena transaksi
+  /// menyimpan referensi ke wallet tersebut. Penghapusan dalam kondisi ini
+  /// akan merusak histori finansial dan membuat laporan tidak konsisten.
   Future<bool> deleteWallet(String id) async {
+    final transactions = ref.read(financialTransactionStoreProvider);
+    final hasTransactions = transactions.any(
+      (transaction) =>
+          transaction.walletId == id ||
+          transaction.sourceAccount == id ||
+          transaction.destinationAccount == id,
+    );
+    if (hasTransactions) return false;
+
     try {
       await _repository.deleteWallet(id);
       await _reload();
