@@ -20,7 +20,7 @@ class RecentTransactionCard extends StatelessWidget {
     final recent = transactions.take(3).toList();
 
     return NCard(
-      padding: const EdgeInsets.fromLTRB(14, 13, 14, 11),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -29,9 +29,7 @@ class RecentTransactionCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Recent Transactions',
-                  style: AppTypography.labelLarge.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               TextButton(
@@ -42,7 +40,7 @@ class RecentTransactionCard extends StatelessWidget {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  'See All  ›',
+                  'Lihat Semua  ›',
                   style: AppTypography.caption.copyWith(
                     color: AppColors.primaryLight,
                     fontWeight: FontWeight.w700,
@@ -52,7 +50,7 @@ class RecentTransactionCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 4),
           if (recent.isEmpty)
             const _EmptyTransactions()
           else
@@ -76,49 +74,42 @@ class RecentTransactionCard extends StatelessWidget {
 
 class _TransactionTile extends StatelessWidget {
   const _TransactionTile({required this.transaction});
-
   final TransactionModel transaction;
 
-  IconData get icon {
-    return switch (transaction.category) {
-      TransactionCategory.food => LucideIcons.utensils,
-      TransactionCategory.transport => LucideIcons.car,
-      TransactionCategory.shopping => LucideIcons.shoppingBag,
-      TransactionCategory.salary => LucideIcons.badgeDollarSign,
-      TransactionCategory.investment => LucideIcons.chartColumn,
-      TransactionCategory.bills => LucideIcons.receipt,
-      TransactionCategory.entertainment => LucideIcons.film,
-      TransactionCategory.health => LucideIcons.heartPulse,
-      TransactionCategory.education => LucideIcons.graduationCap,
-      TransactionCategory.other => LucideIcons.circleDollarSign,
-    };
-  }
+  IconData get icon => switch (transaction.category) {
+        TransactionCategory.food => LucideIcons.utensils,
+        TransactionCategory.transport => LucideIcons.car,
+        TransactionCategory.shopping => LucideIcons.shoppingBag,
+        TransactionCategory.salary => LucideIcons.badgeDollarSign,
+        TransactionCategory.investment => LucideIcons.chartColumn,
+        TransactionCategory.bills => LucideIcons.receipt,
+        TransactionCategory.entertainment => LucideIcons.film,
+        TransactionCategory.health => LucideIcons.heartPulse,
+        TransactionCategory.education => LucideIcons.graduationCap,
+        TransactionCategory.other => LucideIcons.circleDollarSign,
+      };
 
   Color get accent => transaction.isIncome ? AppColors.success : AppColors.danger;
 
   String get dateLabel {
     final now = DateTime.now();
     if (DateUtils.isSameDay(now, transaction.date)) return 'Hari ini';
-    if (DateUtils.isSameDay(now.subtract(const Duration(days: 1)), transaction.date)) {
-      return 'Kemarin';
-    }
+    if (DateUtils.isSameDay(now.subtract(const Duration(days: 1)), transaction.date)) return 'Kemarin';
     return DateFormat('dd MMM', 'id_ID').format(transaction.date);
   }
 
-  String get categoryLabel {
-    return switch (transaction.category) {
-      TransactionCategory.food => 'Makanan',
-      TransactionCategory.transport => 'Transportasi',
-      TransactionCategory.shopping => 'Belanja',
-      TransactionCategory.salary => 'Gaji',
-      TransactionCategory.investment => 'Investasi',
-      TransactionCategory.bills => 'Tagihan',
-      TransactionCategory.entertainment => 'Hiburan',
-      TransactionCategory.health => 'Kesehatan',
-      TransactionCategory.education => 'Pendidikan',
-      TransactionCategory.other => 'Lainnya',
-    };
-  }
+  String get categoryLabel => switch (transaction.category) {
+        TransactionCategory.food => 'Makanan',
+        TransactionCategory.transport => 'Transportasi',
+        TransactionCategory.shopping => 'Belanja',
+        TransactionCategory.salary => 'Gaji',
+        TransactionCategory.investment => 'Investasi',
+        TransactionCategory.bills => 'Tagihan',
+        TransactionCategory.entertainment => 'Hiburan',
+        TransactionCategory.health => 'Kesehatan',
+        TransactionCategory.education => 'Pendidikan',
+        TransactionCategory.other => 'Lainnya',
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -126,14 +117,14 @@ class _TransactionTile extends StatelessWidget {
       borderRadius: AppRadius.radiusLG,
       onTap: () => context.push('/transactions'),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 9),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
             _TransactionIcon(
               icon: transaction.isIncome ? LucideIcons.arrowDownLeft : icon,
               color: accent,
             ),
-            const SizedBox(width: 11),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,7 +174,7 @@ class _TransactionTile extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 9),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 108),
               child: Column(
@@ -238,23 +229,20 @@ class _TransactionTile extends StatelessWidget {
 
 class _TransactionIcon extends StatelessWidget {
   const _TransactionIcon({required this.icon, required this.color});
-
   final IconData icon;
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 42,
-      height: 42,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: .10),
-        shape: BoxShape.circle,
-        border: Border.all(color: color.withValues(alpha: .10)),
-      ),
-      child: Icon(icon, size: 18, color: color),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .08),
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withValues(alpha: .09)),
+        ),
+        child: Icon(icon, size: 17, color: color),
+      );
 }
 
 class _EmptyTransactions extends StatelessWidget {
@@ -262,44 +250,49 @@ class _EmptyTransactions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 18),
-      child: Column(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: .10),
-              shape: BoxShape.circle,
+    return SizedBox(
+      width: double.infinity,
+      height: 172,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: .10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                LucideIcons.receipt,
+                color: AppColors.primaryLight,
+                size: 21,
+              ),
             ),
-            child: const Icon(
-              LucideIcons.receipt,
-              color: AppColors.primaryLight,
-              size: 24,
+            const SizedBox(height: 8),
+            Text(
+              'Belum Ada Transaksi',
+              textAlign: TextAlign.center,
+              style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700),
             ),
-          ),
-          const SizedBox(height: 9),
-          Text(
-            'Belum Ada Transaksi',
-            style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Catat transaksi pertamamu untuk mulai\nmelacak keuangan dengan Nexora.',
-            textAlign: TextAlign.center,
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.35,
+            const SizedBox(height: 3),
+            Text(
+              'Catat transaksi pertamamu untuk mulai\nmelacak keuangan dengan Nexora.',
+              textAlign: TextAlign.center,
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.3,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: () => context.push('/transactions'),
-            icon: const Icon(LucideIcons.plus, size: 16),
-            label: const Text('Tambah Transaksi'),
-          ),
-        ],
+            const SizedBox(height: 10),
+            FilledButton.icon(
+              onPressed: () => context.push('/transactions'),
+              icon: const Icon(LucideIcons.plus, size: 15),
+              label: const Text('Tambah Transaksi'),
+            ),
+          ],
+        ),
       ),
     );
   }

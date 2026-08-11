@@ -11,6 +11,8 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 import '../../dashboard/models/transaction_model.dart';
+import '../../finance/state/financial_transaction_store.dart';
+import '../../forms/presentation/money_form_page.dart';
 
 class TransactionPage extends ConsumerStatefulWidget {
   const TransactionPage({super.key});
@@ -41,6 +43,63 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
         curve: Curves.easeOutCubic,
       );
     }
+  }
+
+  Future<void> _editTransaction(TransactionModel item) async {
+    if (item.isTransfer) {
+      _showMessage('Transfer belum bisa diedit. Hapus lalu buat transfer baru jika diperlukan.');
+      return;
+    }
+
+    await Navigator.of(context).push<TransactionModel>(
+      MaterialPageRoute(
+        builder: (_) => MoneyFormPage(
+          income: item.isIncome,
+          transaction: item,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteTransaction(TransactionModel item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.card,
+        title: const Text('Hapus transaksi?'),
+        content: Text(
+          'Transaksi "${item.title}" sebesar ${rupiah(item.amount)} akan dihapus. Saldo wallet dan ringkasan keuangan akan dihitung ulang.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || confirmed != true) return;
+
+    try {
+      await ref.read(financialTransactionStoreProvider.notifier).delete(item.id);
+      if (!mounted) return;
+      _showMessage('Transaksi berhasil dihapus.');
+    } catch (error) {
+      if (!mounted) return;
+      _showMessage('Gagal menghapus transaksi: $error');
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -85,17 +144,23 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
                 ),
                 data: (items) {
                   final query = _query.toLowerCase();
-                  final expanded = [...items, ..._extraTransactions()]
+                  final visible = items
                       .where((item) => filter == null || item.type == filter)
                       .where(
                         (item) =>
                             query.isEmpty ||
                             item.title.toLowerCase().contains(query) ||
-                            _categoryLabel(item.category).toLowerCase().contains(query),
+                            _categoryLabel(item.category)
+                                .toLowerCase()
+                                .contains(query) ||
+                            (item.isTransfer && 'transfer'.contains(query)),
                       )
-                      .toList();
+                      .toList()
+                    ..sort((a, b) => b.date.compareTo(a.date));
 
-                  if (expanded.isEmpty) return _NoResults(query: _query);
+                  if (visible.isEmpty) {
+                    return _NoResults(query: _query);
+                  }
 
                   return ListView(
                     key: ValueKey(filter),
@@ -105,11 +170,7 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
                       top: 8,
                       bottom: AppSpacing.bottomNav(context) + 28,
                     ),
-                    children: [
-                      _Group(title: 'Hari ini', items: expanded.take(4).toList()),
-                      _Group(title: 'Kemarin', items: expanded.skip(4).take(2).toList()),
-                      _Group(title: 'Sebelumnya', items: expanded.skip(6).toList()),
-                    ],
+                    children: _buildGroups(visible),
                   );
                 },
               ),
@@ -118,6 +179,34 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildGroups(List<TransactionModel> items) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final groups = <String, List<TransactionModel>>{};
+
+    for (final item in items) {
+      final date = DateTime(item.date.year, item.date.month, item.date.day);
+      final label = date == today
+          ? 'Hari ini'
+          : date == yesterday
+              ? 'Kemarin'
+              : DateFormat('dd MMM yyyy', 'id_ID').format(date);
+      groups.putIfAbsent(label, () => <TransactionModel>[]).add(item);
+    }
+
+    return groups.entries
+        .map(
+          (entry) => _Group(
+            title: entry.key,
+            items: entry.value,
+            onEdit: _editTransaction,
+            onDelete: _deleteTransaction,
+          ),
+        )
+        .toList();
   }
 
   void _showFilterSheet(BuildContext context) {
@@ -135,7 +224,12 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Filter transaksi', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
+              Text(
+                'Filter transaksi',
+                style: AppTypography.labelLarge.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               const SizedBox(height: 12),
               _SheetOption(
                 label: 'Semua transaksi',
@@ -161,6 +255,14 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
                   Navigator.pop(sheetContext);
                 },
               ),
+              _SheetOption(
+                label: 'Transfer',
+                selected: filter == TransactionType.transfer,
+                onTap: () {
+                  _setFilter(TransactionType.transfer);
+                  Navigator.pop(sheetContext);
+                },
+              ),
             ],
           ),
         ),
@@ -171,6 +273,7 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
 
 class _TransactionHeader extends StatelessWidget {
   const _TransactionHeader({this.onFilter});
+
   final VoidCallback? onFilter;
 
   @override
@@ -196,7 +299,11 @@ class _TransactionHeader extends StatelessWidget {
             child: const SizedBox(
               width: 44,
               height: 44,
-              child: Icon(LucideIcons.slidersHorizontal, size: 20, color: AppColors.textSecondary),
+              child: Icon(
+                LucideIcons.slidersHorizontal,
+                size: 20,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
         ),
@@ -206,7 +313,12 @@ class _TransactionHeader extends StatelessWidget {
 }
 
 class _SearchBar extends StatelessWidget {
-  const _SearchBar({required this.controller, required this.onChanged, this.onFilter});
+  const _SearchBar({
+    required this.controller,
+    required this.onChanged,
+    this.onFilter,
+  });
+
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   final VoidCallback? onFilter;
@@ -230,10 +342,14 @@ class _SearchBar extends StatelessWidget {
               controller: controller,
               onChanged: onChanged,
               textInputAction: TextInputAction.search,
-              style: AppTypography.bodySmall.copyWith(color: AppColors.textPrimary),
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textPrimary,
+              ),
               decoration: InputDecoration(
                 hintText: 'Cari transaksi',
-                hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                hintStyle: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textMuted,
+                ),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
@@ -246,12 +362,20 @@ class _SearchBar extends StatelessWidget {
                 controller.clear();
                 onChanged('');
               },
-              child: const Icon(LucideIcons.x, size: 18, color: AppColors.textMuted),
+              child: const Icon(
+                LucideIcons.x,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
             ),
           const SizedBox(width: 5),
           GestureDetector(
             onTap: onFilter,
-            child: const Icon(LucideIcons.listFilter, color: AppColors.primaryLight, size: 19),
+            child: const Icon(
+              LucideIcons.listFilter,
+              color: AppColors.primaryLight,
+              size: 19,
+            ),
           ),
         ],
       ),
@@ -261,19 +385,21 @@ class _SearchBar extends StatelessWidget {
 
 class _FilterTabs extends StatelessWidget {
   const _FilterTabs({required this.selected, required this.onChanged});
+
   final TransactionType? selected;
   final ValueChanged<TransactionType?> onChanged;
 
-  Alignment _alignment() {
-    if (selected == TransactionType.income) return Alignment.center;
-    if (selected == TransactionType.expense) return Alignment.centerRight;
-    return Alignment.centerLeft;
+  int _index() {
+    if (selected == TransactionType.income) return 1;
+    if (selected == TransactionType.expense) return 2;
+    if (selected == TransactionType.transfer) return 3;
+    return 0;
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 52,
+      height: 50,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: AppColors.card.withValues(alpha: .68),
@@ -282,16 +408,19 @@ class _FilterTabs extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final itemWidth = constraints.maxWidth / 3;
+          final itemWidth = constraints.maxWidth / 4;
+          final index = _index();
           return Stack(
+            clipBehavior: Clip.none,
             children: [
-              AnimatedAlign(
-                alignment: _alignment(),
+              AnimatedPositioned(
+                left: itemWidth * index,
+                top: 0,
                 duration: const Duration(milliseconds: 280),
                 curve: Curves.easeOutCubic,
                 child: Container(
                   width: itemWidth,
-                  height: 46,
+                  height: 44,
                   decoration: BoxDecoration(
                     gradient: AppGradients.primary,
                     borderRadius: AppRadius.radiusMD,
@@ -308,8 +437,9 @@ class _FilterTabs extends StatelessWidget {
               Row(
                 children: [
                   _Tab(label: 'Semua', selected: selected == null, onTap: () => onChanged(null)),
-                  _Tab(label: 'Pemasukan', selected: selected == TransactionType.income, onTap: () => onChanged(TransactionType.income)),
-                  _Tab(label: 'Pengeluaran', selected: selected == TransactionType.expense, onTap: () => onChanged(TransactionType.expense)),
+                  _Tab(label: 'Masuk', selected: selected == TransactionType.income, onTap: () => onChanged(TransactionType.income)),
+                  _Tab(label: 'Keluar', selected: selected == TransactionType.expense, onTap: () => onChanged(TransactionType.expense)),
+                  _Tab(label: 'Transfer', selected: selected == TransactionType.transfer, onTap: () => onChanged(TransactionType.transfer)),
                 ],
               ),
             ],
@@ -322,6 +452,7 @@ class _FilterTabs extends StatelessWidget {
 
 class _Tab extends StatelessWidget {
   const _Tab({required this.label, required this.selected, required this.onTap});
+
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -335,7 +466,6 @@ class _Tab extends StatelessWidget {
         child: Center(
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
             style: AppTypography.caption.copyWith(
               color: selected ? Colors.white : AppColors.textSecondary,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
@@ -349,13 +479,20 @@ class _Tab extends StatelessWidget {
 }
 
 class _Group extends StatelessWidget {
-  const _Group({required this.title, required this.items});
+  const _Group({
+    required this.title,
+    required this.items,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
   final String title;
   final List<TransactionModel> items;
+  final ValueChanged<TransactionModel> onEdit;
+  final ValueChanged<TransactionModel> onDelete;
 
   @override
   Widget build(BuildContext context) {
-    if (items.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -369,7 +506,12 @@ class _Group extends StatelessWidget {
             ],
           ),
         ),
-        for (final item in items) _TransactionTile(item: item),
+        for (final item in items)
+          _TransactionTile(
+            item: item,
+            onEdit: onEdit,
+            onDelete: onDelete,
+          ),
         const SizedBox(height: 4),
       ],
     );
@@ -377,8 +519,15 @@ class _Group extends StatelessWidget {
 }
 
 class _TransactionTile extends StatefulWidget {
-  const _TransactionTile({required this.item});
+  const _TransactionTile({
+    required this.item,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
   final TransactionModel item;
+  final ValueChanged<TransactionModel> onEdit;
+  final ValueChanged<TransactionModel> onDelete;
 
   @override
   State<_TransactionTile> createState() => _TransactionTileState();
@@ -388,6 +537,7 @@ class _TransactionTileState extends State<_TransactionTile> {
   static const double _actionWidth = 76;
   static const double _openThreshold = 34;
   static const Duration _settleDuration = Duration(milliseconds: 190);
+
   double _offset = 0;
   bool _open = false;
 
@@ -403,10 +553,23 @@ class _TransactionTileState extends State<_TransactionTile> {
     });
   }
 
+  void _close() {
+    if (!_open) return;
+    setState(() {
+      _open = false;
+      _offset = 0;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
-    final color = item.isIncome ? AppColors.success : AppColors.danger;
+    final color = item.isIncome
+        ? AppColors.success
+        : item.isExpense
+            ? AppColors.danger
+            : AppColors.primaryLight;
+    final prefix = item.isIncome ? '+' : item.isExpense ? '-' : '↔';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 7),
@@ -423,10 +586,14 @@ class _TransactionTileState extends State<_TransactionTile> {
                 ),
                 alignment: Alignment.centerRight,
                 padding: const EdgeInsets.only(right: 18),
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 100),
-                  opacity: _offset < -8 ? 1 : .35,
-                  child: const Icon(LucideIcons.trash2, color: AppColors.danger, size: 20),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => widget.onDelete(item),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 100),
+                    opacity: _offset < -8 ? 1 : .35,
+                    child: const Icon(LucideIcons.trash2, color: AppColors.danger, size: 20),
+                  ),
                 ),
               ),
             ),
@@ -439,9 +606,7 @@ class _TransactionTileState extends State<_TransactionTile> {
                 behavior: HitTestBehavior.opaque,
                 onHorizontalDragUpdate: _dragUpdate,
                 onHorizontalDragEnd: _dragEnd,
-                onTap: () {
-                  if (_open) setState(() { _open = false; _offset = 0; });
-                },
+                onTap: _open ? _close : () => widget.onEdit(item),
                 child: PremiumCard(
                   borderRadius: AppRadius.radiusXL,
                   padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
@@ -454,7 +619,11 @@ class _TransactionTileState extends State<_TransactionTile> {
                           color: color.withValues(alpha: .13),
                           borderRadius: AppRadius.radiusLG,
                         ),
-                        child: Icon(_icon(item.category), color: color, size: 21),
+                        child: Icon(
+                          item.isTransfer ? LucideIcons.arrowLeftRight : _icon(item.category),
+                          color: color,
+                          size: 21,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -466,7 +635,7 @@ class _TransactionTileState extends State<_TransactionTile> {
                             const SizedBox(height: 1),
                             Row(
                               children: [
-                                Flexible(child: Text(_categoryLabel(item.category), maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption)),
+                                Flexible(child: Text(item.isTransfer ? 'Transfer' : _categoryLabel(item.category), maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption)),
                                 const SizedBox(width: 5),
                                 Container(width: 3, height: 3, decoration: const BoxDecoration(color: AppColors.textMuted, shape: BoxShape.circle)),
                                 const SizedBox(width: 5),
@@ -477,7 +646,9 @@ class _TransactionTileState extends State<_TransactionTile> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text('${item.isIncome ? '+' : '-'}${rupiah(item.amount)}', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.end, style: AppTypography.labelMedium.copyWith(color: color, fontWeight: FontWeight.w800)),
+                      Flexible(
+                        child: Text('$prefix${rupiah(item.amount)}', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.end, style: AppTypography.labelMedium.copyWith(color: color, fontWeight: FontWeight.w800)),
+                      ),
                     ],
                   ),
                 ),
@@ -492,6 +663,7 @@ class _TransactionTileState extends State<_TransactionTile> {
 
 class _NoResults extends StatelessWidget {
   const _NoResults({required this.query});
+
   final String query;
 
   @override
@@ -520,6 +692,7 @@ class _NoResults extends StatelessWidget {
 
 class _SheetOption extends StatelessWidget {
   const _SheetOption({required this.label, required this.selected, required this.onTap});
+
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -537,26 +710,30 @@ class _SheetOption extends StatelessWidget {
 }
 
 IconData _icon(TransactionCategory c) => switch (c) {
-  TransactionCategory.food => LucideIcons.utensils,
-  TransactionCategory.transport => LucideIcons.car,
-  TransactionCategory.shopping => LucideIcons.shoppingBag,
-  TransactionCategory.salary => LucideIcons.wallet,
-  TransactionCategory.investment => LucideIcons.chartColumn,
-  TransactionCategory.bills => LucideIcons.receiptText,
-  TransactionCategory.entertainment => LucideIcons.gamepad2,
-  TransactionCategory.health => LucideIcons.heartPulse,
-  TransactionCategory.education => LucideIcons.graduationCap,
-  TransactionCategory.other => LucideIcons.circleDollarSign,
-};
-
-List<TransactionModel> _extraTransactions() => [
-  TransactionModel(id: '4', title: 'Grab Bike', amount: 27000, type: TransactionType.expense, category: TransactionCategory.transport, date: DateTime.now()),
-  TransactionModel(id: '5', title: 'Coffee', amount: 18000, type: TransactionType.expense, category: TransactionCategory.food, date: DateTime.now().subtract(const Duration(days: 1))),
-  TransactionModel(id: '6', title: 'Freelance Project', amount: 3500000, type: TransactionType.income, category: TransactionCategory.investment, date: DateTime.now().subtract(const Duration(days: 1))),
-  TransactionModel(id: '7', title: 'Monthly Groceries', amount: 650000, type: TransactionType.expense, category: TransactionCategory.shopping, date: DateTime.now().subtract(const Duration(days: 2))),
-];
+      TransactionCategory.food => LucideIcons.utensils,
+      TransactionCategory.transport => LucideIcons.car,
+      TransactionCategory.shopping => LucideIcons.shoppingBag,
+      TransactionCategory.salary => LucideIcons.wallet,
+      TransactionCategory.investment => LucideIcons.chartColumn,
+      TransactionCategory.bills => LucideIcons.receiptText,
+      TransactionCategory.entertainment => LucideIcons.gamepad2,
+      TransactionCategory.health => LucideIcons.heartPulse,
+      TransactionCategory.education => LucideIcons.graduationCap,
+      TransactionCategory.other => LucideIcons.circleDollarSign,
+    };
 
 String _categoryLabel(TransactionCategory category) {
-  final name = category.name;
-  return '${name[0].toUpperCase()}${name.substring(1)}';
+  final labels = <TransactionCategory, String>{
+    TransactionCategory.food: 'Makan & Minum',
+    TransactionCategory.transport: 'Transportasi',
+    TransactionCategory.shopping: 'Belanja',
+    TransactionCategory.salary: 'Gaji',
+    TransactionCategory.investment: 'Investasi',
+    TransactionCategory.bills: 'Tagihan',
+    TransactionCategory.entertainment: 'Hiburan',
+    TransactionCategory.health: 'Kesehatan',
+    TransactionCategory.education: 'Pendidikan',
+    TransactionCategory.other: 'Lainnya',
+  };
+  return labels[category] ?? 'Lainnya';
 }

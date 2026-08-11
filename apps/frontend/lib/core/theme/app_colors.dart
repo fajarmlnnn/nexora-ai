@@ -24,9 +24,12 @@ abstract final class AppColors {
 
   static const surfaceVariant = Color(0xFF171C2C);
 
-  static const card = Color(0xFF171C2C);
+  // Global application card surface.
+  // Keep cards close to the Total Balance visual language:
+  // dark/navy, restrained, and neutral so accent colors remain semantic.
+  static const card = Color(0xFF12121C);
 
-  static const cardSecondary = Color(0xFF1D2335);
+  static const cardSecondary = Color(0xFF171525);
 
   // ==================================================
   // Text
