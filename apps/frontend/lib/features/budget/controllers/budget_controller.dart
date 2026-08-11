@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../dashboard/models/budget_item.dart';
 import '../../dashboard/models/transaction_model.dart';
+import '../../finance/state/financial_analytics_provider.dart';
 import '../../finance/state/financial_transaction_store.dart';
 import '../repositories/budget_repository.dart';
 
@@ -25,8 +26,9 @@ class BudgetController extends AsyncNotifier<List<BudgetItem>> {
   }
 
   Future<bool> addBudget(BudgetItem budget) async {
+    if (budget.limit <= 0) return false;
     try {
-      await _repository.createBudget(budget);
+      await _repository.createBudget(budget.copyWith(spent: 0));
       await _reload();
       return true;
     } catch (error, stackTrace) {
@@ -36,8 +38,10 @@ class BudgetController extends AsyncNotifier<List<BudgetItem>> {
   }
 
   Future<bool> updateBudget(BudgetItem budget) async {
+    if (budget.limit <= 0) return false;
     try {
-      await _repository.updateBudget(budget);
+      // Spent is derived from transactions and must never be persisted as user input.
+      await _repository.updateBudget(budget.copyWith(spent: 0));
       await _reload();
       return true;
     } catch (error, stackTrace) {
@@ -70,18 +74,25 @@ class BudgetController extends AsyncNotifier<List<BudgetItem>> {
     List<TransactionModel> transactions,
   ) {
     final now = DateTime.now();
+    final analytics = buildFinancialAnalytics(
+      transactions,
+      DateTime(now.year, now.month),
+      DateTime(now.year, now.month + 1),
+    );
+
     return [
       for (final budget in budgets)
         budget.copyWith(
-          spent: transactions
-              .where((transaction) =>
-                  transaction.isExpense &&
-                  transaction.date.year == now.year &&
-                  transaction.date.month == now.month &&
-                  transaction.category.name == budget.id)
-              .fold<double>(0, (sum, transaction) => sum + transaction.amount),
+          spent: analytics.expenseByCategory[_categoryForBudget(budget.id)] ?? 0,
         ),
     ];
+  }
+
+  TransactionCategory _categoryForBudget(String id) {
+    for (final category in TransactionCategory.values) {
+      if (category.name == id) return category;
+    }
+    return TransactionCategory.other;
   }
 }
 
@@ -93,6 +104,21 @@ final totalBudgetLimitProvider = Provider<double>((ref) {
 final totalBudgetSpentProvider = Provider<double>((ref) {
   final budgets = ref.watch(budgetItemsProvider).valueOrNull ?? const <BudgetItem>[];
   return budgets.fold<double>(0, (sum, budget) => sum + budget.spent);
+});
+
+final budgetRemainingProvider = Provider<double>((ref) {
+  return ref.watch(totalBudgetLimitProvider) - ref.watch(totalBudgetSpentProvider);
+});
+
+final overBudgetItemsProvider = Provider<List<BudgetItem>>((ref) {
+  final budgets = ref.watch(budgetItemsProvider).valueOrNull ?? const <BudgetItem>[];
+  return budgets.where((budget) => budget.isOverBudget).toList(growable: false);
+});
+
+final budgetUsageProvider = Provider<double>((ref) {
+  final limit = ref.watch(totalBudgetLimitProvider);
+  if (limit <= 0) return 0;
+  return (ref.watch(totalBudgetSpentProvider) / limit).clamp(0.0, 1.0);
 });
 
 Color budgetColorForCategory(String category) {
