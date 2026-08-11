@@ -11,6 +11,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/context_ai_insight.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../../dashboard/controllers/financial_overview_controller.dart';
+import 'add_goal_sheet.dart';
 
 class GoalsPage extends ConsumerStatefulWidget {
   const GoalsPage({super.key});
@@ -32,18 +33,14 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   void _selectTab(int index) {
     if (index == _selectedTab) return;
     setState(() => _selectedTab = index);
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOutCubic,
-    );
+    _pageController.animateToPage(index, duration: const Duration(milliseconds: 280), curve: Curves.easeOutCubic);
   }
+
+  Future<void> _addGoal() => showAddGoalSheet(context, ref);
 
   @override
   Widget build(BuildContext context) {
-    final goals = ref.watch(financialGoalsProvider)
-        .map(_GoalData.fromSnapshot)
-        .toList(growable: false);
+    final goals = ref.watch(financialGoalsProvider).map(_GoalData.fromSnapshot).toList(growable: false);
 
     return PremiumScaffold(
       child: Padding(
@@ -51,7 +48,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _GoalsHeader(),
+            _GoalsHeader(onAdd: _addGoal),
             const SizedBox(height: 10),
             _GoalsOverview(goals: goals),
             const SizedBox(height: 10),
@@ -62,9 +59,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                 controller: _pageController,
                 physics: const BouncingScrollPhysics(),
                 onPageChanged: (index) {
-                  if (index != _selectedTab) {
-                    setState(() => _selectedTab = index);
-                  }
+                  if (index != _selectedTab) setState(() => _selectedTab = index);
                 },
                 children: [
                   _GoalList(goals: goals, showInsight: true),
@@ -82,7 +77,8 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
 }
 
 class _GoalsHeader extends StatelessWidget {
-  const _GoalsHeader();
+  const _GoalsHeader({required this.onAdd});
+  final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -98,15 +94,23 @@ class _GoalsHeader extends StatelessWidget {
             ],
           ),
         ),
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.border.withValues(alpha: .45)),
+        Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: onAdd,
+            customBorder: const CircleBorder(),
+            child: Ink(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.border.withValues(alpha: .45)),
+              ),
+              child: const Center(child: Icon(LucideIcons.plus, color: AppColors.primaryLight, size: 20)),
+            ),
           ),
-          child: const Icon(LucideIcons.plus, color: AppColors.primaryLight, size: 20),
         ),
       ],
     );
@@ -115,7 +119,6 @@ class _GoalsHeader extends StatelessWidget {
 
 class _GoalsOverview extends StatelessWidget {
   const _GoalsOverview({required this.goals});
-
   final List<_GoalData> goals;
 
   @override
@@ -135,12 +138,7 @@ class _GoalsOverview extends StatelessWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                CircularProgressIndicator(
-                  value: progress,
-                  strokeWidth: 6,
-                  backgroundColor: AppColors.border.withValues(alpha: .35),
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight),
-                ),
+                CircularProgressIndicator(value: progress, strokeWidth: 6, backgroundColor: AppColors.border.withValues(alpha: .35), valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight)),
                 Text('${(progress * 100).round()}%', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w800)),
               ],
             ),
@@ -169,7 +167,6 @@ class _GoalsOverview extends StatelessWidget {
 
 class _GoalTabs extends StatelessWidget {
   const _GoalTabs({required this.selected, required this.onSelected});
-
   final int selected;
   final ValueChanged<int> onSelected;
   static const labels = ['Semua', 'Wishlist', 'Saving', 'Debt'];
@@ -179,11 +176,7 @@ class _GoalTabs extends StatelessWidget {
     return Container(
       height: 44,
       padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: .72),
-        borderRadius: AppRadius.radiusLG,
-        border: Border.all(color: AppColors.border.withValues(alpha: .3)),
-      ),
+      decoration: BoxDecoration(color: AppColors.card.withValues(alpha: .72), borderRadius: AppRadius.radiusLG, border: Border.all(color: AppColors.border.withValues(alpha: .3))),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final itemWidth = constraints.maxWidth / labels.length;
@@ -193,15 +186,7 @@ class _GoalTabs extends StatelessWidget {
                 duration: const Duration(milliseconds: 280),
                 curve: Curves.easeOutCubic,
                 alignment: Alignment(-1 + (selected * 2 / (labels.length - 1)), 0),
-                child: Container(
-                  width: itemWidth,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    gradient: AppGradients.primary,
-                    borderRadius: AppRadius.radiusMD,
-                    boxShadow: AppShadows.glow,
-                  ),
-                ),
+                child: Container(width: itemWidth, height: 38, decoration: BoxDecoration(gradient: AppGradients.primary, borderRadius: AppRadius.radiusMD, boxShadow: AppShadows.glow)),
               ),
               Row(
                 children: List.generate(labels.length, (index) {
@@ -211,15 +196,7 @@ class _GoalTabs extends StatelessWidget {
                       behavior: HitTestBehavior.opaque,
                       onTap: () => onSelected(index),
                       child: Center(
-                        child: AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 180),
-                          curve: Curves.easeOutCubic,
-                          style: AppTypography.caption.copyWith(
-                            color: active ? Colors.white : AppColors.textSecondary,
-                            fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                          ),
-                          child: Text(labels[index], maxLines: 1, overflow: TextOverflow.ellipsis),
-                        ),
+                        child: Text(labels[index], maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption.copyWith(color: active ? Colors.white : AppColors.textSecondary, fontWeight: active ? FontWeight.w800 : FontWeight.w600)),
                       ),
                     ),
                   );
@@ -235,7 +212,6 @@ class _GoalTabs extends StatelessWidget {
 
 class _GoalList extends StatelessWidget {
   const _GoalList({required this.goals, this.showInsight = false});
-
   final List<_GoalData> goals;
   final bool showInsight;
 
@@ -248,9 +224,7 @@ class _GoalList extends StatelessWidget {
       separatorBuilder: (_, _) => const SizedBox(height: 7),
       itemBuilder: (context, index) {
         if (showInsight && index == goals.length) {
-          return const ContextAIInsight(
-            message: 'Dana Darurat sudah menjadi prioritas. Saat sebuah goal selesai, Nexora bisa menyarankan mengalihkan dana ke target yang masih relevan.',
-          );
+          return const ContextAIInsight(message: 'Dana Darurat sudah menjadi prioritas. Saat sebuah goal selesai, Nexora bisa menyarankan mengalihkan dana ke target yang masih relevan.');
         }
         return _GoalCard(goal: goals[index]);
       },
@@ -260,7 +234,6 @@ class _GoalList extends StatelessWidget {
 
 class _GoalCard extends StatelessWidget {
   const _GoalCard({required this.goal});
-
   final _GoalData goal;
 
   @override
@@ -270,56 +243,18 @@ class _GoalCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: AppRadius.radiusXL,
-        border: Border.all(color: AppColors.border.withValues(alpha: .5)),
-        boxShadow: AppShadows.card,
-      ),
+      decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadius.radiusXL, border: Border.all(color: AppColors.border.withValues(alpha: .5)), boxShadow: AppShadows.card),
       child: Row(
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: .12),
-              borderRadius: AppRadius.radiusLG,
-            ),
-            child: Icon(goal.icon, color: AppColors.primaryLight, size: 21),
-          ),
+          Container(width: 42, height: 42, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .12), borderRadius: AppRadius.radiusLG), child: Icon(goal.icon, color: AppColors.primaryLight, size: 21)),
           const SizedBox(width: 9),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        goal.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                    Text('${(progress * 100).round()}%', style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800)),
-                  ],
-                ),
+                Row(children: [Expanded(child: Text(goal.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800))), Text('${(progress * 100).round()}%', style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800))]),
                 const SizedBox(height: 1),
-                Row(
-                  children: [
-                    Text(goal.type, style: AppTypography.caption),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: .10),
-                        borderRadius: AppRadius.radiusPill,
-                      ),
-                      child: Text(status, style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontSize: 9, fontWeight: FontWeight.w700)),
-                    ),
-                  ],
-                ),
+                Row(children: [Text(goal.type, style: AppTypography.caption), const SizedBox(width: 6), Container(padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1), decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .10), borderRadius: AppRadius.radiusPill), child: Text(status, style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontSize: 9, fontWeight: FontWeight.w700)))]),
                 const SizedBox(height: 6),
                 AnimatedProgressBar(value: progress, color: AppColors.primaryLight),
                 const SizedBox(height: 4),
@@ -335,7 +270,6 @@ class _GoalCard extends StatelessWidget {
 
 class _GoalData {
   const _GoalData(this.title, this.type, this.saved, this.target, this.icon);
-
   final String title;
   final String type;
   final double saved;
@@ -344,7 +278,5 @@ class _GoalData {
 
   double get progress => target <= 0 ? 0 : (saved / target).clamp(0.0, 1.0);
 
-  factory _GoalData.fromSnapshot(FinancialGoalSnapshot snapshot) {
-    return _GoalData(snapshot.title, snapshot.type, snapshot.saved, snapshot.target, snapshot.icon);
-  }
+  factory _GoalData.fromSnapshot(FinancialGoalSnapshot snapshot) => _GoalData(snapshot.title, snapshot.type, snapshot.saved, snapshot.target, snapshot.icon);
 }
