@@ -65,6 +65,15 @@ class LocalWalletRepository implements WalletRepository {
     if (wallets.any((item) => item.id == wallet.id)) {
       throw StateError('Wallet dengan id "${wallet.id}" sudah ada.');
     }
+
+    if (wallet.isPrimary) {
+      for (var index = 0; index < wallets.length; index++) {
+        if (wallets[index].isPrimary) {
+          wallets[index] = wallets[index].copyWith(isPrimary: false);
+        }
+      }
+    }
+
     wallets.add(wallet);
     await _write(wallets);
     return wallet;
@@ -77,6 +86,15 @@ class LocalWalletRepository implements WalletRepository {
     if (index == -1) {
       throw StateError('Wallet dengan id "${wallet.id}" tidak ditemukan.');
     }
+
+    if (wallet.isPrimary) {
+      for (var itemIndex = 0; itemIndex < wallets.length; itemIndex++) {
+        if (itemIndex != index && wallets[itemIndex].isPrimary) {
+          wallets[itemIndex] = wallets[itemIndex].copyWith(isPrimary: false);
+        }
+      }
+    }
+
     wallets[index] = wallet;
     await _write(wallets);
     return wallet;
