@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
+import '../../../core/widgets/premium_widgets.dart';
 import '../models/budget_item.dart';
 
 class BudgetSummaryCard extends StatelessWidget {
