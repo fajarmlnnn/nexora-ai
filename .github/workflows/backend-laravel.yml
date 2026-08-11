@@ -37,8 +37,21 @@ jobs:
 
       - name: Prepare environment
         run: |
-          cp .env.example .env
-          php artisan key:generate
+          printf '%s\n' \
+            'APP_NAME=Nexora' \
+            'APP_ENV=testing' \
+            'APP_KEY=' \
+            'APP_DEBUG=true' \
+            'APP_URL=http://localhost' \
+            'LOG_CHANNEL=stderr' \
+            'DB_CONNECTION=sqlite' \
+            'DB_DATABASE=database/database.sqlite' \
+            'CACHE_STORE=array' \
+            'SESSION_DRIVER=array' \
+            'QUEUE_CONNECTION=sync' \
+            'MAIL_MAILER=array' \
+            > .env
+          php artisan key:generate --force
           touch database/database.sqlite
 
       - name: Run migrations
