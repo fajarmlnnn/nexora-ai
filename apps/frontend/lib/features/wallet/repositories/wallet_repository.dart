@@ -21,7 +21,7 @@ class LocalWalletRepository implements WalletRepository {
   Future<List<WalletModel>> _read() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_storageKey);
-    if (raw == null || raw.isEmpty) return const [];
+    if (raw == null || raw.isEmpty) return <WalletModel>[];
 
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;
@@ -33,16 +33,19 @@ class LocalWalletRepository implements WalletRepository {
           )
           .toList(growable: true);
     } catch (_) {
-      return const [];
+      return <WalletModel>[];
     }
   }
 
   Future<void> _write(List<WalletModel> wallets) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
+    final saved = await prefs.setString(
       _storageKey,
       jsonEncode(wallets.map((wallet) => wallet.toJson()).toList()),
     );
+    if (!saved) {
+      throw StateError('Gagal menyimpan data wallet ke penyimpanan lokal.');
+    }
   }
 
   @override
@@ -58,7 +61,7 @@ class LocalWalletRepository implements WalletRepository {
 
   @override
   Future<WalletModel> createWallet(WalletModel wallet) async {
-    final wallets = await _read();
+    final wallets = List<WalletModel>.from(await _read());
     if (wallets.any((item) => item.id == wallet.id)) {
       throw StateError('Wallet dengan id "${wallet.id}" sudah ada.');
     }
@@ -69,7 +72,7 @@ class LocalWalletRepository implements WalletRepository {
 
   @override
   Future<WalletModel> updateWallet(WalletModel wallet) async {
-    final wallets = await _read();
+    final wallets = List<WalletModel>.from(await _read());
     final index = wallets.indexWhere((item) => item.id == wallet.id);
     if (index == -1) {
       throw StateError('Wallet dengan id "${wallet.id}" tidak ditemukan.');
@@ -81,7 +84,7 @@ class LocalWalletRepository implements WalletRepository {
 
   @override
   Future<void> deleteWallet(String id) async {
-    final wallets = await _read();
+    final wallets = List<WalletModel>.from(await _read());
     final index = wallets.indexWhere((item) => item.id == id);
     if (index == -1) {
       throw StateError('Wallet dengan id "$id" tidak ditemukan.');
