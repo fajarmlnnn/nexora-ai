@@ -43,6 +43,7 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
   }
 
   Future<void> add(TransactionModel transaction) async {
+    _validateTransaction(transaction);
     if (state.any((item) => item.id == transaction.id)) {
       throw StateError('Transaksi dengan id "${transaction.id}" sudah ada.');
     }
@@ -71,7 +72,10 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
     if (sourceWalletId == destinationWalletId) {
       throw ArgumentError('Wallet sumber dan tujuan harus berbeda.');
     }
-    if (amount <= 0) {
+    if (sourceWalletId.trim().isEmpty || destinationWalletId.trim().isEmpty) {
+      throw ArgumentError('Wallet sumber dan tujuan wajib diisi.');
+    }
+    if (amount <= 0 || !amount.isFinite) {
       throw ArgumentError('Nominal transfer harus lebih besar dari nol.');
     }
 
@@ -91,10 +95,20 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
   }
 
   Future<void> delete(String id) async {
+    final trimmedId = id.trim();
+    if (trimmedId.isEmpty) {
+      throw ArgumentError('ID transaksi wajib diisi.');
+    }
+
     final previous = state;
-    state = previous
-        .where((transaction) => transaction.id != id)
+    final next = previous
+        .where((transaction) => transaction.id != trimmedId)
         .toList(growable: false);
+    if (next.length == previous.length) {
+      throw StateError('Transaksi dengan id "$trimmedId" tidak ditemukan.');
+    }
+
+    state = next;
 
     try {
       await _persist();
@@ -105,6 +119,8 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
   }
 
   Future<void> replace(TransactionModel transaction) async {
+    _validateTransaction(transaction);
+
     final previous = state;
     final index = previous.indexWhere((item) => item.id == transaction.id);
     if (index == -1) {
@@ -133,6 +149,31 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
     } catch (_) {
       state = previous;
       rethrow;
+    }
+  }
+
+  void _validateTransaction(TransactionModel transaction) {
+    if (transaction.id.trim().isEmpty) {
+      throw ArgumentError('ID transaksi wajib diisi.');
+    }
+    if (!transaction.amount.isFinite || transaction.amount <= 0) {
+      throw ArgumentError('Nominal transaksi harus lebih besar dari nol.');
+    }
+    if (transaction.title.trim().isEmpty) {
+      throw ArgumentError('Nama transaksi wajib diisi.');
+    }
+    if (transaction.isTransfer) {
+      if (transaction.sourceAccount == null || transaction.sourceAccount!.trim().isEmpty) {
+        throw ArgumentError('Wallet sumber transfer wajib diisi.');
+      }
+      if (transaction.destinationAccount == null || transaction.destinationAccount!.trim().isEmpty) {
+        throw ArgumentError('Wallet tujuan transfer wajib diisi.');
+      }
+      if (transaction.sourceAccount == transaction.destinationAccount) {
+        throw ArgumentError('Wallet sumber dan tujuan transfer harus berbeda.');
+      }
+    } else if (transaction.walletId == null || transaction.walletId!.trim().isEmpty) {
+      throw ArgumentError('Wallet transaksi wajib diisi.');
     }
   }
 
