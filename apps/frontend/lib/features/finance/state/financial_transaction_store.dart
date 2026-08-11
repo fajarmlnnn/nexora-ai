@@ -43,8 +43,20 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
   }
 
   Future<void> add(TransactionModel transaction) async {
-    state = [transaction, ...state];
-    await _persist();
+    if (state.any((item) => item.id == transaction.id)) {
+      throw StateError('Transaksi dengan id "${transaction.id}" sudah ada.');
+    }
+
+    final previous = state;
+    final next = [transaction, ...previous];
+    state = next;
+
+    try {
+      await _persist();
+    } catch (_) {
+      state = previous;
+      rethrow;
+    }
   }
 
   /// Records an internal wallet transfer. It never contributes to income,
@@ -79,31 +91,60 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
   }
 
   Future<void> delete(String id) async {
-    state = state
+    final previous = state;
+    state = previous
         .where((transaction) => transaction.id != id)
         .toList(growable: false);
-    await _persist();
+
+    try {
+      await _persist();
+    } catch (_) {
+      state = previous;
+      rethrow;
+    }
   }
 
   Future<void> replace(TransactionModel transaction) async {
-    state = [
-      for (final item in state) item.id == transaction.id ? transaction : item,
-    ];
-    await _persist();
+    final previous = state;
+    final index = previous.indexWhere((item) => item.id == transaction.id);
+    if (index == -1) {
+      throw StateError('Transaksi dengan id "${transaction.id}" tidak ditemukan.');
+    }
+
+    final next = [...previous];
+    next[index] = transaction;
+    state = next;
+
+    try {
+      await _persist();
+    } catch (_) {
+      state = previous;
+      rethrow;
+    }
   }
 
   /// Clears persisted transactions. This method does not restore demo data.
   Future<void> clearAndRestoreDemoData() async {
+    final previous = state;
     state = const [];
-    await _persist();
+
+    try {
+      await _persist();
+    } catch (_) {
+      state = previous;
+      rethrow;
+    }
   }
 
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
+    final saved = await prefs.setString(
       _storageKey,
       jsonEncode(state.map((transaction) => transaction.toJson()).toList()),
     );
+    if (!saved) {
+      throw StateError('Gagal menyimpan transaksi ke penyimpanan lokal.');
+    }
   }
 
   bool _isLegacyDemo(TransactionModel transaction) {
