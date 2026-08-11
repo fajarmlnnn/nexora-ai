@@ -5,16 +5,10 @@ import '../../finance/state/financial_transaction_store.dart';
 import '../models/wallet_model.dart';
 import '../repositories/wallet_repository.dart';
 
-/// Repository dependency.
-///
-/// Wallet data is now backed by persistent local storage. The repository
-/// boundary stays intact so it can later be replaced by Supabase/API storage
-/// without changing the Wallet UI.
 final walletRepositoryProvider = Provider<WalletRepository>((ref) {
   return LocalWalletRepository();
 });
 
-/// Main wallet state.
 final walletProvider =
     AsyncNotifierProvider<WalletController, List<WalletModel>>(
       WalletController.new,
@@ -30,7 +24,6 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
     return _applyTransactions(wallets, transactions);
   }
 
-  /// Refresh wallet tanpa sengaja membuang data lama dari UI.
   Future<void> refreshWallets() async {
     final previous = state;
     final result = await AsyncValue.guard<List<WalletModel>>(() async {
@@ -47,41 +40,28 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
     state = result;
   }
 
-  /// Tambahkan wallet baru.
   Future<bool> addWallet(WalletModel wallet) async {
     try {
       await _repository.createWallet(wallet);
       await _reload();
       return true;
     } catch (error, stackTrace) {
-      state = AsyncValue<List<WalletModel>>.error(
-        error,
-        stackTrace,
-      ).copyWithPrevious(state);
+      state = AsyncValue<List<WalletModel>>.error(error, stackTrace).copyWithPrevious(state);
       return false;
     }
   }
 
-  /// Update wallet.
   Future<bool> updateWallet(WalletModel wallet) async {
     try {
       await _repository.updateWallet(wallet);
       await _reload();
       return true;
     } catch (error, stackTrace) {
-      state = AsyncValue<List<WalletModel>>.error(
-        error,
-        stackTrace,
-      ).copyWithPrevious(state);
+      state = AsyncValue<List<WalletModel>>.error(error, stackTrace).copyWithPrevious(state);
       return false;
     }
   }
 
-  /// Hapus wallet.
-  ///
-  /// Wallet yang masih memiliki transaksi tidak boleh dihapus karena transaksi
-  /// menyimpan referensi ke wallet tersebut. Penghapusan dalam kondisi ini
-  /// akan merusak histori finansial dan membuat laporan tidak konsisten.
   Future<bool> deleteWallet(String id) async {
     final transactions = ref.read(financialTransactionStoreProvider);
     final hasTransactions = transactions.any(
@@ -97,22 +77,17 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
       await _reload();
       return true;
     } catch (error, stackTrace) {
-      state = AsyncValue<List<WalletModel>>.error(
-        error,
-        stackTrace,
-      ).copyWithPrevious(state);
+      state = AsyncValue<List<WalletModel>>.error(error, stackTrace).copyWithPrevious(state);
       return false;
     }
   }
 
-  /// Menyembunyikan atau menampilkan wallet.
   Future<bool> setWalletVisibility(String id, {required bool hidden}) async {
     final wallet = _findWallet(id);
     if (wallet == null) return false;
     return updateWallet(wallet.copyWith(isHidden: hidden));
   }
 
-  /// Menjadikan wallet tertentu sebagai wallet utama.
   Future<bool> setPrimaryWallet(String id) async {
     final wallets = state.valueOrNull;
     if (wallets == null || wallets.isEmpty) return false;
@@ -124,18 +99,47 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
       for (final wallet in wallets) {
         final shouldBePrimary = wallet.id == id;
         if (wallet.isPrimary != shouldBePrimary) {
-          await _repository.updateWallet(
-            wallet.copyWith(isPrimary: shouldBePrimary),
-          );
+          await _repository.updateWallet(wallet.copyWith(isPrimary: shouldBePrimary));
         }
       }
       await _reload();
       return true;
     } catch (error, stackTrace) {
-      state = AsyncValue<List<WalletModel>>.error(
-        error,
-        stackTrace,
-      ).copyWithPrevious(state);
+      state = AsyncValue<List<WalletModel>>.error(error, stackTrace).copyWithPrevious(state);
+      return false;
+    }
+  }
+
+  /// Transfers money between two visible wallets as one financial transaction.
+  /// Transfers are internal movements: they do not count as income or expense.
+  Future<bool> transferBetweenWallets({
+    required String sourceWalletId,
+    required String destinationWalletId,
+    required double amount,
+    String? note,
+  }) async {
+    if (sourceWalletId == destinationWalletId || amount <= 0) return false;
+
+    final wallets = state.valueOrNull;
+    if (wallets == null) return false;
+
+    final source = _findWalletFrom(wallets, sourceWalletId);
+    final destination = _findWalletFrom(wallets, destinationWalletId);
+    if (source == null || destination == null) return false;
+    if (source.isHidden || destination.isHidden) return false;
+    if (source.balance < amount) return false;
+
+    try {
+      await ref.read(financialTransactionStoreProvider.notifier).transfer(
+        sourceWalletId: sourceWalletId,
+        destinationWalletId: destinationWalletId,
+        amount: amount,
+        note: note,
+      );
+      await _reload();
+      return true;
+    } catch (error, stackTrace) {
+      state = AsyncValue<List<WalletModel>>.error(error, stackTrace).copyWithPrevious(state);
       return false;
     }
   }
@@ -143,7 +147,10 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
   WalletModel? _findWallet(String id) {
     final wallets = state.valueOrNull;
     if (wallets == null) return null;
+    return _findWalletFrom(wallets, id);
+  }
 
+  WalletModel? _findWalletFrom(List<WalletModel> wallets, String id) {
     for (final wallet in wallets) {
       if (wallet.id == id) return wallet;
     }
@@ -164,9 +171,7 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
   ) {
     return [
       for (final wallet in wallets)
-        wallet.copyWith(
-          balance: wallet.balance + _walletDelta(wallet.id, transactions),
-        ),
+        wallet.copyWith(balance: wallet.balance + _walletDelta(wallet.id, transactions)),
     ];
   }
 
@@ -179,12 +184,8 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
       } else if (transaction.isExpense && transaction.walletId == walletId) {
         delta -= transaction.amount;
       } else if (transaction.isTransfer) {
-        if (transaction.sourceAccount == walletId) {
-          delta -= transaction.amount;
-        }
-        if (transaction.destinationAccount == walletId) {
-          delta += transaction.amount;
-        }
+        if (transaction.sourceAccount == walletId) delta -= transaction.amount;
+        if (transaction.destinationAccount == walletId) delta += transaction.amount;
       }
     }
 
@@ -192,30 +193,20 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
   }
 }
 
-/// Total saldo seluruh wallet yang visible.
 final totalWalletBalanceProvider = Provider<double>((ref) {
   final walletsAsync = ref.watch(walletProvider);
-
   return walletsAsync.maybeWhen(
-    data: (wallets) => wallets.fold<double>(
-      0,
-      (total, wallet) => wallet.isHidden ? total : total + wallet.balance,
-    ),
+    data: (wallets) => wallets.fold<double>(0, (total, wallet) => wallet.isHidden ? total : total + wallet.balance),
     orElse: () => 0,
   );
 });
 
-/// Wallet utama.
 final primaryWalletProvider = Provider<WalletModel?>((ref) {
   final walletsAsync = ref.watch(walletProvider);
-
   return walletsAsync.maybeWhen(
     data: (wallets) {
-      final visibleWallets = wallets
-          .where((wallet) => !wallet.isHidden)
-          .toList(growable: false);
+      final visibleWallets = wallets.where((wallet) => !wallet.isHidden).toList(growable: false);
       if (visibleWallets.isEmpty) return null;
-
       for (final wallet in visibleWallets) {
         if (wallet.isPrimary) return wallet;
       }
@@ -225,40 +216,24 @@ final primaryWalletProvider = Provider<WalletModel?>((ref) {
   );
 });
 
-/// Wallet yang boleh ditampilkan di UI.
 final visibleWalletsProvider = Provider<List<WalletModel>>((ref) {
   final walletsAsync = ref.watch(walletProvider);
-
   return walletsAsync.maybeWhen(
-    data: (wallets) => wallets
-        .where((wallet) => !wallet.isHidden)
-        .toList(growable: false),
+    data: (wallets) => wallets.where((wallet) => !wallet.isHidden).toList(growable: false),
     orElse: () => const [],
   );
 });
 
-/// Wallet berdasarkan tipe.
-final walletByTypeProvider = Provider.family<List<WalletModel>, WalletType>(
-  (ref, type) {
-    final wallets = ref.watch(visibleWalletsProvider);
-    return wallets.where((wallet) => wallet.type == type).toList(growable: false);
-  },
-);
-
-/// Total saldo berdasarkan tipe wallet.
-final walletBalanceByTypeProvider = Provider.family<double, WalletType>(
-  (ref, type) {
-    final wallets = ref.watch(walletByTypeProvider(type));
-    return wallets.fold<double>(0, (total, wallet) => total + wallet.balance);
-  },
-);
-
-/// Jumlah wallet aktif.
-final walletCountProvider = Provider<int>((ref) {
-  return ref.watch(visibleWalletsProvider).length;
+final walletByTypeProvider = Provider.family<List<WalletModel>, WalletType>((ref, type) {
+  final wallets = ref.watch(visibleWalletsProvider);
+  return wallets.where((wallet) => wallet.type == type).toList(growable: false);
 });
 
-/// Apakah user sudah memiliki wallet.
-final hasWalletProvider = Provider<bool>((ref) {
-  return ref.watch(visibleWalletsProvider).isNotEmpty;
+final walletBalanceByTypeProvider = Provider.family<double, WalletType>((ref, type) {
+  final wallets = ref.watch(walletByTypeProvider(type));
+  return wallets.fold<double>(0, (total, wallet) => total + wallet.balance);
 });
+
+final walletCountProvider = Provider<int>((ref) => ref.watch(visibleWalletsProvider).length);
+
+final hasWalletProvider = Provider<bool>((ref) => ref.watch(visibleWalletsProvider).isNotEmpty);
