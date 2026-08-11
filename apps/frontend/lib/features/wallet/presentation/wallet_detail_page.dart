@@ -110,6 +110,8 @@ class WalletDetailPage extends ConsumerWidget {
       const SizedBox(height: 14),
       _ActivityCard(income: monthIncome, expense: monthExpense, transferIn: monthTransferIn, transferOut: monthTransferOut),
       const SizedBox(height: 14),
+      _MinimumBalanceCard(wallet: wallet, onEdit: () => _showMinimumBalanceDialog(context, ref, wallet)),
+      const SizedBox(height: 14),
       _TopSpendingCard(spending: topSpending, counts: spendingCounts, total: monthExpense),
       const SizedBox(height: 18),
       Row(children: [Expanded(child: Text('Transaksi Terbaru', style: AppTypography.heading3.copyWith(fontWeight: FontWeight.w800))), Text('${related.length} transaksi', style: AppTypography.caption)]),
@@ -132,9 +134,48 @@ class WalletDetailPage extends ConsumerWidget {
   Future<void> _showActions(BuildContext context, WidgetRef ref, WalletModel wallet) async {
     await showModalBottomSheet<void>(context: context, backgroundColor: AppColors.card, builder: (sheetContext) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
       ListTile(leading: const Icon(LucideIcons.star), title: Text(wallet.isPrimary ? 'Wallet utama' : 'Jadikan wallet utama'), enabled: !wallet.isPrimary, onTap: wallet.isPrimary ? null : () async { await ref.read(walletProvider.notifier).setPrimaryWallet(wallet.id); if (sheetContext.mounted) Navigator.pop(sheetContext); }),
+      ListTile(leading: const Icon(LucideIcons.shieldCheck), title: Text(wallet.hasMinimumBalance ? 'Atur saldo minimum' : 'Tetapkan saldo minimum'), onTap: () async { Navigator.pop(sheetContext); await _showMinimumBalanceDialog(context, ref, wallet); }),
       ListTile(leading: Icon(wallet.isHidden ? LucideIcons.eye : LucideIcons.eyeOff), title: Text(wallet.isHidden ? 'Tampilkan wallet' : 'Sembunyikan wallet'), onTap: () async { await ref.read(walletProvider.notifier).setWalletVisibility(wallet.id, hidden: !wallet.isHidden); if (sheetContext.mounted) Navigator.pop(sheetContext); }),
       ListTile(leading: const Icon(LucideIcons.trash2, color: AppColors.danger), title: const Text('Hapus wallet', style: TextStyle(color: AppColors.danger)), onTap: () async { Navigator.pop(sheetContext); await _confirmDelete(context, ref, wallet); }),
     ])));
+  }
+
+  Future<void> _showMinimumBalanceDialog(BuildContext context, WidgetRef ref, WalletModel wallet) async {
+    final controller = TextEditingController(text: wallet.minimumBalance > 0 ? wallet.minimumBalance.toStringAsFixed(0) : '');
+    final result = await showDialog<double?>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Saldo Minimum'),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Tentukan batas saldo aman untuk wallet ini.', style: AppTypography.bodySmall),
+          const SizedBox(height: 12),
+          TextField(
+            controller: controller,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Batas minimum', prefixText: 'Rp '),
+          ),
+          const SizedBox(height: 8),
+          Text('Isi 0 atau kosong untuk menonaktifkan batas.', style: AppTypography.caption),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Batal')),
+          FilledButton(onPressed: () {
+            final digits = controller.text.replaceAll(RegExp(r'[^0-9]'), '');
+            final value = digits.isEmpty ? 0.0 : double.tryParse(digits);
+            if (value == null) return;
+            Navigator.pop(dialogContext, value);
+          }, child: const Text('Simpan')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (result == null || !context.mounted) return;
+    final success = await ref.read(walletProvider.notifier).updateWallet(wallet.copyWith(minimumBalance: result));
+    if (!context.mounted) return;
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saldo minimum gagal disimpan.')));
+    }
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref, WalletModel wallet) async {
@@ -161,9 +202,14 @@ class _AiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final positive = net >= 0;
-    final insight = topSpending == null ? (positive ? 'Cashflow bulan ini positif berdasarkan transaksi yang tersedia.' : 'Cashflow bulan ini negatif berdasarkan transaksi yang tersedia.') : 'Pengeluaran terbesar bulan ini: ${_categoryLabel(topSpending!.key)} (${rupiah(topSpending!.value)}).';
-    return Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF17131F), Color(0xFF0D0D14)]), borderRadius: AppRadius.radiusXL, border: Border.all(color: AppColors.primary.withValues(alpha: .24))), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Container(width: 38, height: 38, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .14), borderRadius: AppRadius.radiusLG), child: const Icon(LucideIcons.sparkles, color: AppColors.primaryLight, size: 19)),
+    final minimumWarning = wallet.isBelowMinimum;
+    final insight = minimumWarning
+        ? 'Saldo wallet berada di bawah batas minimum ${rupiah(wallet.minimumBalance)}.'
+        : topSpending == null
+            ? (positive ? 'Cashflow bulan ini positif berdasarkan transaksi yang tersedia.' : 'Cashflow bulan ini negatif berdasarkan transaksi yang tersedia.')
+            : 'Pengeluaran terbesar bulan ini: ${_categoryLabel(topSpending!.key)} (${rupiah(topSpending!.value)}).';
+    return Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF17131F), Color(0xFF0D0D14)]), borderRadius: AppRadius.radiusXL, border: Border.all(color: minimumWarning ? AppColors.warning.withValues(alpha: .35) : AppColors.primary.withValues(alpha: .24))), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Container(width: 38, height: 38, decoration: BoxDecoration(color: (minimumWarning ? AppColors.warning : AppColors.primary).withValues(alpha: .14), borderRadius: AppRadius.radiusLG), child: Icon(minimumWarning ? LucideIcons.triangleAlert : LucideIcons.sparkles, color: minimumWarning ? AppColors.warning : AppColors.primaryLight, size: 19)),
       const SizedBox(width: 11),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [Text('Nexora AI', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800)), const SizedBox(width: 6), const _StatusChip(label: 'AI', color: AppColors.primaryLight)]),
@@ -217,6 +263,43 @@ class _ActivityRow extends StatelessWidget {
   ]));
 }
 
+class _MinimumBalanceCard extends StatelessWidget {
+  const _MinimumBalanceCard({required this.wallet, required this.onEdit});
+  final WalletModel wallet;
+  final VoidCallback onEdit;
+  @override
+  Widget build(BuildContext context) {
+    final enabled = wallet.hasMinimumBalance;
+    final below = wallet.isBelowMinimum;
+    final color = below ? AppColors.warning : AppColors.success;
+    return PremiumCard(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Saldo Minimum', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 3),
+          Text(enabled ? (below ? 'Di bawah batas aman' : 'Di atas batas aman') : 'Batas belum ditetapkan', style: AppTypography.caption.copyWith(color: enabled ? color : AppColors.textSecondary, fontWeight: FontWeight.w700)),
+        ])),
+        IconButton(onPressed: onEdit, tooltip: 'Atur saldo minimum', icon: const Icon(LucideIcons.pencil, size: 18)),
+      ]),
+      const SizedBox(height: 10),
+      if (!enabled) Text('Tetapkan batas agar Nexora dapat memberi peringatan sebelum saldo terlalu rendah.', style: AppTypography.caption)
+      else ...[
+        Row(children: [Expanded(child: _MinimumMetric(label: 'Saldo saat ini', value: rupiah(wallet.balance))), const SizedBox(width: 10), Expanded(child: _MinimumMetric(label: 'Batas minimum', value: rupiah(wallet.minimumBalance)))]),
+        const SizedBox(height: 10),
+        Container(width: double.infinity, padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withValues(alpha: .08), borderRadius: AppRadius.radiusLG), child: Row(children: [Icon(below ? LucideIcons.triangleAlert : LucideIcons.shieldCheck, size: 17, color: color), const SizedBox(width: 8), Expanded(child: Text(below ? 'Kurang ${rupiah(wallet.minimumBalanceGap)} dari batas minimum.' : 'Saldo masih ${rupiah(wallet.balance - wallet.minimumBalance)} di atas batas minimum.', style: AppTypography.caption.copyWith(color: color, fontWeight: FontWeight.w700)))])),
+      ],
+    ]));
+  }
+}
+
+class _MinimumMetric extends StatelessWidget {
+  const _MinimumMetric({required this.label, required this.value});
+  final String label;
+  final String value;
+  @override
+  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: AppTypography.caption), const SizedBox(height: 3), Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.amountSmall.copyWith(fontWeight: FontWeight.w800))]);
+}
+
 class _TopSpendingCard extends StatelessWidget {
   const _TopSpendingCard({required this.spending, required this.counts, required this.total});
   final List<MapEntry<TransactionCategory, double>> spending;
@@ -245,21 +328,27 @@ class _TopSpendingCard extends StatelessWidget {
 
 class _MetricCard extends StatelessWidget {
   const _MetricCard({required this.title, required this.amount, required this.color, required this.icon});
-  final String title; final double amount; final Color color; final IconData icon;
+  final String title;
+   final double amount;
+  final Color color;
+  final IconData icon;
   @override
   Widget build(BuildContext context) => PremiumCard(padding: const EdgeInsets.all(13), child: Row(children: [Container(width: 32, height: 32, decoration: BoxDecoration(color: color.withValues(alpha: .12), borderRadius: AppRadius.radiusLG), child: Icon(icon, size: 16, color: color)), const SizedBox(width: 9), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: AppTypography.caption), const SizedBox(height: 2), Text(rupiah(amount), maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800))]))]));
 }
 
 class _FlowRow extends StatelessWidget {
   const _FlowRow({required this.label, required this.amount, required this.color});
-  final String label; final double amount; final Color color;
+  final String label;
+  final double amount;
+  final Color color;
   @override
   Widget build(BuildContext context) => Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Row(children: [Expanded(child: Text(label, style: AppTypography.caption)), Text(rupiah(amount), style: AppTypography.amountSmall.copyWith(color: color, fontWeight: FontWeight.w800))]));
 }
 
 class _TransactionRow extends StatelessWidget {
   const _TransactionRow({required this.transaction, required this.walletId});
-  final TransactionModel transaction; final String walletId;
+  final TransactionModel transaction;
+  final String walletId;
   @override
   Widget build(BuildContext context) {
     final incoming = transaction.isIncome || (transaction.isTransfer && transaction.destinationAccount == walletId);
@@ -276,40 +365,32 @@ class _TransactionRow extends StatelessWidget {
 
 class _InfoRow extends StatelessWidget {
   const _InfoRow({required this.label, required this.value});
-  final String label; final String value;
+  final String label;
+  final String value;
   @override
   Widget build(BuildContext context) => Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(child: Text(label, style: AppTypography.caption)), const SizedBox(width: 12), Flexible(child: Text(value, textAlign: TextAlign.right, style: AppTypography.amountSmall.copyWith(fontWeight: FontWeight.w700)))]));
 }
 
 class _StatusChip extends StatelessWidget {
   const _StatusChip({required this.label, required this.color});
-  final String label; final Color color;
+  final String label;
+  final Color color;
   @override
   Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4), decoration: BoxDecoration(color: color.withValues(alpha: .11), borderRadius: BorderRadius.circular(8)), child: Text(label, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.w900)));
 }
 
 String _categoryLabel(TransactionCategory category) {
   switch (category) {
-    case TransactionCategory.salary:
-      return 'Gaji';
-    case TransactionCategory.food:
-      return 'Makanan';
-    case TransactionCategory.transport:
-      return 'Transportasi';
-    case TransactionCategory.shopping:
-      return 'Belanja';
-    case TransactionCategory.bills:
-      return 'Tagihan';
-    case TransactionCategory.health:
-      return 'Kesehatan';
-    case TransactionCategory.entertainment:
-      return 'Hiburan';
-    case TransactionCategory.education:
-      return 'Pendidikan';
-    case TransactionCategory.investment:
-      return 'Investasi';
-    case TransactionCategory.other:
-      return 'Lainnya';
+    case TransactionCategory.salary: return 'Gaji';
+    case TransactionCategory.food: return 'Makanan';
+    case TransactionCategory.transport: return 'Transportasi';
+    case TransactionCategory.shopping: return 'Belanja';
+    case TransactionCategory.bills: return 'Tagihan';
+    case TransactionCategory.health: return 'Kesehatan';
+    case TransactionCategory.entertainment: return 'Hiburan';
+    case TransactionCategory.education: return 'Pendidikan';
+    case TransactionCategory.investment: return 'Investasi';
+    case TransactionCategory.other: return 'Lainnya';
   }
 }
 
