@@ -88,7 +88,7 @@ final aiInsightProvider = Provider<AIInsight>((ref) {
     message: 'Belum cukup data historis untuk membuat perbandingan. Lanjutkan pencatatan transaksi agar insight semakin akurat.',
     level: InsightLevel.positive,
   );
-}
+});
 
 _BalanceTrend _buildBalanceTrend(List<TransactionModel> transactions, double currentBalance) {
   final now = DateTime.now();
@@ -139,7 +139,11 @@ _BalanceTrend _buildBalanceTrend(List<TransactionModel> transactions, double cur
 }
 
 class _BalanceTrend {
-  const _BalanceTrend({required this.previousBalance, required this.changePercent, required this.points});
+  const _BalanceTrend({
+    required this.previousBalance,
+    required this.changePercent,
+    required this.points,
+  });
 
   final double previousBalance;
   final double changePercent;
