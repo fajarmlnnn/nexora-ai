@@ -86,13 +86,11 @@ class WalletDetailPage extends ConsumerWidget {
         child: ListView(
           padding: AppSpacing.screen.copyWith(bottom: AppSpacing.bottomNav(context) + 24),
           children: [
-            Row(
-              children: [
-                IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(LucideIcons.arrowLeft)),
-                Expanded(child: Text(wallet.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.heading2.copyWith(fontWeight: FontWeight.w800))),
-                IconButton(onPressed: () => _showActions(context, ref, wallet), icon: const Icon(LucideIcons.ellipsis)),
-              ],
-            ),
+            Row(children: [
+              IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(LucideIcons.arrowLeft)),
+              Expanded(child: Text(wallet.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.heading2.copyWith(fontWeight: FontWeight.w800))),
+              IconButton(onPressed: () => _showActions(context, ref, wallet), icon: const Icon(LucideIcons.ellipsis)),
+            ]),
             const SizedBox(height: 8),
             PremiumCard(
               padding: const EdgeInsets.all(18),
@@ -170,7 +168,13 @@ class WalletDetailPage extends ConsumerWidget {
     if (confirmed != true || !context.mounted) return;
     final success = await ref.read(walletProvider.notifier).deleteWallet(wallet.id);
     if (!context.mounted) return;
-    if (success) Navigator.pop(context); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Wallet gagal dihapus.')));
+    if (success) {
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Wallet gagal dihapus.')),
+      );
+    }
   }
 }
 
