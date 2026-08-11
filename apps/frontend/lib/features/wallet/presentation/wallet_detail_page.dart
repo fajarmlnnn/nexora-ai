@@ -110,7 +110,12 @@ class WalletDetailPage extends ConsumerWidget {
       const SizedBox(height: 14),
       _ActivityCard(income: monthIncome, expense: monthExpense, transferIn: monthTransferIn, transferOut: monthTransferOut),
       const SizedBox(height: 14),
-      _TopSpendingCard(spending: topSpending, counts: spendingCounts, total: monthExpense),
+      PremiumCard(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Pengeluaran Terbesar', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        if (topSpending.isEmpty) Text('Belum cukup data pengeluaran bulan ini.', style: AppTypography.caption)
+        else ...topSpending.take(3).map((entry) => _FlowRow(label: entry.key.name, amount: entry.value, color: AppColors.danger)),
+      ])),
       const SizedBox(height: 18),
       Row(children: [Expanded(child: Text('Transaksi Terbaru', style: AppTypography.heading3.copyWith(fontWeight: FontWeight.w800))), Text('${related.length} transaksi', style: AppTypography.caption)]),
       const SizedBox(height: 8),
@@ -296,6 +301,8 @@ class _StatusChip extends StatelessWidget {
 
 String _categoryLabel(TransactionCategory category) {
   switch (category) {
+    case TransactionCategory.salary:
+      return 'Gaji';
     case TransactionCategory.food:
       return 'Makanan';
     case TransactionCategory.transport:
