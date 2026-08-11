@@ -14,6 +14,7 @@ import '../features/onboarding/presentation/splash_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/report/presentation/report_page.dart';
 import '../features/transaction/presentation/transaction_page.dart';
+import '../features/wallet/presentation/wallet_detail_page.dart';
 import '../features/wallet/presentation/wallet_page.dart';
 import 'app_shell.dart';
 
@@ -31,6 +32,7 @@ final appRouter = GoRouter(
         StatefulShellBranch(routes: [GoRoute(path: '/goals', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const GoalsPage()))]),
       ],
     ),
+    GoRoute(path: '/wallet/:walletId', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: WalletDetailPage(walletId: state.pathParameters['walletId']!))),
     GoRoute(path: '/financial-overview', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const FinancialOverviewRealtimePage())),
     GoRoute(path: '/profile', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const ProfilePage())),
     GoRoute(path: '/ai', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const AIPage())),
@@ -52,13 +54,7 @@ CustomTransitionPage<void> _buildTransitionPage({required GoRouterState state, r
     reverseTransitionDuration: const Duration(milliseconds: 260),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
-      return FadeTransition(
-        opacity: curved,
-        child: SlideTransition(
-          position: Tween<Offset>(begin: const Offset(0.04, .03), end: Offset.zero).animate(curved),
-          child: child,
-        ),
-      );
+      return FadeTransition(opacity: curved, child: SlideTransition(position: Tween<Offset>(begin: const Offset(0.04, .03), end: Offset.zero).animate(curved), child: child));
     },
   );
 }
