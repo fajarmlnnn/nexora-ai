@@ -26,6 +26,7 @@ class FinancialGoalSnapshot {
 
   double get progress => target <= 0 ? 0 : (saved / target).clamp(0.0, 1.0);
   bool get isCompleted => target > 0 && saved >= target;
+  double get remaining => (target - saved).clamp(0.0, double.infinity);
 
   FinancialGoalSnapshot copyWith({
     String? title,
@@ -53,13 +54,22 @@ class FinancialGoalSnapshot {
       };
 
   static FinancialGoalSnapshot fromJson(Map<String, dynamic> json) {
-    final id = json['id'] as String? ?? 'goal';
+    final id = json['id'] as String? ?? '';
+    final title = json['title'] as String? ?? '';
+    final type = json['type'] as String? ?? 'Saving';
+    final saved = (json['saved'] as num?)?.toDouble() ?? 0;
+    final target = (json['target'] as num?)?.toDouble() ?? 0;
+
+    if (id.isEmpty || title.trim().isEmpty || target <= 0 || saved < 0) {
+      throw const FormatException('Data goal tidak valid.');
+    }
+
     return FinancialGoalSnapshot(
       id: id,
-      title: json['title'] as String? ?? 'Goal',
-      type: json['type'] as String? ?? 'Saving',
-      saved: (json['saved'] as num?)?.toDouble() ?? 0,
-      target: (json['target'] as num?)?.toDouble() ?? 0,
+      title: title.trim(),
+      type: type,
+      saved: saved > target ? target : saved,
+      target: target,
       icon: _goalIcon(id),
     );
   }
@@ -165,76 +175,120 @@ class FinancialGoalsController extends Notifier<List<FinancialGoalSnapshot>> {
     if (raw == null || raw.isEmpty) return;
 
     try {
-      final decoded = jsonDecode(raw) as List<dynamic>;
-      final loaded = decoded
-          .map(
-            (item) => FinancialGoalSnapshot.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
-          )
-          .where((goal) => !_legacyDemoGoalIds.contains(goal.id))
-          .toList(growable: false);
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) throw const FormatException('Goal storage bukan list.');
+
+      final loaded = <FinancialGoalSnapshot>[];
+      final ids = <String>{};
+      for (final item in decoded) {
+        if (item is! Map) continue;
+        try {
+          final goal = FinancialGoalSnapshot.fromJson(
+            Map<String, dynamic>.from(item),
+          );
+          if (_legacyDemoGoalIds.contains(goal.id) || !ids.add(goal.id)) continue;
+          loaded.add(goal);
+        } catch (_) {
+          // Ignore one malformed record rather than losing every valid goal.
+        }
+      }
 
       state = List.unmodifiable(loaded);
 
-      // Migrate old demo records out of persistent storage so they cannot
-      // reappear after a restart. New installs start with an empty goal list.
       if (loaded.length != decoded.length) {
-        await _persist();
+        await _persistSnapshot(loaded);
       }
     } catch (_) {
       state = const [];
-      await _persist();
+      await _persistSnapshot(const []);
     }
   }
 
-  Future<void> _persist() async {
+  Future<void> _persistSnapshot(List<FinancialGoalSnapshot> goals) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
+    final saved = await prefs.setString(
       _goalsStorageKey,
-      jsonEncode(state.map((goal) => goal.toJson()).toList()),
+      jsonEncode(goals.map((goal) => goal.toJson()).toList(growable: false)),
     );
+    if (!saved) throw StateError('Gagal menyimpan goals ke penyimpanan lokal.');
+  }
+
+  Future<void> _commit(List<FinancialGoalSnapshot> next) async {
+    final previous = state;
+    try {
+      await _persistSnapshot(next);
+      state = List.unmodifiable(next);
+    } catch (_) {
+      state = previous;
+      rethrow;
+    }
   }
 
   Future<void> replaceGoals(List<FinancialGoalSnapshot> goals) async {
-    state = List.unmodifiable(goals);
-    await _persist();
+    final ids = <String>{};
+    for (final goal in goals) {
+      if (goal.id.isEmpty || goal.title.trim().isEmpty || goal.target <= 0 || goal.saved < 0 || goal.saved > goal.target || !ids.add(goal.id)) {
+        throw StateError('Data goal tidak valid.');
+      }
+    }
+    await _commit(List.unmodifiable(goals));
   }
 
   Future<void> addGoal(FinancialGoalSnapshot goal) async {
-    state = List.unmodifiable([...state, goal]);
-    await _persist();
+    if (goal.id.isEmpty || goal.title.trim().isEmpty) {
+      throw StateError('Nama atau ID goal tidak valid.');
+    }
+    if (goal.target <= 0 || goal.saved < 0 || goal.saved > goal.target) {
+      throw StateError('Target dan saldo goal tidak valid.');
+    }
+    if (state.any((item) => item.id == goal.id)) {
+      throw StateError('Goal dengan ID tersebut sudah ada.');
+    }
+    await _commit([...state, goal]);
   }
 
   Future<bool> contribute(String id, double amount) async {
     if (amount <= 0) return false;
     final index = state.indexWhere((goal) => goal.id == id);
     if (index < 0) return false;
+
     final goal = state[index];
-    state = List.unmodifiable([
+    final contribution = amount.clamp(0.0, goal.remaining);
+    if (contribution <= 0) return false;
+
+    final next = [
       ...state.take(index),
-      goal.copyWith(saved: goal.saved + amount),
+      goal.copyWith(saved: goal.saved + contribution),
       ...state.skip(index + 1),
-    ]);
-    await _persist();
+    ];
+
+    await _commit(next);
     return true;
   }
 
   Future<bool> updateGoal(String id, {double? target, String? title}) async {
     final index = state.indexWhere((goal) => goal.id == id);
     if (index < 0) return false;
-    state = List.unmodifiable([
+    if (target != null && target <= 0) return false;
+    if (title != null && title.trim().isEmpty) return false;
+
+    final current = state[index];
+    final nextTarget = target ?? current.target;
+    if (current.saved > nextTarget) return false;
+
+    final next = [
       ...state.take(index),
-      state[index].copyWith(target: target, title: title),
+      current.copyWith(target: nextTarget, title: title?.trim()),
       ...state.skip(index + 1),
-    ]);
-    await _persist();
+    ];
+
+    await _commit(next);
     return true;
   }
 
   Future<void> removeGoal(String id) async {
-    state = List.unmodifiable(state.where((goal) => goal.id != id));
-    await _persist();
+    if (!state.any((goal) => goal.id == id)) return;
+    await _commit(state.where((goal) => goal.id != id).toList(growable: false));
   }
 }
 
@@ -269,10 +323,11 @@ class InstallmentsController extends Notifier<List<InstallmentSnapshot>> {
 
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
+    final saved = await prefs.setString(
       _installmentsStorageKey,
       jsonEncode(state.map((item) => item.toJson()).toList()),
     );
+    if (!saved) throw StateError('Gagal menyimpan cicilan ke penyimpanan lokal.');
   }
 
   Future<void> replaceInstallments(List<InstallmentSnapshot> installments) async {
@@ -322,6 +377,13 @@ final totalGoalTargetProvider = Provider<double>((ref) {
   return ref.watch(financialGoalsProvider).fold<double>(
         0,
         (total, goal) => total + goal.target,
+      );
+});
+
+final totalGoalRemainingProvider = Provider<double>((ref) {
+  return ref.watch(financialGoalsProvider).fold<double>(
+        0,
+        (total, goal) => total + goal.remaining,
       );
 });
 
