@@ -64,8 +64,10 @@ class WalletDetailPage extends ConsumerWidget {
 
     final monthNet = monthIncome - monthExpense;
     final spending = <TransactionCategory, double>{};
+    final spendingCounts = <TransactionCategory, int>{};
     for (final tx in monthTransactions.where((tx) => tx.isExpense)) {
       spending[tx.category] = (spending[tx.category] ?? 0) + tx.amount;
+      spendingCounts[tx.category] = (spendingCounts[tx.category] ?? 0) + 1;
     }
     final topSpending = spending.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
     final accent = _walletAccent(wallet.type);
@@ -108,12 +110,7 @@ class WalletDetailPage extends ConsumerWidget {
       const SizedBox(height: 14),
       _ActivityCard(income: monthIncome, expense: monthExpense, transferIn: monthTransferIn, transferOut: monthTransferOut),
       const SizedBox(height: 14),
-      PremiumCard(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Pengeluaran Terbesar', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800)),
-        const SizedBox(height: 8),
-        if (topSpending.isEmpty) Text('Belum cukup data pengeluaran bulan ini.', style: AppTypography.caption)
-        else ...topSpending.take(3).map((entry) => _FlowRow(label: entry.key.name, amount: entry.value, color: AppColors.danger)),
-      ])),
+      _TopSpendingCard(spending: topSpending, counts: spendingCounts, total: monthExpense),
       const SizedBox(height: 18),
       Row(children: [Expanded(child: Text('Transaksi Terbaru', style: AppTypography.heading3.copyWith(fontWeight: FontWeight.w800))), Text('${related.length} transaksi', style: AppTypography.caption)]),
       const SizedBox(height: 8),
@@ -164,7 +161,7 @@ class _AiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final positive = net >= 0;
-    final insight = topSpending == null ? (positive ? 'Cashflow bulan ini positif berdasarkan transaksi yang tersedia.' : 'Cashflow bulan ini negatif berdasarkan transaksi yang tersedia.') : 'Pengeluaran terbesar bulan ini: ${topSpending!.key.name} (${rupiah(topSpending!.value)}).';
+    final insight = topSpending == null ? (positive ? 'Cashflow bulan ini positif berdasarkan transaksi yang tersedia.' : 'Cashflow bulan ini negatif berdasarkan transaksi yang tersedia.') : 'Pengeluaran terbesar bulan ini: ${_categoryLabel(topSpending!.key)} (${rupiah(topSpending!.value)}).';
     return Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF17131F), Color(0xFF0D0D14)]), borderRadius: AppRadius.radiusXL, border: Border.all(color: AppColors.primary.withValues(alpha: .24))), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Container(width: 38, height: 38, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .14), borderRadius: AppRadius.radiusLG), child: const Icon(LucideIcons.sparkles, color: AppColors.primaryLight, size: 19)),
       const SizedBox(width: 11),
@@ -220,6 +217,38 @@ class _ActivityRow extends StatelessWidget {
   ]));
 }
 
+class _TopSpendingCard extends StatelessWidget {
+  const _TopSpendingCard({required this.spending, required this.counts, required this.total});
+  final List<MapEntry<TransactionCategory, double>> spending;
+  final Map<TransactionCategory, int> counts;
+  final double total;
+
+  @override
+  Widget build(BuildContext context) {
+    return PremiumCard(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [Expanded(child: Text('Pengeluaran Terbesar', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800))), Text('Bulan berjalan', style: AppTypography.caption)]),
+      const SizedBox(height: 10),
+      if (spending.isEmpty || total <= 0)
+        Text('Belum cukup data pengeluaran bulan ini.', style: AppTypography.caption)
+      else
+        ...spending.take(3).map((entry) {
+          final percentage = (entry.value / total).clamp(0.0, 1.0);
+          final count = counts[entry.key] ?? 0;
+          return Padding(padding: const EdgeInsets.only(bottom: 12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Expanded(child: Text(_categoryLabel(entry.key), style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700))),
+              Text('${(percentage * 100).round()}%', style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800)),
+            ]),
+            const SizedBox(height: 5),
+            ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: percentage, minHeight: 5, backgroundColor: AppColors.border, valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight))),
+            const SizedBox(height: 5),
+            Row(children: [Expanded(child: Text('${rupiah(entry.value)} • $count transaksi', style: AppTypography.caption)), if (entry == spending.first) const _StatusChip(label: 'TERBESAR', color: AppColors.primaryLight)]),
+          ]));
+        }),
+    ]));
+  }
+}
+
 class _MetricCard extends StatelessWidget {
   const _MetricCard({required this.title, required this.amount, required this.color, required this.icon});
   final String title; final double amount; final Color color; final IconData icon;
@@ -263,6 +292,29 @@ class _StatusChip extends StatelessWidget {
   final String label; final Color color;
   @override
   Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4), decoration: BoxDecoration(color: color.withValues(alpha: .11), borderRadius: BorderRadius.circular(8)), child: Text(label, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.w900)));
+}
+
+String _categoryLabel(TransactionCategory category) {
+  switch (category) {
+    case TransactionCategory.food:
+      return 'Makanan';
+    case TransactionCategory.transport:
+      return 'Transportasi';
+    case TransactionCategory.shopping:
+      return 'Belanja';
+    case TransactionCategory.bills:
+      return 'Tagihan';
+    case TransactionCategory.health:
+      return 'Kesehatan';
+    case TransactionCategory.entertainment:
+      return 'Hiburan';
+    case TransactionCategory.education:
+      return 'Pendidikan';
+    case TransactionCategory.investment:
+      return 'Investasi';
+    case TransactionCategory.other:
+      return 'Lainnya';
+  }
 }
 
 Color _walletAccent(WalletType type) {
