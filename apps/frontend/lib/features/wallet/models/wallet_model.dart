@@ -16,6 +16,7 @@ class WalletModel {
     required this.color,
     this.isPrimary = false,
     this.isHidden = false,
+    this.minimumBalance = 0,
   });
 
   final String id;
@@ -27,12 +28,17 @@ class WalletModel {
   final Color color;
   final bool isPrimary;
   final bool isHidden;
+  final double minimumBalance;
 
   bool get hasBalance => balance > 0;
   bool get isBank => type == WalletType.bank;
   bool get isEWallet => type == WalletType.ewallet;
   bool get isCash => type == WalletType.cash;
   bool get isInvestment => type == WalletType.investment;
+
+  bool get hasMinimumBalance => minimumBalance > 0;
+  bool get isBelowMinimum => hasMinimumBalance && balance < minimumBalance;
+  double get minimumBalanceGap => minimumBalance - balance;
 
   String get maskedAccount {
     if (accountNumber.length <= 4) {
@@ -64,6 +70,7 @@ class WalletModel {
     Color? color,
     bool? isPrimary,
     bool? isHidden,
+    double? minimumBalance,
   }) {
     return WalletModel(
       id: id ?? this.id,
@@ -75,6 +82,7 @@ class WalletModel {
       color: color ?? this.color,
       isPrimary: isPrimary ?? this.isPrimary,
       isHidden: isHidden ?? this.isHidden,
+      minimumBalance: minimumBalance ?? this.minimumBalance,
     );
   }
 
@@ -89,6 +97,7 @@ class WalletModel {
       color: Color(json["color"] as int),
       isPrimary: json["isPrimary"] as bool? ?? false,
       isHidden: json["isHidden"] as bool? ?? false,
+      minimumBalance: (json["minimumBalance"] as num?)?.toDouble() ?? 0,
     );
   }
 
@@ -103,6 +112,7 @@ class WalletModel {
       "color": color.toARGB32(),
       "isPrimary": isPrimary,
       "isHidden": isHidden,
+      "minimumBalance": minimumBalance,
     };
   }
 }
