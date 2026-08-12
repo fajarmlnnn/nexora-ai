@@ -47,6 +47,10 @@ class SupabaseWalletRepository implements WalletRepository {
 
   @override
   Future<WalletModel> createWallet(WalletModel wallet) async {
+    // Balance is a derived financial value. It must never be accepted from
+    // an untrusted Flutter client. Opening funds should be recorded as an
+    // income transaction so the database trigger remains the single source
+    // of truth for balance changes.
     final row = await _client
         .from('wallets')
         .insert({
@@ -57,7 +61,7 @@ class SupabaseWalletRepository implements WalletRepository {
           'account_number':
               wallet.accountNumber.isEmpty ? null : wallet.accountNumber,
           'type': wallet.type.name,
-          'balance': wallet.balance,
+          'balance': 0,
           'minimum_balance': wallet.minimumBalance,
           'color': _colorToHex(wallet.color),
           'is_primary': wallet.isPrimary,
