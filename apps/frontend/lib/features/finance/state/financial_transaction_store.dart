@@ -1,67 +1,53 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../dashboard/models/transaction_model.dart';
+import '../repositories/supabase_transaction_repository.dart';
+import '../repositories/transaction_repository.dart';
 
-const _storageKey = 'nexora_financial_transactions_v1';
+final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
+  return SupabaseTransactionRepository();
+});
 
 final financialTransactionStoreProvider =
     StateNotifierProvider<FinancialTransactionStore, List<TransactionModel>>(
-  (ref) => FinancialTransactionStore()..load(),
+  (ref) => FinancialTransactionStore(ref.read(transactionRepositoryProvider))..load(),
 );
 
 class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
-  FinancialTransactionStore() : super(const []);
+  FinancialTransactionStore(this._repository) : super(const []);
+
+  final TransactionRepository _repository;
 
   Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_storageKey);
-    if (raw == null || raw.isEmpty) return;
-
     try {
-      final decoded = jsonDecode(raw) as List<dynamic>;
-      final loaded = decoded
-          .map(
-            (item) => TransactionModel.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
-          )
-          .where((transaction) => !_isLegacyDemo(transaction))
-          .toList(growable: false);
-
+      final loaded = await _repository.getTransactions(limit: 100);
       state = loaded;
-
-      if (loaded.length != decoded.length) {
-        await _persist();
-      }
     } catch (_) {
+      // Keep the store empty when there is no authenticated Supabase session
+      // yet. The auth/session layer will trigger reload after sign-in.
       state = const [];
-      await _persist();
     }
   }
+
+  Future<void> reload() => load();
 
   Future<void> add(TransactionModel transaction) async {
     _validateTransaction(transaction);
-    if (state.any((item) => item.id == transaction.id)) {
-      throw StateError('Transaksi dengan id "${transaction.id}" sudah ada.');
+
+    final created = await _repository.createTransaction(
+      transaction,
+      idempotencyKey: transaction.id,
+    );
+
+    if (state.any((item) => item.id == created.id)) {
+      return;
     }
 
-    final previous = state;
-    final next = [transaction, ...previous];
-    state = next;
-
-    try {
-      await _persist();
-    } catch (_) {
-      state = previous;
-      rethrow;
-    }
+    state = [created, ...state];
   }
 
-  /// Records an internal wallet transfer. It never contributes to income,
-  /// expense, or net cashflow.
+  /// Records an internal wallet transfer. The database applies both wallet
+  /// balance changes atomically; this store only submits the transaction.
   Future<void> transfer({
     required String sourceWalletId,
     required String destinationWalletId,
@@ -100,56 +86,31 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
       throw ArgumentError('ID transaksi wajib diisi.');
     }
 
-    final previous = state;
-    final next = previous
+    await _repository.deleteTransaction(trimmedId);
+    state = state
         .where((transaction) => transaction.id != trimmedId)
         .toList(growable: false);
-    if (next.length == previous.length) {
-      throw StateError('Transaksi dengan id "$trimmedId" tidak ditemukan.');
-    }
-
-    state = next;
-
-    try {
-      await _persist();
-    } catch (_) {
-      state = previous;
-      rethrow;
-    }
   }
 
   Future<void> replace(TransactionModel transaction) async {
     _validateTransaction(transaction);
 
-    final previous = state;
-    final index = previous.indexWhere((item) => item.id == transaction.id);
+    final updated = await _repository.updateTransaction(transaction);
+    final index = state.indexWhere((item) => item.id == updated.id);
     if (index == -1) {
-      throw StateError('Transaksi dengan id "${transaction.id}" tidak ditemukan.');
+      state = [updated, ...state];
+      return;
     }
 
-    final next = [...previous];
-    next[index] = transaction;
+    final next = [...state];
+    next[index] = updated;
     state = next;
-
-    try {
-      await _persist();
-    } catch (_) {
-      state = previous;
-      rethrow;
-    }
   }
 
-  /// Clears persisted transactions. This method does not restore demo data.
+  /// Reloads the remote source. This intentionally does not delete remote
+  /// financial data; clearing a local cache must never erase real finances.
   Future<void> clearAndRestoreDemoData() async {
-    final previous = state;
-    state = const [];
-
-    try {
-      await _persist();
-    } catch (_) {
-      state = previous;
-      rethrow;
-    }
+    await load();
   }
 
   void _validateTransaction(TransactionModel transaction) {
@@ -175,23 +136,6 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
     } else if (transaction.walletId == null || transaction.walletId!.trim().isEmpty) {
       throw ArgumentError('Wallet transaksi wajib diisi.');
     }
-  }
-
-  Future<void> _persist() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = await prefs.setString(
-      _storageKey,
-      jsonEncode(state.map((transaction) => transaction.toJson()).toList()),
-    );
-    if (!saved) {
-      throw StateError('Gagal menyimpan transaksi ke penyimpanan lokal.');
-    }
-  }
-
-  bool _isLegacyDemo(TransactionModel transaction) {
-    return transaction.id == 'seed-salary-may' ||
-        transaction.id == 'seed-lunch' ||
-        transaction.id == 'seed-coffee';
   }
 }
 
