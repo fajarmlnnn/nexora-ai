@@ -11,7 +11,7 @@ String _uuid() {
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
   final hex = bytes.map((value) => value.toRadixString(16).padLeft(2, '0')).join();
-  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
+  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}';
 }
 
 void main() {
@@ -33,6 +33,7 @@ void main() {
 
       final walletId = _uuid();
       final forgedWalletId = _uuid();
+      final forgedBalanceWalletId = _uuid();
 
       try {
         // A client may create a wallet, but balance is derived and must not be
@@ -58,6 +59,26 @@ void main() {
         expect(created['id'], walletId);
         expect(created['user_id'], user.id);
         expect(created['balance'], 0);
+
+        // A client must not be able to create a wallet with an arbitrary
+        // starting balance, even if table privileges are accidentally broadened.
+        await expectLater(
+          client.from('wallets').insert({
+            'id': forgedBalanceWalletId,
+            'user_id': user.id,
+            'name': 'E2E Forged Balance',
+            'type': 'cash',
+            'bank_name': '',
+            'account_number': '',
+            'balance': 999999,
+            'minimum_balance': 0,
+            'currency_code': 'IDR',
+            'color': '#DC2626',
+            'is_primary': false,
+            'is_hidden': false,
+          }),
+          throwsA(isA<PostgrestException>()),
+        );
 
         // Direct balance mutation must be rejected by column privileges.
         await expectLater(
@@ -106,10 +127,12 @@ void main() {
             .single();
         expect(ownership['user_id'], user.id);
       } finally {
-        try {
-          await client.from('wallets').delete().eq('id', walletId);
-        } catch (_) {
-          // Best-effort cleanup; preserve the original test failure.
+        for (final id in [walletId, forgedBalanceWalletId]) {
+          try {
+            await client.from('wallets').delete().eq('id', id);
+          } catch (_) {
+            // Best-effort cleanup; preserve the original test failure.
+          }
         }
         await client.auth.signOut();
       }
