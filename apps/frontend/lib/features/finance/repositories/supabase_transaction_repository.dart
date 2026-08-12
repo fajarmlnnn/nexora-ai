@@ -1,0 +1,277 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../../core/supabase/supabase_client.dart';
+import '../../dashboard/models/transaction_model.dart';
+import 'transaction_repository.dart';
+
+class SupabaseTransactionRepository implements TransactionRepository {
+  SupabaseTransactionRepository({SupabaseClient? client})
+      : _client = client ?? NexoraSupabase.client;
+
+  final SupabaseClient _client;
+
+  String get _userId {
+    final user = _client.auth.currentUser;
+    if (user == null) {
+      throw StateError('User belum terautentikasi.');
+    }
+    return user.id;
+  }
+
+  @override
+  Future<List<TransactionModel>> getTransactions({
+    String? walletId,
+    TransactionType? type,
+    TransactionCategory? category,
+    String? search,
+    DateTime? from,
+    DateTime? to,
+    int limit = 100,
+    int offset = 0,
+  }) async {
+    final safeLimit = limit.clamp(1, 100);
+    final safeOffset = offset < 0 ? 0 : offset;
+
+    dynamic query = _client
+        .from('transactions')
+        .select()
+        .eq('user_id', _userId);
+
+    if (walletId != null && walletId.trim().isNotEmpty) {
+      final id = walletId.trim();
+      query = query.or(
+        'wallet_id.eq.$id,source_wallet_id.eq.$id,destination_wallet_id.eq.$id',
+      );
+    }
+    if (type != null) {
+      query = query.eq('type', type.name);
+    }
+    if (category != null) {
+      query = query.eq('category', category.name);
+    }
+    if (search != null && search.trim().isNotEmpty) {
+      final escaped = search.trim().replaceAll(',', '');
+      query = query.ilike('description', '%$escaped%');
+    }
+    if (from != null) {
+      query = query.gte('occurred_at', from.toUtc().toIso8601String());
+    }
+    if (to != null) {
+      query = query.lte('occurred_at', to.toUtc().toIso8601String());
+    }
+
+    final rows = await query
+        .order('occurred_at', ascending: false)
+        .range(safeOffset, safeOffset + safeLimit - 1);
+
+    return rows
+        .map((row) => _fromRow(Map<String, dynamic>.from(row)))
+        .toList(growable: false);
+  }
+
+  @override
+  Future<TransactionModel> createTransaction(
+    TransactionModel transaction, {
+    String? idempotencyKey,
+  }) async {
+    _validate(transaction);
+
+    final key = (idempotencyKey ?? transaction.id).trim();
+    if (key.isEmpty) {
+      throw ArgumentError('Idempotency key transaksi wajib diisi.');
+    }
+
+    final payload = <String, dynamic>{
+      'user_id': _userId,
+      'type': transaction.type.name,
+      'amount': transaction.amount.toStringAsFixed(2),
+      'category': transaction.category.name,
+      'description': transaction.title.trim(),
+      'occurred_at': transaction.date.toUtc().toIso8601String(),
+      'idempotency_key': key,
+      'metadata': {
+        if (transaction.note != null && transaction.note!.trim().isNotEmpty)
+          'note': transaction.note!.trim(),
+      },
+    };
+
+    if (transaction.isTransfer) {
+      payload['source_wallet_id'] = transaction.sourceAccount;
+      payload['destination_wallet_id'] = transaction.destinationAccount;
+    } else {
+      payload['wallet_id'] = transaction.walletId;
+    }
+
+    final existing = await _client
+        .from('transactions')
+        .select()
+        .eq('user_id', _userId)
+        .eq('idempotency_key', key)
+        .maybeSingle();
+
+    if (existing != null) {
+      return _fromRow(Map<String, dynamic>.from(existing));
+    }
+
+    try {
+      final row = await _client.from('transactions').insert(payload).select().single();
+      return _fromRow(Map<String, dynamic>.from(row));
+    } on PostgrestException catch (error) {
+      // A concurrent retry can win the unique idempotency constraint between
+      // the lookup above and the insert. Resolve it to the committed row.
+      if (_isUniqueViolation(error)) {
+        final existingAfterConflict = await _client
+            .from('transactions')
+            .select()
+            .eq('user_id', _userId)
+            .eq('idempotency_key', key)
+            .maybeSingle();
+        if (existingAfterConflict != null) {
+          return _fromRow(Map<String, dynamic>.from(existingAfterConflict));
+        }
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<TransactionModel> updateTransaction(TransactionModel transaction) async {
+    _validate(transaction);
+    if (transaction.id.trim().isEmpty) {
+      throw ArgumentError('ID transaksi wajib diisi.');
+    }
+
+    final payload = <String, dynamic>{
+      'type': transaction.type.name,
+      'amount': transaction.amount.toStringAsFixed(2),
+      'category': transaction.category.name,
+      'description': transaction.title.trim(),
+      'occurred_at': transaction.date.toUtc().toIso8601String(),
+      'metadata': {
+        if (transaction.note != null && transaction.note!.trim().isNotEmpty)
+          'note': transaction.note!.trim(),
+      },
+      'wallet_id': transaction.isTransfer ? null : transaction.walletId,
+      'source_wallet_id': transaction.isTransfer ? transaction.sourceAccount : null,
+      'destination_wallet_id': transaction.isTransfer ? transaction.destinationAccount : null,
+    };
+
+    final row = await _client
+        .from('transactions')
+        .update(payload)
+        .eq('id', transaction.id)
+        .eq('user_id', _userId)
+        .select()
+        .maybeSingle();
+
+    if (row == null) {
+      throw StateError('Transaksi dengan id "${transaction.id}" tidak ditemukan.');
+    }
+    return _fromRow(Map<String, dynamic>.from(row));
+  }
+
+  @override
+  Future<void> deleteTransaction(String id) async {
+    final trimmed = id.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError('ID transaksi wajib diisi.');
+    }
+
+    await _client
+        .from('transactions')
+        .delete()
+        .eq('id', trimmed)
+        .eq('user_id', _userId);
+  }
+
+  TransactionModel _fromRow(Map<String, dynamic> row) {
+    final metadata = row['metadata'];
+    final metadataMap = metadata is Map
+        ? Map<String, dynamic>.from(metadata)
+        : const <String, dynamic>{};
+
+    return TransactionModel(
+      id: row['id'].toString(),
+      title: row['description']?.toString().trim().isNotEmpty == true
+          ? row['description'].toString()
+          : _defaultTitle(row['type']?.toString()),
+      amount: _number(row['amount']),
+      type: _transactionType(row['type']?.toString()),
+      category: _transactionCategory(row['category']?.toString()),
+      date: _parseDate(row['occurred_at']),
+      note: metadataMap['note']?.toString(),
+      walletId: row['wallet_id']?.toString(),
+      sourceAccount: row['source_wallet_id']?.toString(),
+      destinationAccount: row['destination_wallet_id']?.toString(),
+    );
+  }
+
+  TransactionType _transactionType(String? value) {
+    switch (value) {
+      case 'income':
+        return TransactionType.income;
+      case 'transfer':
+        return TransactionType.transfer;
+      case 'expense':
+      default:
+        return TransactionType.expense;
+    }
+  }
+
+  TransactionCategory _transactionCategory(String? value) {
+    for (final category in TransactionCategory.values) {
+      if (category.name == value) return category;
+    }
+    return TransactionCategory.other;
+  }
+
+  DateTime _parseDate(dynamic value) {
+    final parsed = DateTime.tryParse(value?.toString() ?? '');
+    return (parsed ?? DateTime.now().toUtc()).toLocal();
+  }
+
+  double _number(dynamic value) => value is num ? value.toDouble() : double.parse(value.toString());
+
+  String _defaultTitle(String? type) {
+    switch (type) {
+      case 'income':
+        return 'Pemasukan';
+      case 'transfer':
+        return 'Transfer antar wallet';
+      default:
+        return 'Pengeluaran';
+    }
+  }
+
+  bool _isUniqueViolation(PostgrestException error) {
+    return error.code == '23505' ||
+        error.message.toLowerCase().contains('unique');
+  }
+
+  void _validate(TransactionModel transaction) {
+    if (transaction.id.trim().isEmpty) {
+      throw ArgumentError('ID transaksi wajib diisi.');
+    }
+    if (!transaction.amount.isFinite || transaction.amount <= 0) {
+      throw ArgumentError('Nominal transaksi harus lebih besar dari nol.');
+    }
+    if (transaction.title.trim().isEmpty) {
+      throw ArgumentError('Nama transaksi wajib diisi.');
+    }
+    if (transaction.isTransfer) {
+      final source = transaction.sourceAccount?.trim();
+      final destination = transaction.destinationAccount?.trim();
+      if (source == null || source.isEmpty) {
+        throw ArgumentError('Wallet sumber transfer wajib diisi.');
+      }
+      if (destination == null || destination.isEmpty) {
+        throw ArgumentError('Wallet tujuan transfer wajib diisi.');
+      }
+      if (source == destination) {
+        throw ArgumentError('Wallet sumber dan tujuan transfer harus berbeda.');
+      }
+    } else if (transaction.walletId?.trim().isNotEmpty != true) {
+      throw ArgumentError('Wallet transaksi wajib diisi.');
+    }
+  }
+}
