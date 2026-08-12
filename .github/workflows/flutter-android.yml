@@ -20,6 +20,10 @@ jobs:
       run:
         working-directory: apps/frontend
 
+    env:
+      NEXORA_SUPABASE_URL: ${{ secrets.NEXORA_SUPABASE_URL }}
+      NEXORA_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXORA_SUPABASE_PUBLISHABLE_KEY }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,6 +40,25 @@ jobs:
           flutter-version: "3.44.8"
           cache: true
 
+      - name: Validate production Supabase configuration
+        run: |
+          set -euo pipefail
+          if [ -z "$NEXORA_SUPABASE_URL" ]; then
+            echo "::error::Missing GitHub Actions secret NEXORA_SUPABASE_URL"
+            exit 1
+          fi
+          if [ -z "$NEXORA_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::Missing GitHub Actions secret NEXORA_SUPABASE_PUBLISHABLE_KEY"
+            exit 1
+          fi
+          case "$NEXORA_SUPABASE_URL" in
+            https://*.supabase.co) ;;
+            *)
+              echo "::error::NEXORA_SUPABASE_URL must be an https://*.supabase.co URL"
+              exit 1
+              ;;
+          esac
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -50,8 +73,33 @@ jobs:
             echo "No test directory found. Skipping tests."
           fi
 
+      - name: Run live Supabase E2E tests when credentials are available
+        env:
+          NEXORA_E2E_EMAIL: ${{ secrets.NEXORA_E2E_EMAIL }}
+          NEXORA_E2E_PASSWORD: ${{ secrets.NEXORA_E2E_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -n "$NEXORA_E2E_EMAIL" ] && [ -n "$NEXORA_E2E_PASSWORD" ]; then
+            flutter test test/integration/supabase_financial_e2e_test.dart \
+              --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
+              --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY" \
+              --dart-define=NEXORA_E2E_EMAIL="$NEXORA_E2E_EMAIL" \
+              --dart-define=NEXORA_E2E_PASSWORD="$NEXORA_E2E_PASSWORD"
+
+            flutter test test/integration/supabase_security_e2e_test.dart \
+              --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
+              --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY" \
+              --dart-define=NEXORA_E2E_EMAIL="$NEXORA_E2E_EMAIL" \
+              --dart-define=NEXORA_E2E_PASSWORD="$NEXORA_E2E_PASSWORD"
+          else
+            echo "E2E credentials are not configured; live Supabase E2E tests skipped."
+          fi
+
       - name: Build Release APK
-        run: flutter build apk --release
+        run: |
+          flutter build apk --release \
+            --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
+            --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
