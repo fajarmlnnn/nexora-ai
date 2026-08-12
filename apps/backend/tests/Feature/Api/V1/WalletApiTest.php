@@ -47,6 +47,50 @@ class WalletApiTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_wallet_balance_cannot_be_changed_directly(): void
+    {
+        $user = User::factory()->create();
+        $wallet = Wallet::create([
+            'user_id' => $user->id,
+            'name' => 'Cash',
+            'balance' => 100000,
+            'type' => 'cash',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->patchJson('/api/v1/wallets/' . $wallet->id, [
+            'balance' => 999999999,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['balance']);
+
+        $this->assertSame(100000.0, (float) Wallet::findOrFail($wallet->id)->balance);
+    }
+
+    public function test_wallet_metadata_can_be_updated_without_changing_balance(): void
+    {
+        $user = User::factory()->create();
+        $wallet = Wallet::create([
+            'user_id' => $user->id,
+            'name' => 'Cash',
+            'balance' => 100000,
+            'type' => 'cash',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->patchJson('/api/v1/wallets/' . $wallet->id, [
+            'name' => 'Daily Cash',
+            'is_hidden' => true,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Daily Cash')
+            ->assertJsonPath('data.is_hidden', true);
+
+        $this->assertSame(100000.0, (float) Wallet::findOrFail($wallet->id)->balance);
+    }
+
     public function test_primary_wallet_is_unique_per_user(): void
     {
         $user = User::factory()->create();
