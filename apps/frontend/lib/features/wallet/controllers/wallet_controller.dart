@@ -19,6 +19,19 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
 
   @override
   Future<List<WalletModel>> build() async {
+    // Transaction mutations are the source of balance changes. Keep the
+    // wallet cache synchronized with those committed mutations instead of
+    // requiring every caller to remember to refresh wallets manually.
+    ref.listen<List<TransactionModel>>(
+      financialTransactionStoreProvider,
+      (previous, next) {
+        if (previous == next) return;
+        // The refresh is intentionally fire-and-forget; the AsyncNotifier
+        // state is updated when the remote read completes.
+        refreshWallets();
+      },
+    );
+
     return _repository.getWallets();
   }
 
