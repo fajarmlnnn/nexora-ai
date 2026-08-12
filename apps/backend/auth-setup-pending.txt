@@ -1,0 +1,1 @@
+Dependency lockfile must be regenerated with Composer before this branch is merged.
