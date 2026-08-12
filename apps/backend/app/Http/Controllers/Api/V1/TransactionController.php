@@ -130,15 +130,26 @@ class TransactionController extends Controller
         $validated = $this->validateTransaction($request, true);
 
         $updated = DB::transaction(function () use ($request, $transaction, $validated): Transaction {
-            $this->assertWalletOwnership($request->user()->id, $validated);
-            $this->validateTransferShape($validated);
-
             $transaction->load(['wallet', 'sourceWallet', 'destinationWallet']);
+
+            $effective = array_merge(
+                $transaction->only([
+                    'title', 'amount', 'type', 'category', 'date', 'note',
+                    'wallet_id', 'source_wallet_id', 'destination_wallet_id',
+                    'source_account', 'destination_account',
+                ]),
+                $validated,
+            );
+
+            $this->assertWalletOwnership($request->user()->id, $effective);
+            $this->validateTransferShape($effective);
+
             $this->reverseBalanceChange($transaction);
             $transaction->update($validated);
-            $this->applyBalanceChange($transaction->fresh(), $request->user()->id);
+            $fresh = $transaction->fresh();
+            $this->applyBalanceChange($fresh, $request->user()->id);
 
-            return $transaction;
+            return $fresh;
         });
 
         return response()->json([
@@ -218,12 +229,13 @@ class TransactionController extends Controller
             return;
         }
 
+        $uniqueWalletIds = array_unique(array_map('intval', $walletIds));
         $ownedCount = Wallet::query()
             ->where('user_id', $userId)
-            ->whereIn('id', array_unique(array_map('intval', $walletIds)))
+            ->whereIn('id', $uniqueWalletIds)
             ->count();
 
-        if ($ownedCount !== count(array_unique(array_map('intval', $walletIds)))) {
+        if ($ownedCount !== count($uniqueWalletIds)) {
             throw ValidationException::withMessages([
                 'wallet_id' => ['One or more wallets do not belong to the authenticated user.'],
             ]);
@@ -237,17 +249,16 @@ class TransactionController extends Controller
 
     private function applyBalanceChange(Transaction $transaction, int $userId): void
     {
-        $amount = (float) $transaction->amount;
+        $amount = $transaction->amount;
 
         if ($transaction->type === 'transfer') {
-            $source = Wallet::query()->where('user_id', $userId)->lockForUpdate()->findOrFail($transaction->source_wallet_id);
-            $destination = Wallet::query()->where('user_id', $userId)->lockForUpdate()->findOrFail($transaction->destination_wallet_id);
-            $source->decrement('balance', $amount);
-            $destination->increment('balance', $amount);
+            $wallets = $this->lockWallets($userId, [$transaction->source_wallet_id, $transaction->destination_wallet_id]);
+            $wallets[(int) $transaction->source_wallet_id]->decrement('balance', $amount);
+            $wallets[(int) $transaction->destination_wallet_id]->increment('balance', $amount);
             return;
         }
 
-        $wallet = Wallet::query()->where('user_id', $userId)->lockForUpdate()->findOrFail($transaction->wallet_id);
+        $wallet = $this->lockWallets($userId, [$transaction->wallet_id])[(int) $transaction->wallet_id];
         $transaction->type === 'income'
             ? $wallet->increment('balance', $amount)
             : $wallet->decrement('balance', $amount);
@@ -255,20 +266,41 @@ class TransactionController extends Controller
 
     private function reverseBalanceChange(Transaction $transaction): void
     {
-        $amount = (float) $transaction->amount;
+        $amount = $transaction->amount;
         $userId = $transaction->user_id;
 
         if ($transaction->type === 'transfer') {
-            $source = Wallet::query()->where('user_id', $userId)->lockForUpdate()->findOrFail($transaction->source_wallet_id);
-            $destination = Wallet::query()->where('user_id', $userId)->lockForUpdate()->findOrFail($transaction->destination_wallet_id);
-            $source->increment('balance', $amount);
-            $destination->decrement('balance', $amount);
+            $wallets = $this->lockWallets($userId, [$transaction->source_wallet_id, $transaction->destination_wallet_id]);
+            $wallets[(int) $transaction->source_wallet_id]->increment('balance', $amount);
+            $wallets[(int) $transaction->destination_wallet_id]->decrement('balance', $amount);
             return;
         }
 
-        $wallet = Wallet::query()->where('user_id', $userId)->lockForUpdate()->findOrFail($transaction->wallet_id);
+        $wallet = $this->lockWallets($userId, [$transaction->wallet_id])[(int) $transaction->wallet_id];
         $transaction->type === 'income'
             ? $wallet->decrement('balance', $amount)
             : $wallet->increment('balance', $amount);
+    }
+
+    /** @return array<int, Wallet> */
+    private function lockWallets(int $userId, array $walletIds): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $walletIds)));
+        sort($ids);
+
+        $wallets = Wallet::query()
+            ->where('user_id', $userId)
+            ->whereIn('id', $ids)
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
+        if ($wallets->count() !== count($ids)) {
+            throw ValidationException::withMessages([
+                'wallet_id' => ['One or more wallets could not be found for this user.'],
+            ]);
+        }
+
+        return $wallets->all();
     }
 }
