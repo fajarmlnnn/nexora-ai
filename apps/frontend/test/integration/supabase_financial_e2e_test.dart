@@ -30,8 +30,8 @@ void main() {
     'Supabase financial flow preserves balances and ownership',
     () async {
       await Supabase.initialize(
-        url: SupabaseConfig.url!,
-        publishableKey: SupabaseConfig.publishableKey!,
+        url: SupabaseConfig.url,
+        publishableKey: SupabaseConfig.publishableKey,
       );
 
       final client = Supabase.instance.client;
