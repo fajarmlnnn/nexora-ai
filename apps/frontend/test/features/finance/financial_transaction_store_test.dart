@@ -1,8 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-
-import '../../../lib/features/dashboard/models/transaction_model.dart';
-import '../../../lib/features/finance/repositories/transaction_repository.dart';
-import '../../../lib/features/finance/state/financial_transaction_store.dart';
+import 'package:frontend/features/dashboard/models/transaction_model.dart';
+import 'package:frontend/features/finance/repositories/transaction_repository.dart';
+import 'package:frontend/features/finance/state/financial_transaction_store.dart';
 
 class FakeTransactionRepository implements TransactionRepository {
   final List<TransactionModel> rows = [];
