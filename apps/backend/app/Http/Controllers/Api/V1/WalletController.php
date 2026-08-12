@@ -7,6 +7,7 @@ use App\Models\Wallet;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class WalletController extends Controller
 {
@@ -58,7 +59,7 @@ class WalletController extends Controller
 
     public function show(Request $request, Wallet $wallet): JsonResponse
     {
-        abort_unless($wallet->user_id === $request->user()->id, 404);
+        $this->assertOwnership($request, $wallet);
 
         return response()->json([
             'success' => true,
@@ -68,13 +69,13 @@ class WalletController extends Controller
 
     public function update(Request $request, Wallet $wallet): JsonResponse
     {
-        abort_unless($wallet->user_id === $request->user()->id, 404);
+        $this->assertOwnership($request, $wallet);
+        $this->rejectBalanceMutation($request);
 
         $validated = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:100'],
             'bank_name' => ['nullable', 'string', 'max:100'],
             'account_number' => ['nullable', 'string', 'max:100'],
-            'balance' => ['sometimes', 'numeric', 'min:0'],
             'type' => ['sometimes', 'required', 'string', Rule::in(['cash', 'bank', 'ewallet', 'investment', 'other'])],
             'color' => ['nullable', 'string', 'max:20'],
             'is_primary' => ['sometimes', 'boolean'],
@@ -99,7 +100,7 @@ class WalletController extends Controller
 
     public function destroy(Request $request, Wallet $wallet): JsonResponse
     {
-        abort_unless($wallet->user_id === $request->user()->id, 404);
+        $this->assertOwnership($request, $wallet);
 
         $wallet->delete();
 
@@ -107,5 +108,19 @@ class WalletController extends Controller
             'success' => true,
             'data' => null,
         ]);
+    }
+
+    private function assertOwnership(Request $request, Wallet $wallet): void
+    {
+        abort_unless($wallet->user_id === $request->user()->id, 404);
+    }
+
+    private function rejectBalanceMutation(Request $request): void
+    {
+        if ($request->has('balance')) {
+            throw ValidationException::withMessages([
+                'balance' => ['Wallet balance cannot be changed directly. Create a transaction to change the balance.'],
+            ]);
+        }
     }
 }
