@@ -21,7 +21,7 @@ class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
   Future<void> _refreshDashboard(WidgetRef ref) async {
-    await Future.wait([
+    await Future.wait<void>([
       ref.read(financialTransactionStoreProvider.notifier).reload(),
       ref.read(walletProvider.notifier).refreshWallets(),
       ref.refresh(budgetItemsProvider.future),
