@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../finance/state/financial_transaction_store.dart';
+import '../../dashboard/models/transaction_model.dart';
 import '../models/wallet_model.dart';
 import '../repositories/supabase_wallet_repository.dart';
 import '../repositories/wallet_repository.dart';
@@ -19,7 +20,7 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
 
   @override
   Future<List<WalletModel>> build() async {
-    ref.listen<List<dynamic>>(
+    ref.listen<List<TransactionModel>>(
       financialTransactionStoreProvider,
       (previous, next) {
         if (previous == next) return;
