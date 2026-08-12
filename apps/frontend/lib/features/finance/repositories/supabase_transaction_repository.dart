@@ -82,6 +82,9 @@ class SupabaseTransactionRepository implements TransactionRepository {
     }
 
     final payload = <String, dynamic>{
+      // Keep the client-generated UUID stable across retries. The database
+      // still owns balance changes; this ID is only the transaction identity.
+      'id': transaction.id.trim(),
       'user_id': _userId,
       'type': transaction.type.name,
       'amount': transaction.amount.toStringAsFixed(2),
@@ -102,15 +105,9 @@ class SupabaseTransactionRepository implements TransactionRepository {
       payload['wallet_id'] = transaction.walletId;
     }
 
-    final existing = await _client
-        .from('transactions')
-        .select()
-        .eq('user_id', _userId)
-        .eq('idempotency_key', key)
-        .maybeSingle();
-
+    final existing = await _findByIdempotencyKey(key);
     if (existing != null) {
-      return _fromRow(Map<String, dynamic>.from(existing));
+      return existing;
     }
 
     try {
@@ -121,21 +118,39 @@ class SupabaseTransactionRepository implements TransactionRepository {
           .single();
       return _fromRow(Map<String, dynamic>.from(row));
     } on PostgrestException catch (error) {
-      // A concurrent retry can win the unique idempotency constraint between
-      // the lookup above and the insert. Resolve it to the committed row.
+      // A concurrent retry can win either the idempotency constraint or the
+      // primary-key constraint between the lookup above and the insert.
       if (_isUniqueViolation(error)) {
-        final existingAfterConflict = await _client
-            .from('transactions')
-            .select()
-            .eq('user_id', _userId)
-            .eq('idempotency_key', key)
-            .maybeSingle();
+        final existingAfterConflict = await _findByIdempotencyKey(key) ??
+            await _findById(transaction.id.trim());
         if (existingAfterConflict != null) {
-          return _fromRow(Map<String, dynamic>.from(existingAfterConflict));
+          return existingAfterConflict;
         }
       }
       rethrow;
     }
+  }
+
+  Future<TransactionModel?> _findByIdempotencyKey(String key) async {
+    final row = await _client
+        .from('transactions')
+        .select()
+        .eq('user_id', _userId)
+        .eq('idempotency_key', key)
+        .maybeSingle();
+    if (row == null) return null;
+    return _fromRow(Map<String, dynamic>.from(row));
+  }
+
+  Future<TransactionModel?> _findById(String id) async {
+    final row = await _client
+        .from('transactions')
+        .select()
+        .eq('user_id', _userId)
+        .eq('id', id)
+        .maybeSingle();
+    if (row == null) return null;
+    return _fromRow(Map<String, dynamic>.from(row));
   }
 
   @override
