@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
-import '../../budget/presentation/add_budget_sheet.dart';
 
-class QuickActions extends ConsumerWidget {
+class QuickActions extends StatelessWidget {
   const QuickActions({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return NCard(
       padding: const EdgeInsets.fromLTRB(13, 11, 13, 10),
       child: Column(
@@ -22,10 +20,10 @@ class QuickActions extends ConsumerWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: _ActionItem(icon: LucideIcons.plus, label: 'Tambah', color: AppColors.primaryLight, onTap: () => context.push('/add-expense'))),
-              Expanded(child: _ActionItem(icon: LucideIcons.scanLine, label: 'Scan', color: AppColors.primaryLight, isNew: true, onTap: () {})),
-              Expanded(child: _ActionItem(icon: LucideIcons.walletMinimal, label: 'Budget', color: AppColors.primaryLight, onTap: () => showAddBudgetSheet(context, ref))),
-              Expanded(child: _ActionItem(icon: LucideIcons.send, label: 'Transfer', color: AppColors.primaryLight, onTap: () => context.push('/transfer'))),
+              Expanded(child: _ActionItem(icon: LucideIcons.arrowDownToLine, label: 'Pemasukan', color: AppColors.success, onTap: () => context.push('/add-income'))),
+              Expanded(child: _ActionItem(icon: LucideIcons.arrowUpFromLine, label: 'Pengeluaran', color: AppColors.danger, onTap: () => context.push('/add-expense'))),
+              Expanded(child: _ActionItem(icon: LucideIcons.walletMinimal, label: 'Wallet', color: AppColors.primaryLight, onTap: () => context.go('/wallet'))),
+              Expanded(child: _ActionItem(icon: LucideIcons.arrowLeftRight, label: 'Transfer', color: AppColors.info, onTap: () => context.push('/transfer'))),
             ],
           ),
         ],
@@ -35,12 +33,11 @@ class QuickActions extends ConsumerWidget {
 }
 
 class _ActionItem extends StatefulWidget {
-  const _ActionItem({required this.icon, required this.label, required this.color, required this.onTap, this.isNew = false});
+  const _ActionItem({required this.icon, required this.label, required this.color, required this.onTap});
   final IconData icon;
   final String label;
   final Color color;
   final VoidCallback onTap;
-  final bool isNew;
 
   @override
   State<_ActionItem> createState() => _ActionItemState();
@@ -69,34 +66,15 @@ class _ActionItemState extends State<_ActionItem> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 43,
-                  height: 43,
-                  decoration: BoxDecoration(
-                    color: widget.color.withValues(alpha: .075),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: widget.color.withValues(alpha: .13)),
-                  ),
-                  child: Icon(widget.icon, color: widget.color.withValues(alpha: .82), size: 19),
-                ),
-                if (widget.isNew)
-                  Positioned(
-                    top: -5,
-                    right: -7,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: .16),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: AppColors.primary.withValues(alpha: .20)),
-                      ),
-                      child: Text('NEW', style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontSize: 7, fontWeight: FontWeight.w800, letterSpacing: .2)),
-                    ),
-                  ),
-              ],
+            Container(
+              width: 43,
+              height: 43,
+              decoration: BoxDecoration(
+                color: widget.color.withValues(alpha: .075),
+                shape: BoxShape.circle,
+                border: Border.all(color: widget.color.withValues(alpha: .13)),
+              ),
+              child: Icon(widget.icon, color: widget.color.withValues(alpha: .88), size: 19),
             ),
             const SizedBox(height: 6),
             Text(widget.label, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
