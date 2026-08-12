@@ -114,8 +114,6 @@ void main() {
         expect((await walletRepository.getWallet(walletAId)).balance, 45000);
         expect((await walletRepository.getWallet(walletBId)).balance, 30000);
 
-        // A transfer that would violate the source balance must fail as one
-        // database transaction. Neither wallet may be partially changed.
         await expectLater(
           transactionRepository.createTransaction(
             TransactionModel(
@@ -134,8 +132,6 @@ void main() {
         expect((await walletRepository.getWallet(walletAId)).balance, 45000);
         expect((await walletRepository.getWallet(walletBId)).balance, 30000);
 
-        // A transaction cannot reference a wallet owned by another user (or a
-        // non-existent wallet UUID). The trigger/RLS boundary must reject it.
         await expectLater(
           client.from('transactions').insert({
             'id': _uuid(),
@@ -169,9 +165,6 @@ void main() {
         expect(duplicate.id, income.id);
         expect((await walletRepository.getWallet(walletAId)).balance, 90000);
 
-        // Reusing an idempotency key with a different financial payload must
-        // never silently succeed, even though the original transaction is
-        // safely returned for a genuine retry.
         await expectLater(
           transactionRepository.createTransaction(
             income.copyWith(amount: 123456),
@@ -180,6 +173,47 @@ void main() {
           throwsA(isA<StateError>()),
         );
         expect((await walletRepository.getWallet(walletAId)).balance, 90000);
+
+        // Two requests deliberately start together. The database trigger locks
+        // the wallet row before checking the balance. Exactly one 55k expense
+        // may therefore commit; the other must see the new 35k balance and
+        // fail instead of allowing a negative/corrupted balance.
+        final concurrentTransactions = [
+          TransactionModel(
+            id: _uuid(),
+            title: 'E2E concurrent expense A',
+            amount: 55000,
+            type: TransactionType.expense,
+            category: TransactionCategory.other,
+            date: DateTime.now(),
+            walletId: walletAId,
+          ),
+          TransactionModel(
+            id: _uuid(),
+            title: 'E2E concurrent expense B',
+            amount: 55000,
+            type: TransactionType.expense,
+            category: TransactionCategory.other,
+            date: DateTime.now(),
+            walletId: walletAId,
+          ),
+        ];
+
+        final results = await Future.wait(
+          concurrentTransactions.map((transaction) async {
+            try {
+              final created = await transactionRepository.createTransaction(transaction);
+              transactionIds.add(created.id);
+              return true;
+            } on PostgrestException {
+              return false;
+            }
+          }),
+        );
+
+        expect(results.where((success) => success).length, 1);
+        expect(results.where((success) => !success).length, 1);
+        expect((await walletRepository.getWallet(walletAId)).balance, 35000);
       } finally {
         for (final id in transactionIds.reversed) {
           try {
