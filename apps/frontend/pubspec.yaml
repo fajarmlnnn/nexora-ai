@@ -22,6 +22,7 @@ dependencies:
   # Networking
   dio: ^5.9.0
   supabase_flutter: ^2.9.1
+  supabase: ^2.16.0
 
   # UI
   flutter_svg: ^2.2.0
