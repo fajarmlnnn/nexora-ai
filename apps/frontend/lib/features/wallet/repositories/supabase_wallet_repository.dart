@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/supabase/supabase_client.dart';
 import '../models/wallet_model.dart';
-import '../../core/supabase/supabase_client.dart';
 import 'wallet_repository.dart';
 
 class SupabaseWalletRepository implements WalletRepository {
@@ -71,8 +71,6 @@ class SupabaseWalletRepository implements WalletRepository {
 
   @override
   Future<WalletModel> updateWallet(WalletModel wallet) async {
-    // Balance is deliberately excluded. Financial balance changes must happen
-    // through transactions, never through a generic wallet profile update.
     final row = await _client
         .from('wallets')
         .update({
