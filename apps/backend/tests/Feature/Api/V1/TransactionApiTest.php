@@ -146,4 +146,100 @@ class TransactionApiTest extends TestCase
             'date' => '2026-08-12T10:00:00+07:00', 'source_wallet_id' => $wallet->id, 'destination_wallet_id' => $wallet->id,
         ])->assertUnprocessable();
     }
+
+    public function test_expense_cannot_breach_wallet_minimum_balance(): void
+    {
+        $user = User::factory()->create();
+        $wallet = Wallet::create([
+            'user_id' => $user->id,
+            'name' => 'Protected Cash',
+            'type' => 'cash',
+            'balance' => 150000,
+            'minimum_balance' => 100000,
+        ]);
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/transactions', [
+            'title' => 'Too large', 'amount' => 60000, 'type' => 'expense', 'category' => 'other',
+            'date' => '2026-08-12T10:00:00+07:00', 'wallet_id' => $wallet->id,
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseCount('transactions', 0);
+        $this->assertSame(150000.0, (float) $wallet->fresh()->balance);
+    }
+
+    public function test_transfer_cannot_breach_source_wallet_minimum_balance(): void
+    {
+        $user = User::factory()->create();
+        $source = Wallet::create([
+            'user_id' => $user->id, 'name' => 'Source', 'type' => 'bank',
+            'balance' => 200000, 'minimum_balance' => 100000,
+        ]);
+        $destination = Wallet::create([
+            'user_id' => $user->id, 'name' => 'Destination', 'type' => 'bank', 'balance' => 0,
+        ]);
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/transactions', [
+            'title' => 'Too large transfer', 'amount' => 150000, 'type' => 'transfer', 'category' => 'other',
+            'date' => '2026-08-12T10:00:00+07:00',
+            'source_wallet_id' => $source->id, 'destination_wallet_id' => $destination->id,
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseCount('transactions', 0);
+        $this->assertSame(200000.0, (float) $source->fresh()->balance);
+        $this->assertSame(0.0, (float) $destination->fresh()->balance);
+    }
+
+    public function test_idempotency_key_prevents_duplicate_transaction_and_balance_change(): void
+    {
+        $user = User::factory()->create();
+        $wallet = Wallet::create(['user_id' => $user->id, 'name' => 'Cash', 'type' => 'cash', 'balance' => 1000000]);
+        Sanctum::actingAs($user);
+
+        $payload = [
+            'title' => 'Internet', 'amount' => 50000, 'type' => 'expense', 'category' => 'bills',
+            'date' => '2026-08-12T10:00:00+07:00', 'wallet_id' => $wallet->id,
+        ];
+
+        $first = $this->withHeader('Idempotency-Key', 'internet-2026-08-12')
+            ->postJson('/api/v1/transactions', $payload)
+            ->assertCreated();
+
+        $second = $this->withHeader('Idempotency-Key', 'internet-2026-08-12')
+            ->postJson('/api/v1/transactions', $payload)
+            ->assertOk()
+            ->assertJsonPath('meta.idempotent_replay', true);
+
+        $this->assertSame($first->json('data.id'), $second->json('data.id'));
+        $this->assertDatabaseCount('transactions', 1);
+        $this->assertSame(950000.0, (float) $wallet->fresh()->balance);
+    }
+
+    public function test_same_idempotency_key_is_scoped_to_authenticated_user(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $ownerWallet = Wallet::create(['user_id' => $owner->id, 'name' => 'Owner', 'type' => 'cash', 'balance' => 100000]);
+        $otherWallet = Wallet::create(['user_id' => $other->id, 'name' => 'Other', 'type' => 'cash', 'balance' => 100000]);
+
+        Sanctum::actingAs($owner);
+        $first = $this->withHeader('Idempotency-Key', 'same-key')
+            ->postJson('/api/v1/transactions', [
+                'title' => 'Owner expense', 'amount' => 10000, 'type' => 'expense', 'category' => 'other',
+                'date' => '2026-08-12T10:00:00+07:00', 'wallet_id' => $ownerWallet->id,
+            ])->assertCreated();
+
+        Sanctum::actingAs($other);
+        $second = $this->withHeader('Idempotency-Key', 'same-key')
+            ->postJson('/api/v1/transactions', [
+                'title' => 'Other expense', 'amount' => 20000, 'type' => 'expense', 'category' => 'other',
+                'date' => '2026-08-12T10:00:00+07:00', 'wallet_id' => $otherWallet->id,
+            ])->assertCreated();
+
+        $this->assertNotSame($first->json('data.id'), $second->json('data.id'));
+        $this->assertDatabaseCount('transactions', 2);
+        $this->assertSame(90000.0, (float) $ownerWallet->fresh()->balance);
+        $this->assertSame(80000.0, (float) $otherWallet->fresh()->balance);
+    }
 }
