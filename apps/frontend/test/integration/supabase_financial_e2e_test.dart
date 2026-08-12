@@ -11,7 +11,7 @@ import 'package:frontend/features/wallet/models/wallet_model.dart';
 import 'package:frontend/features/wallet/repositories/supabase_wallet_repository.dart';
 
 String _uuid() {
-  final random = Random();
+  final random = Random.secure();
   final bytes = List<int>.generate(16, (_) => random.nextInt(256));
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
@@ -114,6 +114,43 @@ void main() {
         expect((await walletRepository.getWallet(walletAId)).balance, 45000);
         expect((await walletRepository.getWallet(walletBId)).balance, 30000);
 
+        // A transfer that would violate the source balance must fail as one
+        // database transaction. Neither wallet may be partially changed.
+        await expectLater(
+          transactionRepository.createTransaction(
+            TransactionModel(
+              id: _uuid(),
+              title: 'E2E overdraft transfer',
+              amount: 50000,
+              type: TransactionType.transfer,
+              category: TransactionCategory.other,
+              date: DateTime.now(),
+              sourceAccount: walletAId,
+              destinationAccount: walletBId,
+            ),
+          ),
+          throwsA(isA<PostgrestException>()),
+        );
+        expect((await walletRepository.getWallet(walletAId)).balance, 45000);
+        expect((await walletRepository.getWallet(walletBId)).balance, 30000);
+
+        // A transaction cannot reference a wallet owned by another user (or a
+        // non-existent wallet UUID). The trigger/RLS boundary must reject it.
+        await expectLater(
+          client.from('transactions').insert({
+            'id': _uuid(),
+            'user_id': user!.id,
+            'wallet_id': _uuid(),
+            'type': 'income',
+            'amount': '1000.00',
+            'category': 'other',
+            'description': 'E2E forged wallet ownership',
+            'occurred_at': DateTime.now().toUtc().toIso8601String(),
+            'idempotency_key': _uuid(),
+          }),
+          throwsA(isA<PostgrestException>()),
+        );
+
         await transactionRepository.deleteTransaction(expense.id);
         transactionIds.remove(expense.id);
         expect((await walletRepository.getWallet(walletAId)).balance, 70000);
@@ -130,6 +167,18 @@ void main() {
           idempotencyKey: income.id,
         );
         expect(duplicate.id, income.id);
+        expect((await walletRepository.getWallet(walletAId)).balance, 90000);
+
+        // Reusing an idempotency key with a different financial payload must
+        // never silently succeed, even though the original transaction is
+        // safely returned for a genuine retry.
+        await expectLater(
+          transactionRepository.createTransaction(
+            income.copyWith(amount: 123456),
+            idempotencyKey: income.id,
+          ),
+          throwsA(isA<StateError>()),
+        );
         expect((await walletRepository.getWallet(walletAId)).balance, 90000);
       } finally {
         for (final id in transactionIds.reversed) {
