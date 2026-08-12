@@ -148,4 +148,93 @@ void main() {
     expect(created.destinationAccount, 'wallet-b');
     expect(created.amount, 500);
   });
+
+  test('rejects zero and non-finite transaction amounts before repository write', () async {
+    final repository = FakeTransactionRepository();
+    final store = FinancialTransactionStore(repository);
+
+    expect(() => store.add(expense(amount: 0)), throwsArgumentError);
+    expect(() => store.add(expense(amount: double.infinity)), throwsArgumentError);
+    expect(() => store.add(expense(amount: double.nan)), throwsArgumentError);
+    expect(repository.rows, isEmpty);
+    expect(store.state, isEmpty);
+  });
+
+  test('rejects blank transaction identifiers and titles', () async {
+    final repository = FakeTransactionRepository();
+    final store = FinancialTransactionStore(repository);
+
+    final blankId = expense(id: '   ');
+    final blankTitle = expense().copyWith(title: '   ');
+
+    expect(() => store.add(blankId), throwsArgumentError);
+    expect(() => store.add(blankTitle), throwsArgumentError);
+    expect(repository.rows, isEmpty);
+  });
+
+  test('requires a wallet for income and expense transactions', () async {
+    final repository = FakeTransactionRepository();
+    final store = FinancialTransactionStore(repository);
+
+    final withoutWallet = expense().copyWith(walletId: null);
+
+    expect(() => store.add(withoutWallet), throwsArgumentError);
+    expect(repository.rows, isEmpty);
+  });
+
+  test('rejects transfers with the same or missing wallet endpoints', () async {
+    final repository = FakeTransactionRepository();
+    final store = FinancialTransactionStore(repository);
+
+    final sameWallet = TransactionModel(
+      id: 'transfer-1',
+      title: 'Transfer',
+      amount: 100,
+      type: TransactionType.transfer,
+      category: TransactionCategory.other,
+      date: DateTime(2026, 8, 12),
+      sourceAccount: 'wallet-a',
+      destinationAccount: 'wallet-a',
+    );
+    final missingSource = sameWallet.copyWith(
+      id: 'transfer-2',
+      sourceAccount: null,
+      destinationAccount: 'wallet-b',
+    );
+
+    expect(() => store.add(sameWallet), throwsArgumentError);
+    expect(() => store.add(missingSource), throwsArgumentError);
+    expect(repository.rows, isEmpty);
+  });
+
+  test('rejects invalid transfer arguments before creating a transaction', () async {
+    final repository = FakeTransactionRepository();
+    final store = FinancialTransactionStore(repository);
+
+    expect(
+      () => store.transfer(
+        sourceWalletId: 'wallet-a',
+        destinationWalletId: 'wallet-a',
+        amount: 100,
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => store.transfer(
+        sourceWalletId: 'wallet-a',
+        destinationWalletId: 'wallet-b',
+        amount: 0,
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => store.transfer(
+        sourceWalletId: '   ',
+        destinationWalletId: 'wallet-b',
+        amount: 100,
+      ),
+      throwsArgumentError,
+    );
+    expect(repository.rows, isEmpty);
+  });
 }
