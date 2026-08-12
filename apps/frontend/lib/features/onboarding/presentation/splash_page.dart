@@ -32,7 +32,9 @@ class _SplashPageState extends State<SplashPage>
     await Future<void>.delayed(const Duration(milliseconds: 2500));
     final prefs = await SharedPreferences.getInstance();
     final onboarded = prefs.getBool('nexora_onboarded') ?? false;
-    if (mounted) context.go(onboarded ? '/' : '/onboarding');
+    if (mounted) {
+      context.go(onboarded ? '/auth?redirect=%2F' : '/onboarding');
+    }
   }
 
   @override
