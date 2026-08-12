@@ -16,17 +16,38 @@ final financialTransactionStoreProvider =
 class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
   FinancialTransactionStore(this._repository) : super(const []);
 
+  static const _pageSize = 100;
+  static const _maxPages = 50;
+
   final TransactionRepository _repository;
 
   Future<void> load() async {
     try {
-      final loaded = await _repository.getTransactions(limit: 100);
+      final loaded = await _loadAllTransactions();
       state = loaded;
     } catch (_) {
       // Keep the store empty when there is no authenticated Supabase session
       // yet. The auth/session layer will trigger reload after sign-in.
       state = const [];
     }
+  }
+
+  Future<List<TransactionModel>> _loadAllTransactions() async {
+    final all = <TransactionModel>[];
+
+    for (var page = 0; page < _maxPages; page++) {
+      final batch = await _repository.getTransactions(
+        limit: _pageSize,
+        offset: page * _pageSize,
+      );
+      all.addAll(batch);
+
+      if (batch.length < _pageSize) {
+        break;
+      }
+    }
+
+    return List<TransactionModel>.unmodifiable(all);
   }
 
   Future<void> reload() => load();
