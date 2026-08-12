@@ -36,6 +36,7 @@ void main() {
       final walletId = _uuid();
       final forgedWalletId = _uuid();
       final forgedBalanceWalletId = _uuid();
+      final transactionId = _uuid();
 
       try {
         // A client may create a wallet, but balance is derived and must not be
@@ -128,7 +129,58 @@ void main() {
             .eq('id', walletId)
             .single();
         expect(ownership['user_id'], user.id);
+
+        // Transactions are independently protected: ownership cannot be
+        // reassigned and a transaction cannot be moved onto an arbitrary
+        // wallet UUID. This closes the second path to corrupting balances.
+        final transaction = await client
+            .from('transactions')
+            .insert({
+              'id': transactionId,
+              'user_id': user.id,
+              'wallet_id': walletId,
+              'type': 'income',
+              'amount': '1000.00',
+              'category': 'other',
+              'description': 'E2E ownership transaction',
+              'occurred_at': DateTime.now().toUtc().toIso8601String(),
+              'idempotency_key': transactionId,
+            })
+            .select('id, user_id, wallet_id')
+            .single();
+
+        expect(transaction['user_id'], user.id);
+        expect(transaction['wallet_id'], walletId);
+
+        await expectLater(
+          client
+              .from('transactions')
+              .update({'user_id': _uuid()})
+              .eq('id', transactionId),
+          throwsA(isA<PostgrestException>()),
+        );
+
+        await expectLater(
+          client
+              .from('transactions')
+              .update({'wallet_id': _uuid()})
+              .eq('id', transactionId),
+          throwsA(isA<PostgrestException>()),
+        );
+
+        final transactionUnchanged = await client
+            .from('transactions')
+            .select('user_id, wallet_id')
+            .eq('id', transactionId)
+            .single();
+        expect(transactionUnchanged['user_id'], user.id);
+        expect(transactionUnchanged['wallet_id'], walletId);
       } finally {
+        try {
+          await client.from('transactions').delete().eq('id', transactionId);
+        } catch (_) {
+          // Best-effort cleanup; preserve the original test failure.
+        }
         for (final id in [walletId, forgedWalletId, forgedBalanceWalletId]) {
           try {
             await client.from('wallets').delete().eq('id', id);
