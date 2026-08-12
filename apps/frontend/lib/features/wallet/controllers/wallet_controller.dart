@@ -19,15 +19,10 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
 
   @override
   Future<List<WalletModel>> build() async {
-    // Transaction mutations are the source of balance changes. Keep the
-    // wallet cache synchronized with those committed mutations instead of
-    // requiring every caller to remember to refresh wallets manually.
-    ref.listen<List<TransactionModel>>(
+    ref.listen<List<dynamic>>(
       financialTransactionStoreProvider,
       (previous, next) {
         if (previous == next) return;
-        // The refresh is intentionally fire-and-forget; the AsyncNotifier
-        // state is updated when the remote read completes.
         refreshWallets();
       },
     );
@@ -99,13 +94,9 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
     if (target == null) return false;
 
     try {
-      // The database partial unique index guarantees that at most one wallet
-      // can be primary. Update the current primary first, then the target.
       for (final wallet in wallets) {
         if (wallet.isPrimary && wallet.id != id) {
-          await _repository.updateWallet(
-            wallet.copyWith(isPrimary: false),
-          );
+          await _repository.updateWallet(wallet.copyWith(isPrimary: false));
         }
       }
       if (!target.isPrimary) {
@@ -120,8 +111,6 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
     }
   }
 
-  /// Transfers money by creating one Supabase transaction. PostgreSQL applies
-  /// both balance changes atomically; Flutter never calculates the new balance.
   Future<bool> transferBetweenWallets({
     required String sourceWalletId,
     required String destinationWalletId,
@@ -186,9 +175,7 @@ final primaryWalletProvider = Provider<WalletModel?>((ref) {
   final walletsAsync = ref.watch(walletProvider);
   return walletsAsync.maybeWhen(
     data: (wallets) {
-      final visibleWallets = wallets
-          .where((wallet) => !wallet.isHidden)
-          .toList(growable: false);
+      final visibleWallets = wallets.where((wallet) => !wallet.isHidden).toList(growable: false);
       if (visibleWallets.isEmpty) return null;
       for (final wallet in visibleWallets) {
         if (wallet.isPrimary) return wallet;
@@ -202,31 +189,21 @@ final primaryWalletProvider = Provider<WalletModel?>((ref) {
 final visibleWalletsProvider = Provider<List<WalletModel>>((ref) {
   final walletsAsync = ref.watch(walletProvider);
   return walletsAsync.maybeWhen(
-    data: (wallets) => wallets
-        .where((wallet) => !wallet.isHidden)
-        .toList(growable: false),
+    data: (wallets) => wallets.where((wallet) => !wallet.isHidden).toList(growable: false),
     orElse: () => const [],
   );
 });
 
-final walletByTypeProvider = Provider.family<List<WalletModel>, WalletType>(
-  (ref, type) {
-    final wallets = ref.watch(visibleWalletsProvider);
-    return wallets.where((wallet) => wallet.type == type).toList(growable: false);
-  },
-);
+final walletByTypeProvider = Provider.family<List<WalletModel>, WalletType>((ref, type) {
+  final wallets = ref.watch(visibleWalletsProvider);
+  return wallets.where((wallet) => wallet.type == type).toList(growable: false);
+});
 
-final walletBalanceByTypeProvider = Provider.family<double, WalletType>(
-  (ref, type) {
-    final wallets = ref.watch(walletByTypeProvider(type));
-    return wallets.fold<double>(0, (total, wallet) => total + wallet.balance);
-  },
-);
+final walletBalanceByTypeProvider = Provider.family<double, WalletType>((ref, type) {
+  final wallets = ref.watch(walletByTypeProvider(type));
+  return wallets.fold<double>(0, (total, wallet) => total + wallet.balance);
+});
 
-final walletCountProvider = Provider<int>(
-  (ref) => ref.watch(visibleWalletsProvider).length,
-);
+final walletCountProvider = Provider<int>((ref) => ref.watch(visibleWalletsProvider).length);
 
-final hasWalletProvider = Provider<bool>(
-  (ref) => ref.watch(visibleWalletsProvider).isNotEmpty,
-);
+final hasWalletProvider = Provider<bool>((ref) => ref.watch(visibleWalletsProvider).isNotEmpty);
