@@ -33,9 +33,6 @@ jobs:
           extensions: mbstring, dom, fileinfo, sqlite3, pdo_sqlite
           coverage: none
 
-      - name: Validate Composer
-        run: composer validate --strict
-
       - name: Resolve Sanctum dependency and lockfile
         run: composer update laravel/sanctum --with-dependencies --no-interaction --prefer-dist --no-progress
 
@@ -49,6 +46,9 @@ jobs:
           git add composer.lock
           git commit -m "chore(auth): lock Laravel Sanctum dependency"
           git push origin HEAD:feat/backend-auth-v1
+
+      - name: Validate Composer
+        run: composer validate --strict
 
       - name: Install dependencies from lockfile
         run: composer install --no-interaction --prefer-dist --no-progress
