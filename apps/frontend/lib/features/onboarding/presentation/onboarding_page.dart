@@ -51,7 +51,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Future<void> _finish() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('nexora_onboarded', true);
-    if (mounted) context.go('/');
+    if (mounted) {
+      context.go('/auth?redirect=%2F');
+    }
   }
 
   @override
