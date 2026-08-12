@@ -9,7 +9,10 @@ final supabaseAuthRepositoryProvider = Provider<SupabaseAuthRepository>((ref) {
 
 final authStateProvider = StreamProvider<AuthState>((ref) {
   final repository = ref.watch(supabaseAuthRepositoryProvider);
-  return repository.authStateChanges.handleError((Object _, StackTrace __) {});
+  return repository.authStateChanges.handleError((Object error, StackTrace stack) {
+    // Keep the provider alive after an auth stream error; routing and the
+    // current session remain available from the repository/client.
+  });
 });
 
 final currentSessionProvider = Provider<Session?>((ref) {
