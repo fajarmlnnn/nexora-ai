@@ -6,10 +6,14 @@ on:
       - main
       - feat/backend-ci-v1
       - fix/backend-api-routing
+      - feat/backend-auth-v1
   pull_request:
     branches:
       - main
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   laravel:
@@ -32,7 +36,21 @@ jobs:
       - name: Validate Composer
         run: composer validate --strict
 
-      - name: Install dependencies
+      - name: Resolve Sanctum dependency and lockfile
+        run: composer update laravel/sanctum --with-dependencies --no-interaction --prefer-dist --no-progress
+
+      - name: Persist resolved lockfile
+        run: |
+          if git diff --quiet -- composer.lock; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add composer.lock
+          git commit -m "chore(auth): lock Laravel Sanctum dependency"
+          git push origin HEAD:feat/backend-auth-v1
+
+      - name: Install dependencies from lockfile
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Prepare environment
