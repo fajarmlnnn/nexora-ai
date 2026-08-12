@@ -120,10 +120,15 @@ class AuthApiTest extends TestCase
             ->postJson('/api/v1/auth/logout')
             ->assertOk();
 
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+
+        // Sanctum's guard instance may be cached across multiple requests
+        // in the same PHPUnit application. Reset it so this request verifies
+        // the token against the database like a fresh HTTP request would.
+        $this->app['auth']->forgetGuards();
+
         $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/v1/auth/me')
             ->assertUnauthorized();
-
-        $this->assertDatabaseCount('personal_access_tokens', 0);
     }
 }
