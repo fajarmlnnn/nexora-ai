@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\Wallet;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -93,20 +94,56 @@ class TransactionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $this->normalizeTransaction($this->validateTransaction($request));
+        $userId = $request->user()->id;
+        $idempotencyKey = $request->header('Idempotency-Key');
 
-        $transaction = DB::transaction(function () use ($request, $validated): Transaction {
-            $this->assertWalletOwnership($request->user()->id, $validated);
-            $this->validateTransferShape($validated);
+        if ($idempotencyKey !== null) {
+            $existing = Transaction::query()
+                ->where('user_id', $userId)
+                ->where('idempotency_key', $idempotencyKey)
+                ->first();
 
-            $transaction = Transaction::create([
-                ...$validated,
-                'user_id' => $request->user()->id,
-            ]);
+            if ($existing) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $existing->load(['wallet', 'sourceWallet', 'destinationWallet']),
+                    'meta' => ['idempotent_replay' => true],
+                ]);
+            }
+        }
 
-            $this->applyBalanceChange($transaction, $request->user()->id);
+        $validated['idempotency_key'] = $idempotencyKey;
 
-            return $transaction;
-        });
+        try {
+            $transaction = DB::transaction(function () use ($userId, $validated): Transaction {
+                $this->assertWalletOwnership($userId, $validated);
+                $this->validateTransferShape($validated);
+
+                $transaction = Transaction::create([
+                    ...$validated,
+                    'user_id' => $userId,
+                ]);
+
+                $this->applyBalanceChange($transaction, $userId);
+
+                return $transaction;
+            });
+        } catch (QueryException $exception) {
+            if ($idempotencyKey !== null && $this->isIdempotencyConflict($exception)) {
+                $existing = Transaction::query()
+                    ->where('user_id', $userId)
+                    ->where('idempotency_key', $idempotencyKey)
+                    ->firstOrFail();
+
+                return response()->json([
+                    'success' => true,
+                    'data' => $existing->load(['wallet', 'sourceWallet', 'destinationWallet']),
+                    'meta' => ['idempotent_replay' => true],
+                ]);
+            }
+
+            throw $exception;
+        }
 
         return response()->json([
             'success' => true,
@@ -268,15 +305,22 @@ class TransactionController extends Controller
 
         if ($transaction->type === 'transfer') {
             $wallets = $this->lockWallets($userId, [$transaction->source_wallet_id, $transaction->destination_wallet_id]);
-            $wallets[(int) $transaction->source_wallet_id]->decrement('balance', $amount);
+            $source = $wallets[(int) $transaction->source_wallet_id];
+            $this->assertSufficientBalance($source, $amount);
+            $source->decrement('balance', $amount);
             $wallets[(int) $transaction->destination_wallet_id]->increment('balance', $amount);
             return;
         }
 
         $wallet = $this->lockWallets($userId, [$transaction->wallet_id])[(int) $transaction->wallet_id];
-        $transaction->type === 'income'
-            ? $wallet->increment('balance', $amount)
-            : $wallet->decrement('balance', $amount);
+
+        if ($transaction->type === 'income') {
+            $wallet->increment('balance', $amount);
+            return;
+        }
+
+        $this->assertSufficientBalance($wallet, $amount);
+        $wallet->decrement('balance', $amount);
     }
 
     private function reverseBalanceChange(Transaction $transaction): void
@@ -317,5 +361,28 @@ class TransactionController extends Controller
         }
 
         return $wallets->all();
+    }
+
+    private function assertSufficientBalance(Wallet $wallet, mixed $amount): void
+    {
+        $balanceCents = $this->moneyToCents($wallet->balance);
+        $amountCents = $this->moneyToCents($amount);
+        $minimumCents = $this->moneyToCents($wallet->minimum_balance);
+
+        if (($balanceCents - $amountCents) < $minimumCents) {
+            throw ValidationException::withMessages([
+                'amount' => ['Insufficient wallet balance for this transaction.'],
+            ]);
+        }
+    }
+
+    private function moneyToCents(mixed $value): int
+    {
+        return (int) round(((float) $value) * 100);
+    }
+
+    private function isIdempotencyConflict(QueryException $exception): bool
+    {
+        return str_contains(strtolower($exception->getMessage()), 'idempotency');
     }
 }
