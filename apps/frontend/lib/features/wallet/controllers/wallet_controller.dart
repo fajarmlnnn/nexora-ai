@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../dashboard/models/transaction_model.dart';
 import '../../finance/state/financial_transaction_store.dart';
 import '../models/wallet_model.dart';
+import '../repositories/supabase_wallet_repository.dart';
 import '../repositories/wallet_repository.dart';
 
 final walletRepositoryProvider = Provider<WalletRepository>((ref) {
-  return LocalWalletRepository();
+  return SupabaseWalletRepository();
 });
 
 final walletProvider =
@@ -19,18 +19,14 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
 
   @override
   Future<List<WalletModel>> build() async {
-    final wallets = await _repository.getWallets();
-    final transactions = ref.watch(financialTransactionStoreProvider);
-    return _applyTransactions(wallets, transactions);
+    return _repository.getWallets();
   }
 
   Future<void> refreshWallets() async {
     final previous = state;
-    final result = await AsyncValue.guard<List<WalletModel>>(() async {
-      final wallets = await _repository.getWallets();
-      final transactions = ref.read(financialTransactionStoreProvider);
-      return _applyTransactions(wallets, transactions);
-    });
+    final result = await AsyncValue.guard<List<WalletModel>>(
+      _repository.getWallets,
+    );
 
     if (result.hasError && previous.hasValue) {
       state = result.copyWithPrevious(previous);
@@ -43,10 +39,11 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
   Future<bool> addWallet(WalletModel wallet) async {
     try {
       await _repository.createWallet(wallet);
-      await _reload();
+      await refreshWallets();
       return true;
     } catch (error, stackTrace) {
-      state = AsyncValue<List<WalletModel>>.error(error, stackTrace).copyWithPrevious(state);
+      state = AsyncValue<List<WalletModel>>.error(error, stackTrace)
+          .copyWithPrevious(state);
       return false;
     }
   }
@@ -54,30 +51,23 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
   Future<bool> updateWallet(WalletModel wallet) async {
     try {
       await _repository.updateWallet(wallet);
-      await _reload();
+      await refreshWallets();
       return true;
     } catch (error, stackTrace) {
-      state = AsyncValue<List<WalletModel>>.error(error, stackTrace).copyWithPrevious(state);
+      state = AsyncValue<List<WalletModel>>.error(error, stackTrace)
+          .copyWithPrevious(state);
       return false;
     }
   }
 
   Future<bool> deleteWallet(String id) async {
-    final transactions = ref.read(financialTransactionStoreProvider);
-    final hasTransactions = transactions.any(
-      (transaction) =>
-          transaction.walletId == id ||
-          transaction.sourceAccount == id ||
-          transaction.destinationAccount == id,
-    );
-    if (hasTransactions) return false;
-
     try {
       await _repository.deleteWallet(id);
-      await _reload();
+      await refreshWallets();
       return true;
     } catch (error, stackTrace) {
-      state = AsyncValue<List<WalletModel>>.error(error, stackTrace).copyWithPrevious(state);
+      state = AsyncValue<List<WalletModel>>.error(error, stackTrace)
+          .copyWithPrevious(state);
       return false;
     }
   }
@@ -96,29 +86,38 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
     if (target == null) return false;
 
     try {
+      // The database partial unique index guarantees that at most one wallet
+      // can be primary. Update the current primary first, then the target.
       for (final wallet in wallets) {
-        final shouldBePrimary = wallet.id == id;
-        if (wallet.isPrimary != shouldBePrimary) {
-          await _repository.updateWallet(wallet.copyWith(isPrimary: shouldBePrimary));
+        if (wallet.isPrimary && wallet.id != id) {
+          await _repository.updateWallet(
+            wallet.copyWith(isPrimary: false),
+          );
         }
       }
-      await _reload();
+      if (!target.isPrimary) {
+        await _repository.updateWallet(target.copyWith(isPrimary: true));
+      }
+      await refreshWallets();
       return true;
     } catch (error, stackTrace) {
-      state = AsyncValue<List<WalletModel>>.error(error, stackTrace).copyWithPrevious(state);
+      state = AsyncValue<List<WalletModel>>.error(error, stackTrace)
+          .copyWithPrevious(state);
       return false;
     }
   }
 
-  /// Transfers money between two visible wallets as one financial transaction.
-  /// Transfers are internal movements: they do not count as income or expense.
+  /// Transfers money by creating one Supabase transaction. PostgreSQL applies
+  /// both balance changes atomically; Flutter never calculates the new balance.
   Future<bool> transferBetweenWallets({
     required String sourceWalletId,
     required String destinationWalletId,
     required double amount,
     String? note,
   }) async {
-    if (sourceWalletId == destinationWalletId || amount <= 0) return false;
+    if (sourceWalletId == destinationWalletId || amount <= 0 || !amount.isFinite) {
+      return false;
+    }
 
     final wallets = state.valueOrNull;
     if (wallets == null) return false;
@@ -127,7 +126,7 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
     final destination = _findWalletFrom(wallets, destinationWalletId);
     if (source == null || destination == null) return false;
     if (source.isHidden || destination.isHidden) return false;
-    if (source.balance < amount) return false;
+    if (source.balance - amount < source.minimumBalance) return false;
 
     try {
       await ref.read(financialTransactionStoreProvider.notifier).transfer(
@@ -136,10 +135,11 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
         amount: amount,
         note: note,
       );
-      await _reload();
+      await refreshWallets();
       return true;
     } catch (error, stackTrace) {
-      state = AsyncValue<List<WalletModel>>.error(error, stackTrace).copyWithPrevious(state);
+      state = AsyncValue<List<WalletModel>>.error(error, stackTrace)
+          .copyWithPrevious(state);
       return false;
     }
   }
@@ -156,47 +156,15 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
     }
     return null;
   }
-
-  Future<void> _reload() async {
-    state = await AsyncValue.guard<List<WalletModel>>(() async {
-      final wallets = await _repository.getWallets();
-      final transactions = ref.read(financialTransactionStoreProvider);
-      return _applyTransactions(wallets, transactions);
-    });
-  }
-
-  List<WalletModel> _applyTransactions(
-    List<WalletModel> wallets,
-    List<TransactionModel> transactions,
-  ) {
-    return [
-      for (final wallet in wallets)
-        wallet.copyWith(balance: wallet.balance + _walletDelta(wallet.id, transactions)),
-    ];
-  }
-
-  double _walletDelta(String walletId, List<TransactionModel> transactions) {
-    var delta = 0.0;
-
-    for (final transaction in transactions) {
-      if (transaction.isIncome && transaction.walletId == walletId) {
-        delta += transaction.amount;
-      } else if (transaction.isExpense && transaction.walletId == walletId) {
-        delta -= transaction.amount;
-      } else if (transaction.isTransfer) {
-        if (transaction.sourceAccount == walletId) delta -= transaction.amount;
-        if (transaction.destinationAccount == walletId) delta += transaction.amount;
-      }
-    }
-
-    return delta;
-  }
 }
 
 final totalWalletBalanceProvider = Provider<double>((ref) {
   final walletsAsync = ref.watch(walletProvider);
   return walletsAsync.maybeWhen(
-    data: (wallets) => wallets.fold<double>(0, (total, wallet) => wallet.isHidden ? total : total + wallet.balance),
+    data: (wallets) => wallets.fold<double>(
+      0,
+      (total, wallet) => wallet.isHidden ? total : total + wallet.balance,
+    ),
     orElse: () => 0,
   );
 });
@@ -205,7 +173,9 @@ final primaryWalletProvider = Provider<WalletModel?>((ref) {
   final walletsAsync = ref.watch(walletProvider);
   return walletsAsync.maybeWhen(
     data: (wallets) {
-      final visibleWallets = wallets.where((wallet) => !wallet.isHidden).toList(growable: false);
+      final visibleWallets = wallets
+          .where((wallet) => !wallet.isHidden)
+          .toList(growable: false);
       if (visibleWallets.isEmpty) return null;
       for (final wallet in visibleWallets) {
         if (wallet.isPrimary) return wallet;
@@ -219,21 +189,31 @@ final primaryWalletProvider = Provider<WalletModel?>((ref) {
 final visibleWalletsProvider = Provider<List<WalletModel>>((ref) {
   final walletsAsync = ref.watch(walletProvider);
   return walletsAsync.maybeWhen(
-    data: (wallets) => wallets.where((wallet) => !wallet.isHidden).toList(growable: false),
+    data: (wallets) => wallets
+        .where((wallet) => !wallet.isHidden)
+        .toList(growable: false),
     orElse: () => const [],
   );
 });
 
-final walletByTypeProvider = Provider.family<List<WalletModel>, WalletType>((ref, type) {
-  final wallets = ref.watch(visibleWalletsProvider);
-  return wallets.where((wallet) => wallet.type == type).toList(growable: false);
-});
+final walletByTypeProvider = Provider.family<List<WalletModel>, WalletType>(
+  (ref, type) {
+    final wallets = ref.watch(visibleWalletsProvider);
+    return wallets.where((wallet) => wallet.type == type).toList(growable: false);
+  },
+);
 
-final walletBalanceByTypeProvider = Provider.family<double, WalletType>((ref, type) {
-  final wallets = ref.watch(walletByTypeProvider(type));
-  return wallets.fold<double>(0, (total, wallet) => total + wallet.balance);
-});
+final walletBalanceByTypeProvider = Provider.family<double, WalletType>(
+  (ref, type) {
+    final wallets = ref.watch(walletByTypeProvider(type));
+    return wallets.fold<double>(0, (total, wallet) => total + wallet.balance);
+  },
+);
 
-final walletCountProvider = Provider<int>((ref) => ref.watch(visibleWalletsProvider).length);
+final walletCountProvider = Provider<int>(
+  (ref) => ref.watch(visibleWalletsProvider).length,
+);
 
-final hasWalletProvider = Provider<bool>((ref) => ref.watch(visibleWalletsProvider).isNotEmpty);
+final hasWalletProvider = Provider<bool>(
+  (ref) => ref.watch(visibleWalletsProvider).isNotEmpty,
+);
