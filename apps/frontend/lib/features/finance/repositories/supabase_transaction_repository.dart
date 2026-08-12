@@ -82,8 +82,6 @@ class SupabaseTransactionRepository implements TransactionRepository {
     }
 
     final payload = <String, dynamic>{
-      // Keep the client-generated UUID stable across retries. The database
-      // still owns balance changes; this ID is only the transaction identity.
       'id': transaction.id.trim(),
       'user_id': _userId,
       'type': transaction.type.name,
@@ -107,6 +105,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
 
     final existing = await _findByIdempotencyKey(key);
     if (existing != null) {
+      _assertSameIdempotentRequest(existing, transaction);
       return existing;
     }
 
@@ -124,6 +123,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
         final existingAfterConflict = await _findByIdempotencyKey(key) ??
             await _findById(transaction.id.trim());
         if (existingAfterConflict != null) {
+          _assertSameIdempotentRequest(existingAfterConflict, transaction);
           return existingAfterConflict;
         }
       }
@@ -205,6 +205,32 @@ class SupabaseTransactionRepository implements TransactionRepository {
         .delete()
         .eq('id', trimmed)
         .eq('user_id', _userId);
+  }
+
+  void _assertSameIdempotentRequest(
+    TransactionModel existing,
+    TransactionModel requested,
+  ) {
+    final sameAmount = existing.amount == requested.amount;
+    final sameType = existing.type == requested.type;
+    final sameCategory = existing.category == requested.category;
+    final sameTitle = existing.title.trim() == requested.title.trim();
+    final sameWallet = existing.walletId == requested.walletId;
+    final sameSource = existing.sourceAccount == requested.sourceAccount;
+    final sameDestination =
+        existing.destinationAccount == requested.destinationAccount;
+
+    if (!sameAmount ||
+        !sameType ||
+        !sameCategory ||
+        !sameTitle ||
+        !sameWallet ||
+        !sameSource ||
+        !sameDestination) {
+      throw StateError(
+        'Idempotency key sudah digunakan untuk transaksi dengan payload berbeda.',
+      );
+    }
   }
 
   TransactionModel _fromRow(Map<String, dynamic> row) {
