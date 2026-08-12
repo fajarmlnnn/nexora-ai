@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\V1;
 
+use App\Models\Transaction;
 use App\Models\User;
 use App\Models\Wallet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -89,6 +90,55 @@ class WalletApiTest extends TestCase
             ->assertJsonPath('data.is_hidden', true);
 
         $this->assertSame(100000.0, (float) Wallet::findOrFail($wallet->id)->balance);
+    }
+
+    public function test_wallet_with_transactions_cannot_be_deleted(): void
+    {
+        $user = User::factory()->create();
+        $wallet = Wallet::create([
+            'user_id' => $user->id,
+            'name' => 'Cash',
+            'balance' => 100000,
+            'type' => 'cash',
+        ]);
+
+        Transaction::create([
+            'user_id' => $user->id,
+            'wallet_id' => $wallet->id,
+            'title' => 'Coffee',
+            'amount' => 10000,
+            'type' => 'expense',
+            'category' => 'food',
+            'date' => '2026-08-12 10:00:00',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->deleteJson('/api/v1/wallets/' . $wallet->id)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['wallet']);
+
+        $this->assertDatabaseHas('wallets', ['id' => $wallet->id]);
+        $this->assertDatabaseHas('transactions', ['wallet_id' => $wallet->id]);
+    }
+
+    public function test_empty_wallet_can_be_deleted(): void
+    {
+        $user = User::factory()->create();
+        $wallet = Wallet::create([
+            'user_id' => $user->id,
+            'name' => 'Unused',
+            'balance' => 0,
+            'type' => 'cash',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->deleteJson('/api/v1/wallets/' . $wallet->id)
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('wallets', ['id' => $wallet->id]);
     }
 
     public function test_primary_wallet_is_unique_per_user(): void
