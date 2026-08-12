@@ -12,6 +12,13 @@ on:
 
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -26,13 +33,14 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
+          cache: gradle
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -80,6 +88,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "$NEXORA_E2E_EMAIL" ] && [ -n "$NEXORA_E2E_PASSWORD" ]; then
+            echo "Running authenticated Supabase financial and security E2E tests."
             flutter test test/integration/supabase_financial_e2e_test.dart \
               --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
               --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY" \
@@ -92,7 +101,8 @@ jobs:
               --dart-define=NEXORA_E2E_EMAIL="$NEXORA_E2E_EMAIL" \
               --dart-define=NEXORA_E2E_PASSWORD="$NEXORA_E2E_PASSWORD"
           else
-            echo "E2E credentials are not configured; live Supabase E2E tests skipped."
+            echo "::warning::E2E credentials are not configured; live Supabase E2E tests are skipped."
+            echo "Configure NEXORA_E2E_EMAIL and NEXORA_E2E_PASSWORD in GitHub Actions Secrets before production release."
           fi
 
       - name: Build Release APK
@@ -101,8 +111,18 @@ jobs:
             --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
             --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY"
 
+      - name: Verify APK output
+        run: |
+          set -euo pipefail
+          apk="build/app/outputs/flutter-apk/app-release.apk"
+          test -s "$apk"
+          sha256sum "$apk"
+          ls -lh "$apk"
+
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nexora-ai-release
           path: apps/frontend/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
