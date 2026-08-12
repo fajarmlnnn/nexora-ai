@@ -92,7 +92,7 @@ class TransactionController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $this->validateTransaction($request);
+        $validated = $this->normalizeTransaction($this->validateTransaction($request));
 
         $transaction = DB::transaction(function () use ($request, $validated): Transaction {
             $this->assertWalletOwnership($request->user()->id, $validated);
@@ -140,12 +140,13 @@ class TransactionController extends Controller
                 ]),
                 $validated,
             );
+            $effective = $this->normalizeTransaction($effective);
 
             $this->assertWalletOwnership($request->user()->id, $effective);
             $this->validateTransferShape($effective);
 
             $this->reverseBalanceChange($transaction);
-            $transaction->update($validated);
+            $transaction->update($effective);
             $fresh = $transaction->fresh();
             $this->applyBalanceChange($fresh, $request->user()->id);
 
@@ -191,6 +192,20 @@ class TransactionController extends Controller
             'source_account' => ['nullable', 'string', 'max:150'],
             'destination_account' => ['nullable', 'string', 'max:150'],
         ]);
+    }
+
+    private function normalizeTransaction(array $data): array
+    {
+        $data['category'] = $data['category'] ?? 'other';
+
+        if (($data['type'] ?? null) === 'transfer') {
+            $data['wallet_id'] = null;
+        } else {
+            $data['source_wallet_id'] = null;
+            $data['destination_wallet_id'] = null;
+        }
+
+        return $data;
     }
 
     private function validateTransferShape(array $data): void
