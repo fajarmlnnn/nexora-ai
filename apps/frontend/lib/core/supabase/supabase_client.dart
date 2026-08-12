@@ -7,14 +7,15 @@ class NexoraSupabase {
 
   static SupabaseClient get client => Supabase.instance.client;
 
-  static bool get isInitialized => Supabase.instance.client.auth.currentSession != null;
+  static bool get isInitialized =>
+      Supabase.instance.client.auth.currentSession != null;
 
   static Future<bool> initializeIfConfigured() async {
     if (!SupabaseConfig.isConfigured) return false;
 
     await Supabase.initialize(
       url: SupabaseConfig.url,
-      anonKey: SupabaseConfig.anonKey,
+      publishableKey: SupabaseConfig.publishableKey,
       authOptions: const FlutterAuthClientOptions(
         autoRefreshToken: true,
         detectSessionInUri: false,
@@ -27,7 +28,7 @@ class NexoraSupabase {
     SupabaseConfig.validate();
     await Supabase.initialize(
       url: SupabaseConfig.url,
-      anonKey: SupabaseConfig.anonKey,
+      publishableKey: SupabaseConfig.publishableKey,
       authOptions: const FlutterAuthClientOptions(
         autoRefreshToken: true,
         detectSessionInUri: false,
