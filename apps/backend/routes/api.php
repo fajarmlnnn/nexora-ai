@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\WalletController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -11,5 +12,9 @@ Route::prefix('v1')->group(function (): void {
                 'service' => 'nexora-api',
             ],
         ]);
+    });
+
+    Route::middleware('auth:sanctum')->group(function (): void {
+        Route::apiResource('wallets', WalletController::class);
     });
 });
