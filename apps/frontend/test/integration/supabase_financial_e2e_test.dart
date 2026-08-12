@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase/supabase.dart';
+import 'package:test/test.dart';
 
 import 'package:frontend/core/supabase/supabase_config.dart';
 import 'package:frontend/features/dashboard/models/transaction_model.dart';
@@ -20,8 +20,6 @@ String _uuid() {
 }
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
   const email = String.fromEnvironment('NEXORA_E2E_EMAIL');
   const password = String.fromEnvironment('NEXORA_E2E_PASSWORD');
   final configured = SupabaseConfig.isConfigured && email.isNotEmpty && password.isNotEmpty;
@@ -29,12 +27,14 @@ void main() {
   test(
     'Supabase financial flow preserves balances and ownership',
     () async {
-      await Supabase.initialize(
-        url: SupabaseConfig.url,
-        publishableKey: SupabaseConfig.publishableKey,
+      // Use the pure Dart Supabase client for VM integration tests. The
+      // flutter wrapper persists auth through platform plugins such as
+      // shared_preferences, which are not registered by `flutter test`.
+      final client = SupabaseClient(
+        SupabaseConfig.url,
+        SupabaseConfig.publishableKey,
       );
 
-      final client = Supabase.instance.client;
       await client.auth.signInWithPassword(email: email, password: password);
 
       final user = client.auth.currentUser;
