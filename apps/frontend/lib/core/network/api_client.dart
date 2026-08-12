@@ -1,7 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 import 'api_config.dart';
 import 'api_exception.dart';
@@ -9,154 +8,142 @@ import 'token_store.dart';
 
 class ApiClient {
   ApiClient({
-    http.Client? client,
+    Dio? dio,
     TokenStore? tokenStore,
     Duration timeout = const Duration(seconds: 20),
-  })  : _client = client ?? http.Client(),
-        _tokenStore = tokenStore ?? TokenStore(),
-        _timeout = timeout;
+  })  : _dio = dio ?? Dio(),
+        _tokenStore = tokenStore ?? TokenStore() {
+    _dio.options = _dio.options.copyWith(
+      baseUrl: ApiConfig.baseUrl,
+      connectTimeout: timeout,
+      receiveTimeout: timeout,
+      sendTimeout: timeout,
+      headers: const {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      validateStatus: (status) => status != null && status >= 200 && status < 300,
+    );
+  }
 
-  final http.Client _client;
+  final Dio _dio;
   final TokenStore _tokenStore;
-  final Duration _timeout;
 
   Future<Map<String, dynamic>> get(
     String path, {
     Map<String, String>? query,
   }) =>
-      _send('GET', path, query: query);
+      _send(() => _dio.get(path, queryParameters: query));
 
   Future<Map<String, dynamic>> post(
     String path, {
     Map<String, dynamic>? body,
     String? idempotencyKey,
   }) =>
-      _send('POST', path, body: body, idempotencyKey: idempotencyKey);
+      _send(
+        () => _dio.post(
+          path,
+          data: body ?? const <String, dynamic>{},
+          options: Options(
+            headers: idempotencyKey == null
+                ? null
+                : {'Idempotency-Key': idempotencyKey},
+          ),
+        ),
+      );
 
   Future<Map<String, dynamic>> put(
     String path, {
     Map<String, dynamic>? body,
   }) =>
-      _send('PUT', path, body: body);
+      _send(() => _dio.put(path, data: body ?? const <String, dynamic>{}));
 
-  Future<Map<String, dynamic>> delete(String path) => _send('DELETE', path);
+  Future<Map<String, dynamic>> delete(String path) => _send(() => _dio.delete(path));
 
-  Future<Map<String, dynamic>> _send(
-    String method,
-    String path, {
-    Map<String, String>? query,
-    Map<String, dynamic>? body,
-    String? idempotencyKey,
-  }) async {
+  Future<Map<String, dynamic>> _send(Future<Response<dynamic>> Function() request) async {
     final token = await _tokenStore.read();
-    final headers = <String, String>{
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    };
+    final previousAuthorization = _dio.options.headers['Authorization'];
 
     if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
+      _dio.options.headers['Authorization'] = 'Bearer $token';
+    } else {
+      _dio.options.headers.remove('Authorization');
     }
-    if (idempotencyKey != null && idempotencyKey.isNotEmpty) {
-      headers['Idempotency-Key'] = idempotencyKey;
-    }
-
-    final uri = ApiConfig.endpoint(path, query);
-    late http.Response response;
 
     try {
-      switch (method) {
-        case 'GET':
-          response = await _client.get(uri, headers: headers).timeout(_timeout);
-        case 'POST':
-          response = await _client
-              .post(uri, headers: headers, body: jsonEncode(body ?? const {}))
-              .timeout(_timeout);
-        case 'PUT':
-          response = await _client
-              .put(uri, headers: headers, body: jsonEncode(body ?? const {}))
-              .timeout(_timeout);
-        case 'DELETE':
-          response = await _client.delete(uri, headers: headers).timeout(_timeout);
-        default:
-          throw StateError('Unsupported HTTP method: $method');
-      }
-    } on TimeoutException {
-      throw const ApiException(
-        statusCode: 0,
-        code: 'NETWORK_TIMEOUT',
-        message: 'The server took too long to respond.',
-      );
-    } on http.ClientException catch (error) {
-      throw ApiException(
-        statusCode: 0,
-        code: 'NETWORK_ERROR',
-        message: error.message,
-      );
-    }
-
-    final payload = _decode(response.body);
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      if (payload is! Map<String, dynamic>) {
+      final response = await request();
+      final payload = _asMap(response.data);
+      if (payload == null) {
         throw ApiException(
-          statusCode: response.statusCode,
+          statusCode: response.statusCode ?? 0,
           code: 'INVALID_RESPONSE',
           message: 'The server returned an invalid response.',
         );
       }
       return payload;
-    }
-
-    if (response.statusCode == 401) {
-      await _tokenStore.clear();
-    }
-
-    throw _toException(response.statusCode, payload);
-  }
-
-  dynamic _decode(String body) {
-    if (body.trim().isEmpty) return <String, dynamic>{};
-    try {
-      return jsonDecode(body);
-    } catch (_) {
-      return null;
+    } on DioException catch (error) {
+      final statusCode = error.response?.statusCode ?? 0;
+      if (statusCode == 401) {
+        await _tokenStore.clear();
+      }
+      throw _toException(statusCode, error.response?.data, error);
+    } finally {
+      if (previousAuthorization == null) {
+        _dio.options.headers.remove('Authorization');
+      } else {
+        _dio.options.headers['Authorization'] = previousAuthorization;
+      }
     }
   }
 
-  ApiException _toException(int statusCode, dynamic payload) {
-    if (payload is Map<String, dynamic>) {
-      final error = payload['error'];
-      if (error is Map<String, dynamic>) {
-        return ApiException(
-          statusCode: statusCode,
-          code: error['code']?.toString() ?? 'API_ERROR',
-          message: error['message']?.toString() ?? 'The request failed.',
-          fields: _parseFields(error['fields']),
-        );
-      }
+  Map<String, dynamic>? _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) {
+      return value.map((key, value) => MapEntry(key.toString(), value));
+    }
+    return null;
+  }
 
-      final errors = payload['errors'];
-      if (errors is Map) {
-        return ApiException(
-          statusCode: statusCode,
-          code: statusCode == 422 ? 'VALIDATION_ERROR' : 'API_ERROR',
-          message: payload['message']?.toString() ?? 'The request failed.',
-          fields: _parseFields(errors),
-        );
-      }
+  ApiException _toException(int statusCode, dynamic payload, DioException error) {
+    final map = _asMap(payload);
+    final apiError = _asMap(map?['error']);
+    final errors = map?['errors'];
 
+    if (apiError != null) {
       return ApiException(
         statusCode: statusCode,
-        code: payload['code']?.toString() ?? 'API_ERROR',
-        message: payload['message']?.toString() ?? 'The request failed.',
+        code: apiError['code']?.toString() ?? 'API_ERROR',
+        message: apiError['message']?.toString() ?? 'The request failed.',
+        fields: _parseFields(apiError['fields']),
+      );
+    }
+
+    if (errors is Map) {
+      return ApiException(
+        statusCode: statusCode,
+        code: statusCode == 422 ? 'VALIDATION_ERROR' : 'API_ERROR',
+        message: map?['message']?.toString() ?? 'The request failed.',
+        fields: _parseFields(errors),
+      );
+    }
+
+    if (statusCode == 0) {
+      final code = error.type == DioExceptionType.connectionTimeout ||
+              error.type == DioExceptionType.receiveTimeout ||
+              error.type == DioExceptionType.sendTimeout
+          ? 'NETWORK_TIMEOUT'
+          : 'NETWORK_ERROR';
+      return ApiException(
+        statusCode: 0,
+        code: code,
+        message: error.message ?? 'Unable to reach the server.',
       );
     }
 
     return ApiException(
       statusCode: statusCode,
-      code: 'HTTP_$statusCode',
-      message: 'The server returned HTTP $statusCode.',
+      code: map?['code']?.toString() ?? 'HTTP_$statusCode',
+      message: map?['message']?.toString() ?? 'The request failed.',
     );
   }
 
@@ -172,5 +159,5 @@ class ApiClient {
     );
   }
 
-  void dispose() => _client.close();
+  void dispose() => _dio.close(force: true);
 }
