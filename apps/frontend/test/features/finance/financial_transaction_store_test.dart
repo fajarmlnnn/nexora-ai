@@ -79,6 +79,22 @@ void main() {
     expect(store.state.single.id, 'tx-1');
   });
 
+  test('loads more than one page of remote transactions', () async {
+    final repository = FakeTransactionRepository();
+    repository.rows.addAll(
+      List.generate(
+        101,
+        (index) => expense(id: 'tx-$index', amount: index + 1.0),
+      ),
+    );
+    final store = FinancialTransactionStore(repository);
+
+    await store.load();
+
+    expect(store.state, hasLength(101));
+    expect(store.state.map((item) => item.id).toSet(), hasLength(101));
+  });
+
   test('add delegates to repository and updates state with committed row', () async {
     final repository = FakeTransactionRepository();
     final store = FinancialTransactionStore(repository);
