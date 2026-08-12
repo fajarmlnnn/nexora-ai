@@ -72,6 +72,8 @@ class TransactionModel {
     };
   }
 
+  /// Creates a copy while allowing nullable fields to be explicitly cleared.
+  /// The sentinel distinguishes an omitted argument from an explicit null.
   TransactionModel copyWith({
     String? id,
     String? title,
@@ -79,10 +81,10 @@ class TransactionModel {
     TransactionType? type,
     TransactionCategory? category,
     DateTime? date,
-    String? note,
-    String? walletId,
-    String? sourceAccount,
-    String? destinationAccount,
+    Object? note = _unset,
+    Object? walletId = _unset,
+    Object? sourceAccount = _unset,
+    Object? destinationAccount = _unset,
   }) {
     return TransactionModel(
       id: id ?? this.id,
@@ -91,10 +93,16 @@ class TransactionModel {
       type: type ?? this.type,
       category: category ?? this.category,
       date: date ?? this.date,
-      note: note ?? this.note,
-      walletId: walletId ?? this.walletId,
-      sourceAccount: sourceAccount ?? this.sourceAccount,
-      destinationAccount: destinationAccount ?? this.destinationAccount,
+      note: identical(note, _unset) ? this.note : note as String?,
+      walletId: identical(walletId, _unset) ? this.walletId : walletId as String?,
+      sourceAccount: identical(sourceAccount, _unset)
+          ? this.sourceAccount
+          : sourceAccount as String?,
+      destinationAccount: identical(destinationAccount, _unset)
+          ? this.destinationAccount
+          : destinationAccount as String?,
     );
   }
+
+  static const Object _unset = Object();
 }
