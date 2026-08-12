@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Transaction;
 use App\Models\Wallet;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -101,6 +102,22 @@ class WalletController extends Controller
     public function destroy(Request $request, Wallet $wallet): JsonResponse
     {
         $this->assertOwnership($request, $wallet);
+
+        $hasTransactions = Transaction::query()
+            ->where('user_id', $request->user()->id)
+            ->where(function ($query) use ($wallet): void {
+                $query
+                    ->where('wallet_id', $wallet->id)
+                    ->orWhere('source_wallet_id', $wallet->id)
+                    ->orWhere('destination_wallet_id', $wallet->id);
+            })
+            ->exists();
+
+        if ($hasTransactions) {
+            throw ValidationException::withMessages([
+                'wallet' => ['Wallet cannot be deleted while it has transactions. Delete or migrate its transactions first.'],
+            ]);
+        }
 
         $wallet->delete();
 
