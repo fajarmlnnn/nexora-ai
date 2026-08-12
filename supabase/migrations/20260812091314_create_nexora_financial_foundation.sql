@@ -38,7 +38,7 @@ create table public.transactions (
   destination_wallet_id uuid references public.wallets(id) on delete restrict,
   type text not null check (type in ('income','expense','transfer')),
   amount numeric(19,2) not null check (amount > 0),
-  category text not null default 'other' check (char_length(trim(category)) between 1 and 100),
+  category text not null default 'other',
   description text,
   occurred_at timestamptz not null default now(),
   idempotency_key text,
@@ -181,6 +181,14 @@ create policy transactions_delete_own on public.transactions for delete to authe
 grant select, insert, update, delete on public.profiles to authenticated;
 grant select, insert, update, delete on public.wallets to authenticated;
 grant select, insert, update, delete on public.transactions to authenticated;
+
+-- Financial invariant: clients may never write the derived wallet balance directly.
+-- The balance is changed only by the SECURITY DEFINER transaction trigger above.
+revoke insert (balance) on public.wallets from authenticated;
+revoke update (balance) on public.wallets from authenticated;
+
+-- Ownership is protected by RLS and by the transaction trigger's wallet ownership checks.
+-- Clients may submit their own user_id on insert, but cannot persist a different owner.
 
 revoke execute on function public.set_updated_at() from public, anon, authenticated;
 revoke execute on function public.handle_new_user() from public, anon, authenticated;
