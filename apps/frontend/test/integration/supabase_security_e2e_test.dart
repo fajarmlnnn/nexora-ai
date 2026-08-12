@@ -6,12 +6,14 @@ import 'package:supabase/supabase.dart';
 import 'package:frontend/core/supabase/supabase_config.dart';
 
 String _uuid() {
-  final random = Random();
+  final random = Random.secure();
   final bytes = List<int>.generate(16, (_) => random.nextInt(256));
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
   final hex = bytes.map((value) => value.toRadixString(16).padLeft(2, '0')).join();
-  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}';
+
+  // UUID v4 is 8-4-4-4-12 hexadecimal characters.
+  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20, 32)}';
 }
 
 void main() {
@@ -127,7 +129,7 @@ void main() {
             .single();
         expect(ownership['user_id'], user.id);
       } finally {
-        for (final id in [walletId, forgedBalanceWalletId]) {
+        for (final id in [walletId, forgedWalletId, forgedBalanceWalletId]) {
           try {
             await client.from('wallets').delete().eq('id', id);
           } catch (_) {
