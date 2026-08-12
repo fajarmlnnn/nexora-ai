@@ -50,7 +50,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
       query = query.eq('category', category.name);
     }
     if (search != null && search.trim().isNotEmpty) {
-      final escaped = search.trim().replaceAll(',', '');
+      final escaped = _escapeIlike(search.trim());
       query = query.ilike('description', '%$escaped%');
     }
     if (from != null) {
@@ -114,7 +114,11 @@ class SupabaseTransactionRepository implements TransactionRepository {
     }
 
     try {
-      final row = await _client.from('transactions').insert(payload).select().single();
+      final row = await _client
+          .from('transactions')
+          .insert(payload)
+          .select()
+          .single();
       return _fromRow(Map<String, dynamic>.from(row));
     } on PostgrestException catch (error) {
       // A concurrent retry can win the unique idempotency constraint between
@@ -135,7 +139,9 @@ class SupabaseTransactionRepository implements TransactionRepository {
   }
 
   @override
-  Future<TransactionModel> updateTransaction(TransactionModel transaction) async {
+  Future<TransactionModel> updateTransaction(
+    TransactionModel transaction,
+  ) async {
     _validate(transaction);
     if (transaction.id.trim().isEmpty) {
       throw ArgumentError('ID transaksi wajib diisi.');
@@ -152,8 +158,10 @@ class SupabaseTransactionRepository implements TransactionRepository {
           'note': transaction.note!.trim(),
       },
       'wallet_id': transaction.isTransfer ? null : transaction.walletId,
-      'source_wallet_id': transaction.isTransfer ? transaction.sourceAccount : null,
-      'destination_wallet_id': transaction.isTransfer ? transaction.destinationAccount : null,
+      'source_wallet_id':
+          transaction.isTransfer ? transaction.sourceAccount : null,
+      'destination_wallet_id':
+          transaction.isTransfer ? transaction.destinationAccount : null,
     };
 
     final row = await _client
@@ -230,7 +238,8 @@ class SupabaseTransactionRepository implements TransactionRepository {
     return (parsed ?? DateTime.now().toUtc()).toLocal();
   }
 
-  double _number(dynamic value) => value is num ? value.toDouble() : double.parse(value.toString());
+  double _number(dynamic value) =>
+      value is num ? value.toDouble() : double.parse(value.toString());
 
   String _defaultTitle(String? type) {
     switch (type) {
@@ -241,6 +250,13 @@ class SupabaseTransactionRepository implements TransactionRepository {
       default:
         return 'Pengeluaran';
     }
+  }
+
+  String _escapeIlike(String value) {
+    return value
+        .replaceAll(r'\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_');
   }
 
   bool _isUniqueViolation(PostgrestException error) {
