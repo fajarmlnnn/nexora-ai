@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/card/n_card.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../../wallet/controllers/wallet_controller.dart';
 import '../controllers/dashboard_controller.dart';
