@@ -19,6 +19,16 @@ import '../widgets/recent_transaction_card.dart';
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
+  Future<void> _refreshDashboard(WidgetRef ref) async {
+    await Future.wait([
+      ref.read(financialTransactionStoreProvider.notifier).reload(),
+      ref.read(walletProvider.notifier).refreshWallets(),
+      ref.refresh(budgetItemsProvider.future),
+    ]);
+    ref.invalidate(dashboardSummaryProvider);
+    ref.invalidate(recentTransactionsProvider);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(dashboardSummaryProvider);
@@ -26,6 +36,7 @@ class DashboardPage extends ConsumerWidget {
     final transactionsAsync = ref.watch(recentTransactionsProvider);
     final insight = ref.watch(aiInsightProvider);
     final totalAssets = ref.watch(totalWalletBalanceProvider);
+    final walletCount = ref.watch(walletCountProvider);
 
     return PremiumScaffold(
       child: summaryAsync.when(
@@ -35,61 +46,141 @@ class DashboardPage extends ConsumerWidget {
           child: _DashboardErrorState(
             title: 'Dashboard belum dapat dimuat',
             message: 'Terjadi kendala saat mengambil data keuanganmu.',
-            onRetry: () => ref.invalidate(dashboardSummaryProvider),
+            onRetry: () {
+              ref.invalidate(dashboardSummaryProvider);
+              ref.invalidate(recentTransactionsProvider);
+              ref.invalidate(budgetItemsProvider);
+            },
           ),
         ),
-        data: (summary) => SingleChildScrollView(
-          padding: AppSpacing.screen.copyWith(bottom: AppSpacing.bottomNav(context)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const PremiumEntrance(child: DashboardHeader()),
-              AppSpacing.gapMD,
-              PremiumEntrance(
-                delay: const Duration(milliseconds: 50),
-                child: BalanceCard(
-                  summary: summary,
-                  totalBalance: totalAssets,
-                  onTap: () => context.push('/financial-overview'),
-                ),
-              ),
-              AppSpacing.gapMD,
-              PremiumEntrance(
-                delay: const Duration(milliseconds: 150),
-                child: AIInsightCard(insight: insight),
-              ),
-              AppSpacing.gapMD,
-              const PremiumEntrance(
-                delay: Duration(milliseconds: 200),
-                child: QuickActions(),
-              ),
-              AppSpacing.gapMD,
-              PremiumEntrance(
-                delay: const Duration(milliseconds: 250),
-                child: budgetAsync.when(
-                  loading: () => const ShimmerSkeleton(height: 180),
-                  error: (error, stackTrace) => _DashboardSectionError(
-                    title: 'Budget belum tersedia',
-                    onRetry: () => ref.invalidate(budgetItemsProvider),
+        data: (summary) => RefreshIndicator.adaptive(
+          onRefresh: () => _refreshDashboard(ref),
+          color: AppColors.primaryLight,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            padding: AppSpacing.screen.copyWith(bottom: AppSpacing.bottomNav(context)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const PremiumEntrance(child: DashboardHeader()),
+                AppSpacing.gapMD,
+                PremiumEntrance(
+                  delay: const Duration(milliseconds: 50),
+                  child: BalanceCard(
+                    summary: summary,
+                    totalBalance: totalAssets,
+                    onTap: () => context.push('/financial-overview'),
                   ),
-                  data: (items) => BudgetSummaryCard(items: items),
                 ),
-              ),
-              AppSpacing.gapMD,
-              PremiumEntrance(
-                delay: const Duration(milliseconds: 300),
-                child: transactionsAsync.when(
-                  loading: () => const ShimmerSkeleton(height: 205),
-                  error: (error, stackTrace) => _DashboardSectionError(
-                    title: 'Transaksi belum tersedia',
-                    onRetry: () => ref.invalidate(recentTransactionsProvider),
+                AppSpacing.gapMD,
+                _WalletStatusCard(
+                  walletCount: walletCount,
+                  totalAssets: totalAssets,
+                  onTap: () => context.go('/wallet'),
+                ),
+                AppSpacing.gapMD,
+                PremiumEntrance(
+                  delay: const Duration(milliseconds: 150),
+                  child: AIInsightCard(insight: insight),
+                ),
+                AppSpacing.gapMD,
+                const PremiumEntrance(
+                  delay: Duration(milliseconds: 200),
+                  child: QuickActions(),
+                ),
+                AppSpacing.gapMD,
+                PremiumEntrance(
+                  delay: const Duration(milliseconds: 250),
+                  child: budgetAsync.when(
+                    loading: () => const ShimmerSkeleton(height: 180),
+                    error: (error, stackTrace) => _DashboardSectionError(
+                      title: 'Budget belum tersedia',
+                      onRetry: () => ref.invalidate(budgetItemsProvider),
+                    ),
+                    data: (items) => BudgetSummaryCard(items: items),
                   ),
-                  data: (transactions) => RecentTransactionCard(transactions: transactions),
                 ),
-              ),
-            ],
+                AppSpacing.gapMD,
+                PremiumEntrance(
+                  delay: const Duration(milliseconds: 300),
+                  child: transactionsAsync.when(
+                    loading: () => const ShimmerSkeleton(height: 205),
+                    error: (error, stackTrace) => _DashboardSectionError(
+                      title: 'Transaksi belum tersedia',
+                      onRetry: () => ref.invalidate(recentTransactionsProvider),
+                    ),
+                    data: (transactions) => RecentTransactionCard(transactions: transactions),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _WalletStatusCard extends StatelessWidget {
+  const _WalletStatusCard({
+    required this.walletCount,
+    required this.totalAssets,
+    required this.onTap,
+  });
+
+  final int walletCount;
+  final double totalAssets;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasWallet = walletCount > 0;
+    return NCard(
+      showBorder: true,
+      padding: const EdgeInsets.fromLTRB(14, 13, 10, 13),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: (hasWallet ? AppColors.primaryLight : AppColors.warning).withValues(alpha: .10),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              hasWallet ? LucideIcons.walletCards : LucideIcons.walletMinimal,
+              size: 19,
+              color: hasWallet ? AppColors.primaryLight : AppColors.warning,
+            ),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasWallet ? '$walletCount wallet aktif' : 'Belum ada wallet',
+                  style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hasWallet
+                      ? 'Total aset ${rupiah(totalAssets)} • siap untuk transaksi.'
+                      : 'Buat wallet terlebih dahulu agar income dan expense bisa dicatat.',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary, height: 1.3),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: onTap,
+            tooltip: 'Kelola wallet',
+            icon: const Icon(LucideIcons.chevronRight, size: 19),
+          ),
+        ],
       ),
     );
   }
@@ -219,6 +310,7 @@ class _DashboardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: AppSpacing.screen.copyWith(bottom: AppSpacing.bottomNav(context)),
         child: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,6 +318,8 @@ class _DashboardSkeleton extends StatelessWidget {
             PremiumEntrance(child: ShimmerSkeleton(width: 150, height: 26)),
             SizedBox(height: 18),
             PremiumEntrance(delay: Duration(milliseconds: 50), child: ShimmerSkeleton(height: 270)),
+            SizedBox(height: 18),
+            PremiumEntrance(delay: Duration(milliseconds: 100), child: ShimmerSkeleton(height: 78)),
             SizedBox(height: 18),
             PremiumEntrance(delay: Duration(milliseconds: 150), child: ShimmerSkeleton(height: 150)),
             SizedBox(height: 18),
