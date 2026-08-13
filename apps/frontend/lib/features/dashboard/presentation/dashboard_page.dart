@@ -8,6 +8,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/card/n_card.dart';
 import '../../../core/widgets/premium_widgets.dart';
+import '../../finance/state/financial_analytics_provider.dart';
 import '../../finance/state/financial_transaction_store.dart';
 import '../../wallet/controllers/wallet_controller.dart';
 import '../controllers/dashboard_controller.dart';
@@ -37,6 +38,7 @@ class DashboardPage extends ConsumerWidget {
     final budgetAsync = ref.watch(budgetItemsProvider);
     final transactionsAsync = ref.watch(recentTransactionsProvider);
     final insight = ref.watch(aiInsightProvider);
+    final analytics = ref.watch(financialAnalyticsProvider);
     final totalAssets = ref.watch(totalWalletBalanceProvider);
     final walletCount = ref.watch(walletCountProvider);
 
@@ -82,6 +84,11 @@ class DashboardPage extends ConsumerWidget {
                 ),
                 AppSpacing.gapMD,
                 PremiumEntrance(
+                  delay: const Duration(milliseconds: 125),
+                  child: _CashflowSummaryCard(analytics: analytics),
+                ),
+                AppSpacing.gapMD,
+                PremiumEntrance(
                   delay: const Duration(milliseconds: 150),
                   child: AIInsightCard(insight: insight),
                 ),
@@ -118,6 +125,154 @@ class DashboardPage extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CashflowSummaryCard extends StatelessWidget {
+  const _CashflowSummaryCard({required this.analytics});
+
+  final FinancialAnalyticsSnapshot analytics;
+
+  @override
+  Widget build(BuildContext context) {
+    final net = analytics.netCashflow;
+    final isPositive = net >= 0;
+    final savingsRate = (analytics.savingsRate * 100).clamp(-999.0, 999.0);
+
+    return NCard(
+      showBorder: true,
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 13),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Cashflow bulan ini',
+                  style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
+              Text(
+                '${analytics.transactionCount} transaksi',
+                style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _CashflowMetric(
+                  icon: LucideIcons.arrowDownToLine,
+                  label: 'Income',
+                  value: analytics.income,
+                  valueColor: AppColors.success,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _CashflowMetric(
+                  icon: LucideIcons.arrowUpFromLine,
+                  label: 'Expense',
+                  value: analytics.expense,
+                  valueColor: AppColors.danger,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: (isPositive ? AppColors.success : AppColors.danger).withValues(alpha: .08),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
+                  size: 17,
+                  color: isPositive ? AppColors.success : AppColors.danger,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Net cashflow',
+                    style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                  ),
+                ),
+                Text(
+                  rupiah(net),
+                  style: AppTypography.labelMedium.copyWith(
+                    color: isPositive ? AppColors.success : AppColors.danger,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(width: 7),
+                Text(
+                  '${savingsRate.toStringAsFixed(0)}%',
+                  style: AppTypography.caption.copyWith(
+                    color: isPositive ? AppColors.success : AppColors.danger,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CashflowMetric extends StatelessWidget {
+  const _CashflowMetric({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.valueColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final double value;
+  final Color valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 17, color: valueColor),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                const SizedBox(height: 2),
+                Text(
+                  rupiah(value),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.labelMedium.copyWith(
+                    color: valueColor,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -322,6 +477,8 @@ class _DashboardSkeleton extends StatelessWidget {
             PremiumEntrance(delay: Duration(milliseconds: 50), child: ShimmerSkeleton(height: 270)),
             SizedBox(height: 18),
             PremiumEntrance(delay: Duration(milliseconds: 100), child: ShimmerSkeleton(height: 78)),
+            SizedBox(height: 18),
+            PremiumEntrance(delay: Duration(milliseconds: 125), child: ShimmerSkeleton(height: 175)),
             SizedBox(height: 18),
             PremiumEntrance(delay: Duration(milliseconds: 150), child: ShimmerSkeleton(height: 150)),
             SizedBox(height: 18),
