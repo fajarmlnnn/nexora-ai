@@ -182,6 +182,7 @@ class TransactionController extends Controller
             $this->assertWalletOwnership($request->user()->id, $effective);
             $this->validateTransferShape($effective);
 
+            $this->assertReversalAllowed($transaction);
             $this->reverseBalanceChange($transaction);
             $transaction->update($effective);
             $fresh = $transaction->fresh();
@@ -202,6 +203,7 @@ class TransactionController extends Controller
 
         DB::transaction(function () use ($transaction): void {
             $transaction->load(['wallet', 'sourceWallet', 'destinationWallet']);
+            $this->assertReversalAllowed($transaction);
             $this->reverseBalanceChange($transaction);
             $transaction->delete();
         });
@@ -321,6 +323,41 @@ class TransactionController extends Controller
 
         $this->assertSufficientBalance($wallet, $amount);
         $wallet->decrement('balance', $amount);
+    }
+
+    private function assertReversalAllowed(Transaction $transaction): void
+    {
+        $walletIds = $transaction->type === 'transfer'
+            ? [$transaction->source_wallet_id, $transaction->destination_wallet_id]
+            : [$transaction->wallet_id];
+        $wallets = $this->lockWallets($transaction->user_id, $walletIds);
+        $amountCents = $this->moneyToCents($transaction->amount);
+
+        if ($transaction->type === 'income') {
+            $wallet = $wallets[(int) $transaction->wallet_id];
+            $remainingCents = $this->moneyToCents($wallet->balance) - $amountCents;
+            $minimumCents = $this->moneyToCents($wallet->minimum_balance);
+
+            if ($remainingCents < $minimumCents) {
+                throw ValidationException::withMessages([
+                    'transaction' => ['Transaction cannot be reversed because it would breach the wallet minimum balance.'],
+                ]);
+            }
+
+            return;
+        }
+
+        if ($transaction->type === 'transfer') {
+            $destination = $wallets[(int) $transaction->destination_wallet_id];
+            $remainingCents = $this->moneyToCents($destination->balance) - $amountCents;
+            $minimumCents = $this->moneyToCents($destination->minimum_balance);
+
+            if ($remainingCents < $minimumCents) {
+                throw ValidationException::withMessages([
+                    'transaction' => ['Transfer cannot be reversed because it would breach the destination wallet minimum balance.'],
+                ]);
+            }
+        }
     }
 
     private function reverseBalanceChange(Transaction $transaction): void
