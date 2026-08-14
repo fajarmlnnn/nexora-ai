@@ -23,6 +23,7 @@ class AiApiService {
   }) async {
     if (_baseUrl.isEmpty) {
       throw const ApiException(
+        statusCode: 0,
         code: 'API_BASE_URL_MISSING',
         message: 'Server AI belum dikonfigurasi pada aplikasi ini.',
       );
@@ -31,9 +32,9 @@ class AiApiService {
     var session = _supabase.auth.currentSession;
     if (session == null) {
       throw const ApiException(
+        statusCode: 401,
         code: 'UNAUTHENTICATED',
         message: 'Sesi login tidak ditemukan. Silakan login kembali.',
-        statusCode: 401,
       );
     }
 
@@ -46,9 +47,9 @@ class AiApiService {
       session = refreshed.session;
       if (session == null) {
         throw const ApiException(
+          statusCode: 401,
           code: 'UNAUTHENTICATED',
           message: 'Sesi login sudah kedaluwarsa. Silakan login kembali.',
-          statusCode: 401,
         );
       }
 
@@ -75,8 +76,8 @@ class AiApiService {
               'top_expense_category': analytics.topExpenseCategory!.key.name,
             if (analytics.topExpenseCategory != null)
               'top_expense_value': analytics.topExpenseCategory!.value,
-            'period_start': analytics.periodStart.toIso8601String().split('T').first,
-            'period_end': analytics.periodEnd.toIso8601String().split('T').first,
+            'period_start': analytics.start.toIso8601String().split('T').first,
+            'period_end': analytics.end.toIso8601String().split('T').first,
           },
         },
         options: Options(
@@ -92,6 +93,7 @@ class AiApiService {
       final content = data?['data']?['message']?['content'];
       if (content is! String || content.trim().isEmpty) {
         throw const ApiException(
+          statusCode: 502,
           code: 'AI_INVALID_RESPONSE',
           message: 'AI mengirim respons yang tidak valid.',
         );
@@ -101,34 +103,36 @@ class AiApiService {
       final status = error.response?.statusCode;
       if (status == 401) {
         throw const ApiException(
+          statusCode: 401,
           code: 'UNAUTHENTICATED',
           message: 'Sesi login perlu diperbarui.',
-          statusCode: 401,
         );
       }
       if (status == 429) {
         throw const ApiException(
+          statusCode: 429,
           code: 'RATE_LIMITED',
           message: 'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.',
-          statusCode: 429,
         );
       }
       if (status == 503) {
         throw const ApiException(
+          statusCode: 503,
           code: 'AI_UNAVAILABLE',
           message: 'Nexora AI sedang tidak tersedia. Coba lagi sebentar.',
-          statusCode: 503,
         );
       }
       if (error.type == DioExceptionType.connectionTimeout ||
           error.type == DioExceptionType.sendTimeout ||
           error.type == DioExceptionType.receiveTimeout) {
         throw const ApiException(
+          statusCode: 0,
           code: 'AI_TIMEOUT',
           message: 'Respons AI terlalu lama. Periksa koneksi lalu coba lagi.',
         );
       }
       throw const ApiException(
+        statusCode: 0,
         code: 'NETWORK_ERROR',
         message: 'Tidak bisa terhubung ke server Nexora.',
       );
