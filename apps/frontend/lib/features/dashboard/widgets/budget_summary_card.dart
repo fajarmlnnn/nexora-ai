@@ -18,9 +18,10 @@ class BudgetSummaryCard extends StatelessWidget {
     final visibleItems = items.take(3).toList();
     final totalLimit = items.fold<double>(0, (sum, item) => sum + item.limit);
     final totalSpent = items.fold<double>(0, (sum, item) => sum + item.spent);
-    final remaining = (totalLimit - totalSpent).clamp(0.0, double.infinity);
+    final remaining = totalLimit - totalSpent;
+    final isOver = remaining < 0;
     final progress = totalLimit <= 0 ? 0.0 : (totalSpent / totalLimit).clamp(0.0, 1.0);
-    final percentage = (progress * 100).round();
+    final percentage = totalLimit <= 0 ? 0 : ((totalSpent / totalLimit) * 100).round();
 
     return NCard(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -66,13 +67,13 @@ class BudgetSummaryCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _Metric(
-                    label: 'Sisa',
-                    value: rupiah(remaining),
-                    valueColor: remaining <= 0 ? AppColors.danger : AppColors.success,
+                    label: isOver ? 'Over' : 'Sisa',
+                    value: rupiah(remaining.abs()),
+                    valueColor: isOver ? AppColors.danger : AppColors.success,
                   ),
                 ),
                 const SizedBox(width: 8),
-                _ProgressRing(value: progress, percentage: percentage),
+                _ProgressRing(value: progress, percentage: percentage, isOver: isOver),
               ],
             ),
             const SizedBox(height: 8),
@@ -82,9 +83,22 @@ class BudgetSummaryCard extends StatelessWidget {
                 value: progress,
                 minHeight: 3,
                 backgroundColor: Colors.white.withValues(alpha: .06),
-                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isOver ? AppColors.danger : AppColors.primary,
+                ),
               ),
             ),
+            if (isOver) ...[
+              const SizedBox(height: 6),
+              Text(
+                'OVER BUDGET • Melebihi ${rupiah(remaining.abs())}',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.danger,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 9,
+                ),
+              ),
+            ],
             if (visibleItems.isNotEmpty) ...[
               const SizedBox(height: 8),
               for (int i = 0; i < visibleItems.length; i++) ...[
@@ -185,18 +199,21 @@ class _Metric extends StatelessWidget {
 }
 
 class _ProgressRing extends StatelessWidget {
-  const _ProgressRing({required this.value, required this.percentage});
+  const _ProgressRing({required this.value, required this.percentage, required this.isOver});
 
   final double value;
   final int percentage;
+  final bool isOver;
 
   @override
   Widget build(BuildContext context) {
-    final color = percentage >= 90
+    final color = isOver
         ? AppColors.danger
-        : percentage >= 75
-            ? AppColors.warning
-            : AppColors.primaryLight;
+        : percentage >= 90
+            ? AppColors.danger
+            : percentage >= 75
+                ? AppColors.warning
+                : AppColors.primaryLight;
 
     return SizedBox(
       width: 38,
@@ -210,7 +227,14 @@ class _ProgressRing extends StatelessWidget {
             backgroundColor: Colors.white.withValues(alpha: .06),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
-          Text('$percentage%', style: AppTypography.caption.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w800, fontSize: 8)),
+          Text(
+            isOver ? 'OVER' : '$percentage%',
+            style: AppTypography.caption.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontSize: isOver ? 7 : 8,
+            ),
+          ),
         ],
       ),
     );
@@ -224,7 +248,7 @@ class _BudgetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final percentage = (item.progress * 100).round();
+    final percentage = item.limit <= 0 ? 0 : ((item.spent / item.limit) * 100).round();
     final accent = item.isOverBudget
         ? AppColors.danger
         : item.progress >= .85
@@ -248,7 +272,35 @@ class _BudgetRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700, fontSize: 10.5)),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700, fontSize: 10.5),
+                    ),
+                  ),
+                  if (item.isOverBudget)
+                    Container(
+                      margin: const EdgeInsets.only(left: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.danger.withValues(alpha: .10),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        'OVER',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.danger,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 7,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: 3),
               ClipRRect(
                 borderRadius: BorderRadius.circular(999),
@@ -269,10 +321,18 @@ class _BudgetRow extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerRight,
-              child: Text('${rupiah(item.spent)} / ${rupiah(item.limit)}', maxLines: 1, softWrap: false, style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 8)),
+              child: Text(
+                '${rupiah(item.spent)} / ${rupiah(item.limit)}',
+                maxLines: 1,
+                softWrap: false,
+                style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 8),
+              ),
             ),
             const SizedBox(height: 2),
-            Text('$percentage%', style: AppTypography.caption.copyWith(color: accent, fontWeight: FontWeight.w800, fontSize: 8.5)),
+            Text(
+              '$percentage%',
+              style: AppTypography.caption.copyWith(color: accent, fontWeight: FontWeight.w800, fontSize: 8.5),
+            ),
           ],
         ),
       ],
