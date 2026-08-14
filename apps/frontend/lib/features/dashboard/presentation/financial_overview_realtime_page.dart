@@ -9,7 +9,6 @@ import '../../../core/widgets/card/n_card.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../../finance/state/financial_analytics_provider.dart';
 import '../../wallet/controllers/wallet_controller.dart';
-import '../controllers/dashboard_controller.dart';
 import '../controllers/financial_overview_controller.dart';
 
 class FinancialOverviewRealtimePage extends ConsumerWidget {
