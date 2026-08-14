@@ -1,23 +1,12 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase/supabase.dart';
 
 import 'package:frontend/core/supabase/supabase_config.dart';
+import 'package:frontend/features/budget/repositories/budget_repository.dart';
 import 'package:frontend/features/dashboard/models/budget_item.dart';
 import 'package:frontend/features/dashboard/models/transaction_model.dart';
-import 'package:frontend/features/budget/repositories/budget_repository.dart';
-import 'package:frontend/features/finance/repositories/supabase_transaction_repository.dart';
-
-String _uuid() {
-  final random = Random.secure();
-  final bytes = List<int>.generate(16, (_) => random.nextInt(256));
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  final hex = bytes.map((value) => value.toRadixString(16).padLeft(2, '0')).join();
-  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
-}
+import 'package:frontend/features/finance/state/financial_analytics_provider.dart';
 
 void main() {
   const email = String.fromEnvironment('NEXORA_E2E_EMAIL');
@@ -25,7 +14,7 @@ void main() {
   final configured = SupabaseConfig.isConfigured && email.isNotEmpty && password.isNotEmpty;
 
   test(
-    'Budget lifecycle persists limits and never persists forged spent values',
+    'Budget lifecycle persists limits and derives spending without counting transfers',
     () async {
       final client = SupabaseClient(
         SupabaseConfig.url,
@@ -36,15 +25,12 @@ void main() {
       if (user == null) throw StateError('E2E authentication failed.');
 
       final repository = SupabaseBudgetRepository(client: client);
-      final transactionRepository = SupabaseTransactionRepository(client: client);
       const budgetId = 'food';
-      final expenseId = _uuid();
-      final transferId = _uuid();
       var created = false;
 
       try {
-        // The E2E account is isolated. Remove only the deterministic fixture id
-        // so this test can be rerun without creating duplicate category budgets.
+        // The CI E2E account owns this deterministic fixture. Reusing only this
+        // category id keeps the test repeatable without touching other budgets.
         await client
             .from('budgets')
             .delete()
@@ -62,7 +48,7 @@ void main() {
         );
         created = true;
 
-        // Spent must never be persisted from the client payload.
+        // The repository/database never persists a forged spent value.
         expect(budget.spent, 0);
         final stored = await client
             .from('budgets')
@@ -73,37 +59,42 @@ void main() {
         expect((stored['budget_limit'] as num).toDouble(), 100000);
         expect(stored['name'], 'Makan E2E');
 
-        final noTransactions = await repository.getBudgets();
-        expect(noTransactions.singleWhere((item) => item.id == budgetId).spent, 0);
-
-        await transactionRepository.createTransaction(
+        final transactions = <TransactionModel>[
           TransactionModel(
-            id: expenseId,
+            id: 'budget-fixture-expense',
             title: 'E2E budget food expense',
             amount: 75000,
             type: TransactionType.expense,
             category: TransactionCategory.food,
             date: DateTime.now(),
           ),
-        );
-
-        final persistedAgain = await repository.getBudgets();
-        // Repository deliberately returns derived spent=0. The controller is
-        // responsible for joining current-month expenses to the budget.
-        expect(persistedAgain.singleWhere((item) => item.id == budgetId).spent, 0);
-
-        // Transfers must never become budget spending even if their amount is
-        // large and their date/category would otherwise match the period.
-        await transactionRepository.createTransaction(
           TransactionModel(
-            id: transferId,
+            id: 'budget-fixture-transfer',
             title: 'E2E budget transfer',
             amount: 500000,
             type: TransactionType.transfer,
             category: TransactionCategory.food,
             date: DateTime.now(),
+            sourceAccount: 'wallet-source',
+            destinationAccount: 'wallet-destination',
           ),
+        ];
+
+        final now = DateTime.now();
+        final analytics = buildFinancialAnalytics(
+          transactions,
+          DateTime(now.year, now.month),
+          DateTime(now.year, now.month + 1),
         );
+        expect(analytics.expenseByCategory[TransactionCategory.food], 75000);
+        expect(analytics.expense, 75000);
+        expect(analytics.transferOut, 500000);
+        expect(analytics.transferIn, 500000);
+        expect(analytics.transactionCount, 2);
+
+        // Repository reads keep spent derived rather than trusting the DB row.
+        final reloaded = await repository.getBudgets();
+        expect(reloaded.singleWhere((item) => item.id == budgetId).spent, 0);
 
         final updated = await repository.updateBudget(
           budget.copyWith(limit: 120000, spent: 777777),
@@ -118,14 +109,11 @@ void main() {
 
         await repository.deleteBudget(budgetId);
         created = false;
-        expect((await repository.getBudgets()).where((item) => item.id == budgetId), isEmpty);
+        expect(
+          (await repository.getBudgets()).where((item) => item.id == budgetId),
+          isEmpty,
+        );
       } finally {
-        try {
-          await transactionRepository.deleteTransaction(expenseId);
-        } catch (_) {}
-        try {
-          await transactionRepository.deleteTransaction(transferId);
-        } catch (_) {}
         if (created) {
           try {
             await repository.deleteBudget(budgetId);
