@@ -7,6 +7,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/context_ai_insight.dart';
 import '../../../core/widgets/card/n_card.dart';
 import '../../../core/widgets/premium_widgets.dart';
+import '../../finance/state/financial_analytics_provider.dart';
 import '../controllers/dashboard_controller.dart';
 import '../controllers/financial_overview_controller.dart';
 import '../../wallet/controllers/wallet_controller.dart';
@@ -22,11 +23,11 @@ class FinancialOverviewRealtimePage extends ConsumerWidget {
     final debt = ref.watch(totalInstallmentRemainingProvider);
     final due = ref.watch(installmentDueThisPeriodProvider);
     final installments = ref.watch(installmentsProvider);
-    final transactions = ref.watch(recentTransactionsProvider).valueOrNull ?? const [];
+    final analytics = ref.watch(financialAnalyticsProvider);
 
-    final income = transactions.where((item) => item.isIncome).fold<double>(0, (sum, item) => sum + item.amount);
-    final expense = transactions.where((item) => item.isExpense).fold<double>(0, (sum, item) => sum + item.amount);
-    final cashflow = income - expense;
+    final income = analytics.income;
+    final expense = analytics.expense;
+    final cashflow = analytics.netCashflow;
     final netWorth = assets - debt;
     final goalProgress = goalTarget <= 0 ? 0.0 : (goalSaved / goalTarget).clamp(0.0, 1.0);
     final available = assets - goalSaved - due;
