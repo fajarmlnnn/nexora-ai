@@ -4,8 +4,8 @@ import 'package:frontend/features/budget/controllers/budget_controller.dart';
 import 'package:frontend/features/dashboard/models/budget_item.dart';
 import 'package:frontend/features/dashboard/models/transaction_model.dart';
 
-group('BudgetItem', () {
-  test('defaults category to other for backward compatibility', () {
+void main() {
+  test('BudgetItem defaults category to other', () {
     const budget = BudgetItem(
       id: 'custom-1',
       name: 'Daily spending',
@@ -19,7 +19,7 @@ group('BudgetItem', () {
     expect(budget.progress, 0.25);
   });
 
-  test('copyWith preserves category and JSON round trip', () {
+  test('BudgetItem copyWith and JSON round trip preserve category', () {
     const budget = BudgetItem(
       id: 'food-budget',
       name: 'Food',
@@ -38,7 +38,7 @@ group('BudgetItem', () {
     expect(restored.color, const Color(0xFF123456));
   });
 
-  test('over budget and progress are safely bounded', () {
+  test('BudgetItem safely clamps progress and detects over budget', () {
     const budget = BudgetItem(
       id: 'bills',
       name: 'Bills',
@@ -52,10 +52,8 @@ group('BudgetItem', () {
     expect(budget.remaining, -50);
     expect(budget.progress, 1.0);
   });
-});
 
-group('budgetCategoryForItem', () {
-  test('uses explicit category instead of budget id', () {
+  test('budget category uses explicit category instead of database id', () {
     const budget = BudgetItem(
       id: 'random-database-id',
       name: 'Food budget',
@@ -80,7 +78,7 @@ group('budgetCategoryForItem', () {
     expect(budgetCategoryForItem(budget), TransactionCategory.transport);
   });
 
-  test('custom budget without a known category safely maps to other', () {
+  test('unknown custom budgets safely map to other', () {
     const budget = BudgetItem(
       id: 'custom-budget-1',
       name: 'My custom budget',
@@ -91,4 +89,4 @@ group('budgetCategoryForItem', () {
 
     expect(budgetCategoryForItem(budget), TransactionCategory.other);
   });
-});
+}
