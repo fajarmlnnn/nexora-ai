@@ -168,7 +168,18 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
         created = await _contributeRemote(created.id, goal.saved, walletId: fundingWalletId, note: 'Saldo awal goal');
       }
     } catch (_) {
-      await NexoraSupabase.client.from('goals').delete().eq('id', created.id).eq('user_id', userId);
+      // Goal deletion is intentionally RPC-only because contributions are
+      // backed by ledger transactions. This also makes rollback safe if the
+      // initial funding RPC partially succeeds before surfacing an error.
+      try {
+        await NexoraSupabase.client.rpc(
+          'nexora_delete_goal',
+          params: {'p_goal_id': created.id},
+        );
+      } catch (_) {
+        // Preserve the original funding error; the database RPC remains the
+        // authoritative cleanup path and the goal can be retried safely.
+      }
       rethrow;
     }
 
