@@ -25,7 +25,7 @@ void main() {
   final configured = SupabaseConfig.isConfigured && email.isNotEmpty && password.isNotEmpty;
 
   test(
-    'Supabase financial flow preserves balances and ownership',
+    'Supabase financial flow preserves balances, ownership, and persistence',
     () async {
       final client = SupabaseClient(
         SupabaseConfig.url,
@@ -41,6 +41,8 @@ void main() {
       final walletAId = _uuid();
       final walletBId = _uuid();
       final transactionIds = <String>[];
+      String? persistenceProbeId;
+      String? goalProbeId;
 
       try {
         final walletA = await walletRepository.createWallet(
@@ -214,7 +216,48 @@ void main() {
         expect(results.where((success) => success).length, 1);
         expect(results.where((success) => !success).length, 1);
         expect((await walletRepository.getWallet(walletAId)).balance, 35000);
+
+        // Persistence regression test: a fresh Supabase client simulates a
+        // cold start/reinstall. After signing in again, transactions must be
+        // loaded from Supabase rather than from an in-memory/local-only store.
+        persistenceProbeId = (await transactionRepository.getTransactions(limit: 1)).first.id;
+        await client.auth.signOut();
+        final freshClient = SupabaseClient(
+          SupabaseConfig.url,
+          SupabaseConfig.publishableKey,
+        );
+        try {
+          await freshClient.auth.signInWithPassword(email: email, password: password);
+          final freshTransactions = await SupabaseTransactionRepository(client: freshClient)
+              .getTransactions(limit: 100);
+          expect(freshTransactions.any((item) => item.id == persistenceProbeId), isTrue);
+
+          // Goal insert regression test: user_id must be explicit because the
+          // goals RLS policy intentionally requires user_id = auth.uid().
+          final goal = await freshClient.from('goals').insert({
+            'user_id': freshClient.auth.currentUser!.id,
+            'name': 'E2E goal',
+            'type': 'saving',
+            'target_amount': 100000,
+            'saved_amount': 0,
+            'priority': 'normal',
+            'status': 'active',
+          }).select().single();
+          goalProbeId = goal['id'].toString();
+          expect(goal['user_id'].toString(), freshClient.auth.currentUser!.id);
+        } finally {
+          if (goalProbeId != null) {
+            await freshClient.from('goals').delete().eq('id', goalProbeId!);
+          }
+          await freshClient.auth.signOut();
+        }
+
+        // Restore the original authenticated client for deterministic cleanup.
+        await client.auth.signInWithPassword(email: email, password: password);
       } finally {
+        if (persistenceProbeId != null && !transactionIds.contains(persistenceProbeId)) {
+          transactionIds.add(persistenceProbeId);
+        }
         for (final id in transactionIds.reversed) {
           try {
             await transactionRepository.deleteTransaction(id);
