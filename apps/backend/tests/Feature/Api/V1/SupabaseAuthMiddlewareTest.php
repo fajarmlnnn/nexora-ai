@@ -54,9 +54,11 @@ class SupabaseAuthMiddlewareTest extends TestCase
             ]),
         );
 
-        $response->assertOk()->assertJsonPath(
-            'user_id',
+        $this->assertSame(200, $response->getStatusCode());
+        $payload = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame(
             '11111111-1111-1111-1111-111111111111',
+            $payload['user_id'] ?? null,
         );
 
         Http::assertSent(function ($request): bool {
