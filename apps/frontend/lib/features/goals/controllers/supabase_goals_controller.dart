@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/supabase/supabase_client.dart';
+import '../../finance/state/financial_transaction_store.dart';
+import '../../wallet/controllers/wallet_controller.dart';
 
 class FinancialGoalSnapshot {
   const FinancialGoalSnapshot({
@@ -76,7 +78,9 @@ class FinancialGoalSnapshot {
       saved: saved,
       target: target,
       icon: _iconForType(type),
-      deadline: row['deadline'] == null ? null : DateTime.tryParse(row['deadline'] as String),
+      deadline: row['deadline'] == null
+          ? null
+          : DateTime.tryParse(row['deadline'] as String),
       priority: row['priority'] as String? ?? 'normal',
       status: row['status'] as String? ?? 'active',
     );
@@ -136,6 +140,9 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
     return user.id;
   }
 
+  String? get _primaryWalletId =>
+      ref.read(primaryWalletProvider)?.id;
+
   Future<void> _load() async {
     if (!NexoraSupabase.isInitialized) return;
     try {
@@ -146,7 +153,9 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
           .order('created_at', ascending: false);
       state = List.unmodifiable(
         (rows as List)
-            .map((row) => FinancialGoalSnapshot.fromMap(Map<String, dynamic>.from(row as Map)))
+            .map((row) => FinancialGoalSnapshot.fromMap(
+                  Map<String, dynamic>.from(row as Map),
+                ))
             .where((goal) => goal.id.isNotEmpty && goal.title.isNotEmpty)
             .toList(growable: false),
       );
@@ -162,10 +171,12 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
       throw StateError('Data goal tidak valid.');
     }
 
-    // RLS requires the inserted owner to match auth.uid(). Explicitly send
-    // the authenticated user's UUID instead of relying on a database default.
-    // This is the same ownership contract already used by transactions.
     final userId = _userId;
+    final fundingWalletId = goal.saved > 0 ? _primaryWalletId : null;
+    if (goal.saved > 0 && fundingWalletId == null) {
+      throw StateError('Tambahkan wallet utama sebelum mengisi dana awal goal.');
+    }
+
     final row = await NexoraSupabase.client
         .from('goals')
         .insert({
@@ -184,17 +195,12 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
     var created = FinancialGoalSnapshot.fromMap(Map<String, dynamic>.from(row));
 
     try {
-      if (goal.saved > 0) {
-        final result = await NexoraSupabase.client.rpc(
-          'nexora_contribute_to_goal',
-          params: {
-            'p_goal_id': created.id,
-            'p_amount': goal.saved,
-            'p_note': 'Saldo awal goal',
-          },
-        );
-        created = FinancialGoalSnapshot.fromMap(
-          Map<String, dynamic>.from(result as Map),
+      if (goal.saved > 0 && fundingWalletId != null) {
+        created = await _contributeRemote(
+          created.id,
+          goal.saved,
+          walletId: fundingWalletId,
+          note: 'Saldo awal goal',
         );
       }
     } catch (_) {
@@ -207,27 +213,61 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
     }
 
     state = List.unmodifiable([created, ...state]);
+    await _refreshFinancialState();
   }
 
-  Future<bool> contribute(String id, double amount, {String? note}) async {
+  Future<bool> contribute(
+    String id,
+    double amount, {
+    String? note,
+    String? walletId,
+  }) async {
     if (amount <= 0 || !amount.isFinite) return false;
+    final fundingWalletId = walletId ?? _primaryWalletId;
+    if (fundingWalletId == null) return false;
+
     try {
-      final result = await NexoraSupabase.client.rpc(
-        'nexora_contribute_to_goal',
-        params: {
-          'p_goal_id': id,
-          'p_amount': amount,
-          'p_note': note,
-        },
-      );
-      final updated = FinancialGoalSnapshot.fromMap(
-        Map<String, dynamic>.from(result as Map),
+      final updated = await _contributeRemote(
+        id,
+        amount,
+        walletId: fundingWalletId,
+        note: note,
       );
       _replace(updated);
+      await _refreshFinancialState();
       return true;
     } catch (_) {
       return false;
     }
+  }
+
+  Future<FinancialGoalSnapshot> _contributeRemote(
+    String id,
+    double amount, {
+    required String walletId,
+    String? note,
+  }) async {
+    final idempotencyKey = '${id}_${DateTime.now().microsecondsSinceEpoch}';
+    final result = await NexoraSupabase.client.rpc(
+      'nexora_contribute_to_goal_from_wallet',
+      params: {
+        'p_goal_id': id,
+        'p_wallet_id': walletId,
+        'p_amount': amount,
+        'p_note': note,
+        'p_idempotency_key': idempotencyKey,
+      },
+    );
+    return FinancialGoalSnapshot.fromMap(
+      Map<String, dynamic>.from(result as Map),
+    );
+  }
+
+  Future<void> _refreshFinancialState() async {
+    await Future.wait([
+      ref.read(financialTransactionStoreProvider.notifier).reload(),
+      ref.read(walletProvider.notifier).refreshWallets(),
+    ]);
   }
 
   Future<bool> updateGoal(
