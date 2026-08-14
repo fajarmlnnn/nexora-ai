@@ -10,6 +10,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../controllers/supabase_goals_controller.dart';
+import '../../wallet/controllers/wallet_controller.dart';
 
 class GoalDetailPage extends ConsumerWidget {
   const GoalDetailPage({super.key, required this.goalId});
@@ -26,8 +27,13 @@ class GoalDetailPage extends ConsumerWidget {
       return PremiumScaffold(child: Center(child: Text('Goal tidak ditemukan', style: AppTypography.heading3)));
     }
 
+    final wallet = ref.watch(primaryWalletProvider);
+    final availableToContribute = wallet == null ? 0.0 : (wallet.balance - wallet.minimumBalance).clamp(0.0, double.infinity);
     final completed = goal.isCompleted;
-    final suggested = completed ? (goal.target * .25).clamp(100000.0, double.infinity) : goal.remaining;
+    final suggested = completed
+        ? (goal.target * .25).clamp(100000.0, double.infinity)
+        : goal.suggestedMonthlyContribution;
+    final suggestedContribution = completed ? suggested : suggested.clamp(0.0, availableToContribute);
 
     return PremiumScaffold(
       child: SingleChildScrollView(
@@ -107,7 +113,16 @@ class GoalDetailPage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 10),
-            _AI(goal: goal, completed: completed, suggested: suggested, onTopUp: () => _contribute(context, ref, goal, suggested), onIncrease: () => _increase(context, ref, goal, suggested)),
+            _AI(
+              goal: goal,
+              completed: completed,
+              suggested: suggestedContribution,
+              available: availableToContribute,
+              minimumBalance: wallet?.minimumBalance ?? 0,
+              walletName: wallet?.name,
+              onTopUp: () => _contribute(context, ref, goal, suggestedContribution, availableToContribute),
+              onIncrease: () => _increase(context, ref, goal, suggested),
+            ),
             const SizedBox(height: 10),
             Row(
               children: [
@@ -228,17 +243,36 @@ class GoalDetailPage extends ConsumerWidget {
     if (context.mounted && ok) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Target ditambah ${rupiah(amount)}.')));
   }
 
-  Future<void> _contribute(BuildContext context, WidgetRef ref, FinancialGoalSnapshot goal, double suggested) async {
+  Future<void> _contribute(BuildContext context, WidgetRef ref, FinancialGoalSnapshot goal, double suggested, double available) async {
     if (goal.isCompleted) {
       await _increase(context, ref, goal, suggested);
       return;
     }
-    final controller = TextEditingController(text: suggested.round().toString());
+    if (available <= 0) {
+      final wallet = ref.read(primaryWalletProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(wallet == null ? 'Belum ada wallet yang bisa digunakan.' : 'Saldo yang bisa disetor Rp 0. Wallet harus menyisakan minimum ${rupiah(wallet.minimumBalance)}.')),
+        );
+      }
+      return;
+    }
+
+    final initial = suggested > 0 ? suggested : available.clamp(0.0, goal.remaining);
+    final controller = TextEditingController(text: initial.round().toString());
     final amount = await showDialog<double>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Tambah dana ke goal'),
-        content: TextField(controller: controller, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Nominal')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Maksimal aman disetor: ${rupiah(available)}', style: AppTypography.caption),
+            const SizedBox(height: 10),
+            TextField(controller: controller, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Nominal')),
+          ],
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
           FilledButton(onPressed: () => Navigator.pop(context, double.tryParse(controller.text.replaceAll('.', '').replaceAll(',', ''))), child: const Text('Simpan')),
@@ -247,23 +281,36 @@ class GoalDetailPage extends ConsumerWidget {
     );
     controller.dispose();
     if (amount == null || amount <= 0) return;
-    final ok = await ref.read(financialGoalsProvider.notifier).contribute(goal.id, amount);
-    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'Progress goal diperbarui.' : 'Kontribusi gagal disimpan.')));
+
+    if (amount > available) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Nominal terlalu besar. Maksimal aman ${rupiah(available)}.')));
+      return;
+    }
+
+    try {
+      await ref.read(financialGoalsProvider.notifier).contribute(goal.id, amount);
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dana berhasil ditambahkan ke goal.')));
+    } catch (error) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('Bad state: ', ''))));
+    }
   }
 }
 
 class _AI extends StatelessWidget {
-  const _AI({required this.goal, required this.completed, required this.suggested, required this.onTopUp, required this.onIncrease});
+  const _AI({required this.goal, required this.completed, required this.suggested, required this.available, required this.minimumBalance, required this.walletName, required this.onTopUp, required this.onIncrease});
   final FinancialGoalSnapshot goal;
   final bool completed;
   final double suggested;
+  final double available;
+  final double minimumBalance;
+  final String? walletName;
   final VoidCallback onTopUp;
   final VoidCallback onIncrease;
 
   @override
   Widget build(BuildContext context) {
     final message = completed
-        ? 'Goal sudah 100%. Jangan buat goal baru yang sama. Naikkan target sekitar ${rupiah(suggested)} dan lanjutkan akumulasi di goal ini.'
+        ? 'Goal sudah 100%. Naikkan target sekitar ${rupiah(suggested)} dan lanjutkan akumulasi di goal ini.'
         : 'Kamu masih butuh ${rupiah(goal.remaining)}. Saran setoran sekitar ${rupiah(goal.suggestedMonthlyContribution)} per bulan.';
     return Container(
       padding: const EdgeInsets.all(14),
@@ -274,6 +321,20 @@ class _AI extends StatelessWidget {
           Row(children: [const Icon(LucideIcons.sparkles, color: Colors.white, size: 18), const SizedBox(width: 7), Text('Nexora AI Goal Planner', style: AppTypography.labelLarge.copyWith(color: Colors.white, fontWeight: FontWeight.w800))]),
           const SizedBox(height: 8),
           Text(message, style: AppTypography.bodySmall.copyWith(color: Colors.white.withValues(alpha: .92), height: 1.35)),
+          if (!completed) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: .10), borderRadius: AppRadius.radiusLG),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.walletCards, color: Colors.white70, size: 17),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(walletName == null ? 'Belum ada wallet sumber.' : 'Bisa disetor sekarang: ${rupiah(available)}${minimumBalance > 0 ? ' • min. tersisa ${rupiah(minimumBalance)}' : ''}', style: AppTypography.caption.copyWith(color: Colors.white, fontWeight: FontWeight.w700))),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 10),
           Wrap(
             spacing: 7,
