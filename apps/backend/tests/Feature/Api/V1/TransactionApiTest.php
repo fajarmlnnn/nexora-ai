@@ -242,4 +242,90 @@ class TransactionApiTest extends TestCase
         $this->assertSame(90000.0, (float) $ownerWallet->fresh()->balance);
         $this->assertSame(80000.0, (float) $otherWallet->fresh()->balance);
     }
+
+    public function test_income_cannot_be_deleted_if_reversal_would_breach_minimum_balance(): void
+    {
+        $user = User::factory()->create();
+        $wallet = Wallet::create([
+            'user_id' => $user->id,
+            'name' => 'Protected Cash',
+            'type' => 'cash',
+            'balance' => 100000,
+            'minimum_balance' => 50000,
+        ]);
+        Sanctum::actingAs($user);
+
+        $income = $this->postJson('/api/v1/transactions', [
+            'title' => 'Income', 'amount' => 60000, 'type' => 'income', 'category' => 'salary',
+            'date' => '2026-08-12T10:00:00+07:00', 'wallet_id' => $wallet->id,
+        ])->assertCreated();
+
+        $this->assertSame(160000.0, (float) $wallet->fresh()->balance);
+
+        $this->deleteJson('/api/v1/transactions/'.$income->json('data.id'))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['transaction']);
+
+        $this->assertDatabaseCount('transactions', 1);
+        $this->assertSame(160000.0, (float) $wallet->fresh()->balance);
+    }
+
+    public function test_transfer_cannot_be_deleted_if_reversal_would_breach_destination_minimum_balance(): void
+    {
+        $user = User::factory()->create();
+        $source = Wallet::create([
+            'user_id' => $user->id, 'name' => 'Source', 'type' => 'bank',
+            'balance' => 300000, 'minimum_balance' => 100000,
+        ]);
+        $destination = Wallet::create([
+            'user_id' => $user->id, 'name' => 'Destination', 'type' => 'bank',
+            'balance' => 50000, 'minimum_balance' => 40000,
+        ]);
+        Sanctum::actingAs($user);
+
+        $transfer = $this->postJson('/api/v1/transactions', [
+            'title' => 'Top up', 'amount' => 100000, 'type' => 'transfer', 'category' => 'other',
+            'date' => '2026-08-12T10:00:00+07:00',
+            'source_wallet_id' => $source->id, 'destination_wallet_id' => $destination->id,
+        ])->assertCreated();
+
+        $this->assertSame(200000.0, (float) $source->fresh()->balance);
+        $this->assertSame(150000.0, (float) $destination->fresh()->balance);
+
+        $this->deleteJson('/api/v1/transactions/'.$transfer->json('data.id'))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['transaction']);
+
+        $this->assertDatabaseCount('transactions', 1);
+        $this->assertSame(200000.0, (float) $source->fresh()->balance);
+        $this->assertSame(150000.0, (float) $destination->fresh()->balance);
+    }
+
+    public function test_rejected_reversal_does_not_partially_apply_when_updating_transaction(): void
+    {
+        $user = User::factory()->create();
+        $wallet = Wallet::create([
+            'user_id' => $user->id, 'name' => 'Protected Cash', 'type' => 'cash',
+            'balance' => 100000, 'minimum_balance' => 50000,
+        ]);
+        Sanctum::actingAs($user);
+
+        $income = $this->postJson('/api/v1/transactions', [
+            'title' => 'Income', 'amount' => 60000, 'type' => 'income', 'category' => 'salary',
+            'date' => '2026-08-12T10:00:00+07:00', 'wallet_id' => $wallet->id,
+        ])->assertCreated();
+
+        $this->putJson('/api/v1/transactions/'.$income->json('data.id'), [
+            'title' => 'Changed', 'amount' => 60000, 'type' => 'expense', 'category' => 'shopping',
+            'date' => '2026-08-12T11:00:00+07:00', 'wallet_id' => $wallet->id,
+        ])->assertUnprocessable()->assertJsonValidationErrors(['transaction']);
+
+        $this->assertDatabaseHas('transactions', [
+            'id' => $income->json('data.id'),
+            'title' => 'Income',
+            'type' => 'income',
+            'amount' => 60000,
+        ]);
+        $this->assertSame(160000.0, (float) $wallet->fresh()->balance);
+    }
 }
