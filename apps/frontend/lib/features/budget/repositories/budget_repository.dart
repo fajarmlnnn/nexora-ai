@@ -13,9 +13,9 @@ abstract interface class BudgetRepository {
 
 /// Supabase-backed budget repository.
 ///
-/// The database stores only the user's budget limit and presentation metadata.
-/// `spent` is deliberately derived from transactions by BudgetController so a
-/// client can never persist a forged spent amount.
+/// The database stores only the user's budget configuration. `spent` remains
+/// derived from transactions by BudgetController and is never accepted from
+/// the client as authoritative financial data.
 class SupabaseBudgetRepository implements BudgetRepository {
   SupabaseBudgetRepository({SupabaseClient? client})
       : _client = client ?? NexoraSupabase.client;
@@ -34,7 +34,7 @@ class SupabaseBudgetRepository implements BudgetRepository {
   Future<List<BudgetItem>> getBudgets() async {
     final rows = await _client
         .from('budgets')
-        .select('id, name, budget_limit, color')
+        .select('id, name, budget_limit, color, category')
         .eq('user_id', _userId)
         .order('name');
 
@@ -50,7 +50,7 @@ class SupabaseBudgetRepository implements BudgetRepository {
     final row = await _client
         .from('budgets')
         .insert(_toPayload(budget))
-        .select('id, name, budget_limit, color')
+        .select('id, name, budget_limit, color, category')
         .single();
 
     return _fromRow(Map<String, dynamic>.from(row));
@@ -66,10 +66,11 @@ class SupabaseBudgetRepository implements BudgetRepository {
           'name': budget.name.trim(),
           'budget_limit': budget.limit.toStringAsFixed(2),
           'color': budget.color.toARGB32(),
+          'category': _normalizeCategory(budget.category),
         })
         .eq('id', budget.id.trim())
         .eq('user_id', _userId)
-        .select('id, name, budget_limit, color')
+        .select('id, name, budget_limit, color, category')
         .maybeSingle();
 
     if (row == null) {
@@ -104,6 +105,7 @@ class SupabaseBudgetRepository implements BudgetRepository {
       'name': budget.name.trim(),
       'budget_limit': budget.limit.toStringAsFixed(2),
       'color': budget.color.toARGB32(),
+      'category': _normalizeCategory(budget.category),
     };
   }
 
@@ -128,10 +130,12 @@ class SupabaseBudgetRepository implements BudgetRepository {
     return BudgetItem(
       id: row['id']?.toString() ?? '',
       name: row['name']?.toString() ?? '',
-      // Never trust or persist a server-side spent value. It is derived later.
       spent: 0,
       limit: limit,
       color: Color(color),
+      // Old rows are migrated with `other`; controller retains a safe legacy
+      // id fallback so existing category-keyed budgets do not lose analytics.
+      category: _normalizeCategory(row['category']?.toString() ?? 'other'),
     );
   }
 
@@ -145,5 +149,24 @@ class SupabaseBudgetRepository implements BudgetRepository {
     if (!budget.limit.isFinite || budget.limit <= 0) {
       throw ArgumentError('Limit budget harus lebih besar dari nol.');
     }
+    _normalizeCategory(budget.category);
+  }
+
+  String _normalizeCategory(String category) {
+    final normalized = category.trim().toLowerCase();
+    const allowed = {
+      'food',
+      'transport',
+      'shopping',
+      'bills',
+      'entertainment',
+      'health',
+      'education',
+      'other',
+    };
+    if (!allowed.contains(normalized)) {
+      throw ArgumentError('Kategori budget tidak valid.');
+    }
+    return normalized;
   }
 }
