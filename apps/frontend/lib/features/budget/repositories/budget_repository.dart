@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/supabase/supabase_client.dart';
 import '../../dashboard/models/budget_item.dart';
+import '../../dashboard/models/transaction_model.dart';
 
 abstract interface class BudgetRepository {
   Future<List<BudgetItem>> getBudgets();
@@ -13,9 +14,9 @@ abstract interface class BudgetRepository {
 
 /// Supabase-backed budget repository.
 ///
-/// The database stores only the user's budget limit and presentation metadata.
-/// `spent` is deliberately derived from transactions by BudgetController so a
-/// client can never persist a forged spent amount.
+/// `id` identifies the budget entity. `category` identifies the transaction
+/// category it tracks. They are intentionally persisted as separate fields.
+/// `spent` is always derived from transactions and is never persisted.
 class SupabaseBudgetRepository implements BudgetRepository {
   SupabaseBudgetRepository({SupabaseClient? client})
       : _client = client ?? NexoraSupabase.client;
@@ -34,7 +35,7 @@ class SupabaseBudgetRepository implements BudgetRepository {
   Future<List<BudgetItem>> getBudgets() async {
     final rows = await _client
         .from('budgets')
-        .select('id, name, budget_limit, color')
+        .select('id, name, category, budget_limit, color')
         .eq('user_id', _userId)
         .order('name');
 
@@ -50,7 +51,7 @@ class SupabaseBudgetRepository implements BudgetRepository {
     final row = await _client
         .from('budgets')
         .insert(_toPayload(budget))
-        .select('id, name, budget_limit, color')
+        .select('id, name, category, budget_limit, color')
         .single();
 
     return _fromRow(Map<String, dynamic>.from(row));
@@ -64,12 +65,13 @@ class SupabaseBudgetRepository implements BudgetRepository {
         .from('budgets')
         .update({
           'name': budget.name.trim(),
+          'category': budget.category.name,
           'budget_limit': budget.limit.toStringAsFixed(2),
           'color': budget.color.toARGB32(),
         })
         .eq('id', budget.id.trim())
         .eq('user_id', _userId)
-        .select('id, name, budget_limit, color')
+        .select('id, name, category, budget_limit, color')
         .maybeSingle();
 
     if (row == null) {
@@ -102,6 +104,7 @@ class SupabaseBudgetRepository implements BudgetRepository {
       'id': budget.id.trim(),
       'user_id': _userId,
       'name': budget.name.trim(),
+      'category': budget.category.name,
       'budget_limit': budget.limit.toStringAsFixed(2),
       'color': budget.color.toARGB32(),
     };
@@ -110,6 +113,7 @@ class SupabaseBudgetRepository implements BudgetRepository {
   BudgetItem _fromRow(Map<String, dynamic> row) {
     final rawLimit = row['budget_limit'];
     final rawColor = row['color'];
+    final rawCategory = row['category']?.toString().trim().toLowerCase();
 
     final limit = rawLimit is num
         ? rawLimit.toDouble()
@@ -117,6 +121,10 @@ class SupabaseBudgetRepository implements BudgetRepository {
     final color = rawColor is num
         ? rawColor.toInt()
         : int.tryParse(rawColor?.toString() ?? '');
+    final category = TransactionCategory.values.firstWhere(
+      (value) => value.name == rawCategory,
+      orElse: () => TransactionCategory.other,
+    );
 
     if (limit == null || !limit.isFinite || limit <= 0) {
       throw StateError('Budget limit dari server tidak valid.');
@@ -124,14 +132,17 @@ class SupabaseBudgetRepository implements BudgetRepository {
     if (color == null || color < 0) {
       throw StateError('Warna budget dari server tidak valid.');
     }
+    if (rawCategory == null || rawCategory.isEmpty) {
+      throw StateError('Kategori budget dari server tidak valid.');
+    }
 
     return BudgetItem(
       id: row['id']?.toString() ?? '',
       name: row['name']?.toString() ?? '',
-      // Never trust or persist a server-side spent value. It is derived later.
       spent: 0,
       limit: limit,
       color: Color(color),
+      category: category,
     );
   }
 
@@ -144,6 +155,10 @@ class SupabaseBudgetRepository implements BudgetRepository {
     }
     if (!budget.limit.isFinite || budget.limit <= 0) {
       throw ArgumentError('Limit budget harus lebih besar dari nol.');
+    }
+    if (budget.category == TransactionCategory.salary ||
+        budget.category == TransactionCategory.investment) {
+      throw ArgumentError('Budget hanya dapat menggunakan kategori pengeluaran.');
     }
   }
 }
