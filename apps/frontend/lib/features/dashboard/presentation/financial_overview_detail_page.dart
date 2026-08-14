@@ -32,7 +32,9 @@ class FinancialOverviewDetailPage extends ConsumerWidget {
                 icon: const Icon(LucideIcons.arrowLeft, size: 20),
               ),
               const SizedBox(width: 4),
-              Expanded(child: Text('Financial Overview', style: AppTypography.heading2)),
+              Expanded(
+                child: Text('Financial Overview', style: AppTypography.heading2),
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -47,20 +49,30 @@ class FinancialOverviewDetailPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Net Worth', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+                Text(
+                  'Net Worth',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
                     rupiah(financial.netWorth),
-                    style: AppTypography.heading1.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+                    style: AppTypography.heading1.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Total aset dikurangi seluruh kewajiban yang masih tercatat.',
-                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -68,25 +80,53 @@ class FinancialOverviewDetailPage extends ConsumerWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              Expanded(child: _MetricCard(label: 'Total Aset', value: rupiah(financial.totalAssets), icon: LucideIcons.wallet, accent: AppColors.primaryLight)),
+              Expanded(
+                child: _MetricCard(
+                  label: 'Total Aset',
+                  value: rupiah(financial.totalAssets),
+                  icon: LucideIcons.wallet,
+                  accent: AppColors.primaryLight,
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: _MetricCard(label: 'Kewajiban', value: rupiah(financial.liabilities), icon: LucideIcons.creditCard, accent: AppColors.danger)),
+              Expanded(
+                child: _MetricCard(
+                  label: 'Kewajiban',
+                  value: rupiah(financial.liabilities),
+                  icon: LucideIcons.creditCard,
+                  accent: AppColors.danger,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _MetricCard(label: 'Goal Terkumpul', value: rupiah(financial.goalSaved), icon: LucideIcons.target, accent: AppColors.primaryLight)),
+              Expanded(
+                child: _MetricCard(
+                  label: 'Goal Terkumpul',
+                  value: rupiah(financial.goalSaved),
+                  icon: LucideIcons.target,
+                  accent: AppColors.primaryLight,
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: _MetricCard(label: 'Jatuh Tempo', value: rupiah(financial.dueThisPeriod), icon: LucideIcons.calendarClock, accent: AppColors.warning)),
+              Expanded(
+                child: _MetricCard(
+                  label: 'Jatuh Tempo',
+                  value: rupiah(financial.dueThisPeriod),
+                  icon: LucideIcons.calendarClock,
+                  accent: AppColors.warning,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 14),
           _SectionCard(
             title: 'Aset Wallet',
-            trailing: rupiah(financial.totalAssets),
+            trailing: rupiah(financial.walletAssets),
             child: const Text(
-              'Satu sumber angka untuk seluruh wallet yang terlihat. Goal tidak mengurangi Total Aset.',
+              'Saldo wallet yang masih likuid. Dana yang sudah dialokasikan ke goal tetap dihitung sebagai aset, tetapi tidak lagi tersedia untuk belanja dari wallet.',
               style: AppTypography.bodySmall,
             ),
           ),
@@ -103,13 +143,23 @@ class FinancialOverviewDetailPage extends ConsumerWidget {
                     value: financial.goalProgress,
                     minHeight: 7,
                     backgroundColor: AppColors.border.withValues(alpha: .35),
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.primaryLight,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text('${rupiah(financial.goalSaved)} dari ${rupiah(financial.goalTarget)} target', style: AppTypography.bodySmall),
+                Text(
+                  '${rupiah(financial.goalSaved)} dari ${rupiah(financial.goalTarget)} target',
+                  style: AppTypography.bodySmall,
+                ),
                 const SizedBox(height: 4),
-                Text('${financial.completedGoals} goal selesai dari ${goals.length} goal', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                Text(
+                  '${financial.completedGoals} goal selesai dari ${goals.length} goal',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -122,56 +172,79 @@ class FinancialOverviewDetailPage extends ConsumerWidget {
               children: [
                 Text(
                   'Total sisa kewajiban: ${rupiah(financial.liabilities)}',
-                  style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700),
+                  style: AppTypography.bodySmall.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   'Pembayaran periode ini: ${rupiah(financial.dueThisPeriod)}',
-                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 if (installments.isEmpty)
-                  const Text('Tidak ada cicilan aktif.', style: AppTypography.bodySmall)
+                  const Text(
+                    'Tidak ada cicilan aktif.',
+                    style: AppTypography.bodySmall,
+                  )
                 else
-                  ...installments.map((item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 9),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(item.title, style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700)),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    item.isPaid
-                                        ? 'Periode ini lunas • ${rupiah(item.monthlyAmount)} / periode'
-                                        : item.dueInDays > 0
-                                            ? '${rupiah(item.monthlyAmount)} / periode • ${item.dueInDays} hari lagi'
-                                            : '${rupiah(item.monthlyAmount)} / periode',
-                                    style: AppTypography.caption.copyWith(
-                                      color: item.isPaid ? AppColors.success : AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
+                  ...installments.map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 9),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  rupiah(item.remaining),
-                                  style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800),
+                                  item.title,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                                 const SizedBox(height: 2),
-                                Text('sisa', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                                Text(
+                                  item.isPaid
+                                      ? 'Periode ini lunas • ${rupiah(item.monthlyAmount)} / periode'
+                                      : item.dueInDays > 0
+                                          ? '${rupiah(item.monthlyAmount)} / periode • ${item.dueInDays} hari lagi'
+                                          : '${rupiah(item.monthlyAmount)} / periode',
+                                  style: AppTypography.caption.copyWith(
+                                    color: item.isPaid
+                                        ? AppColors.success
+                                        : AppColors.textSecondary,
+                                  ),
+                                ),
                               ],
                             ),
-                          ],
-                        ),
-                      )),
+                          ),
+                          const SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                rupiah(item.remaining),
+                                style: AppTypography.labelMedium.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'sisa',
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -181,18 +254,33 @@ class FinancialOverviewDetailPage extends ConsumerWidget {
             trailing: rupiah(financial.available),
             child: Text(
               financial.available < 0
-                  ? 'Nilai negatif berarti alokasi goal dan kewajiban periode ini melebihi saldo wallet. Prioritaskan kewajiban sebelum pengeluaran non-esensial.'
-                  : 'Estimasi dana bebas setelah mempertimbangkan dana yang sudah dialokasikan ke goals dan kewajiban periode ini. Ini bukan saldo bank baru.',
+                  ? 'Nilai negatif berarti kewajiban periode ini melebihi saldo wallet yang likuid. Prioritaskan kewajiban sebelum pengeluaran non-esensial.'
+                  : 'Estimasi dana bebas setelah memisahkan dana goal dari saldo wallet dan memperhitungkan kewajiban periode ini. Ini bukan saldo bank baru.',
               style: AppTypography.bodySmall,
             ),
           ),
           const SizedBox(height: 10),
           transactionsAsync.when(
-            loading: () => const _SectionCard(title: 'Cashflow', trailing: 'Memuat…', child: ShimmerSkeleton(height: 48)),
-            error: (error, _) => _SectionCard(title: 'Cashflow', trailing: '—', child: Text('Data transaksi belum tersedia: $error', style: AppTypography.bodySmall)),
+            loading: () => const _SectionCard(
+              title: 'Cashflow',
+              trailing: 'Memuat…',
+              child: ShimmerSkeleton(height: 48),
+            ),
+            error: (error, _) => _SectionCard(
+              title: 'Cashflow',
+              trailing: '—',
+              child: Text(
+                'Data transaksi belum tersedia: $error',
+                style: AppTypography.bodySmall,
+              ),
+            ),
             data: (transactions) {
-              final income = transactions.where((item) => item.type == TransactionType.income).fold<double>(0, (sum, item) => sum + item.amount);
-              final expense = transactions.where((item) => item.type == TransactionType.expense).fold<double>(0, (sum, item) => sum + item.amount);
+              final income = transactions
+                  .where((item) => item.type == TransactionType.income)
+                  .fold<double>(0, (sum, item) => sum + item.amount);
+              final expense = transactions
+                  .where((item) => item.type == TransactionType.expense)
+                  .fold<double>(0, (sum, item) => sum + item.amount);
               final netCashflow = income - expense;
               return _SectionCard(
                 title: 'Cashflow',
@@ -203,9 +291,18 @@ class FinancialOverviewDetailPage extends ConsumerWidget {
                     _CashflowRow(label: 'Pemasukan', value: income),
                     _CashflowRow(label: 'Pengeluaran', value: -expense),
                     const Divider(height: 18),
-                    _CashflowRow(label: 'Net Cashflow', value: netCashflow, strong: true),
+                    _CashflowRow(
+                      label: 'Net Cashflow',
+                      value: netCashflow,
+                      strong: true,
+                    ),
                     const SizedBox(height: 6),
-                    Text('${transactions.length} transaksi dalam sumber data saat ini.', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                    Text(
+                      '${transactions.length} transaksi dalam sumber data saat ini.',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -223,13 +320,13 @@ class FinancialOverviewDetailPage extends ConsumerWidget {
 
   String _aiMessage(FinancialStateSnapshot financial) {
     if (financial.available < 0) {
-      return 'Alokasi goals dan kewajiban periode ini melebihi saldo wallet. Prioritaskan cicilan dan kebutuhan wajib sebelum menambah pengeluaran baru.';
+      return 'Kewajiban periode ini melebihi saldo wallet yang likuid. Prioritaskan cicilan dan kebutuhan wajib sebelum menambah pengeluaran baru.';
     }
     if (financial.completedGoals > 0) {
-      return '${financial.completedGoals} goal sudah tercapai. Saat ada dana baru, Nexora bisa menyarankan mengalihkannya ke dana darurat, investasi, atau target berikutnya tanpa mengurangi Total Aset.';
+      return '${financial.completedGoals} goal sudah tercapai. Dana goal tetap dihitung sebagai aset, tetapi tidak dianggap sebagai saldo wallet yang bebas dibelanjakan.';
     }
     if (financial.debtRatio >= .5) {
-      return 'Kewajiban masih cukup besar dibanding aset wallet. Fokus menjaga cashflow positif dan hindari menambah cicilan baru untuk sementara.';
+      return 'Kewajiban masih cukup besar dibanding aset. Fokus menjaga cashflow positif dan hindari menambah cicilan baru untuk sementara.';
     }
     if (financial.goalProgress >= .8) {
       return 'Progress goals sudah ${(financial.goalProgress * 100).round()}%. Pertahankan kontribusi sambil tetap menyisakan ruang untuk kebutuhan rutin dan kewajiban.';
@@ -239,7 +336,12 @@ class FinancialOverviewDetailPage extends ConsumerWidget {
 }
 
 class _MetricCard extends StatelessWidget {
-  const _MetricCard({required this.label, required this.value, required this.icon, required this.accent});
+  const _MetricCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.accent,
+  });
 
   final String label;
   final String value;
@@ -257,43 +359,28 @@ class _MetricCard extends StatelessWidget {
           Container(
             width: 30,
             height: 30,
-            decoration: BoxDecoration(color: accent.withValues(alpha: .10), shape: BoxShape.circle),
-            child: Icon(icon, size: 15, color: accent),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: .10),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: accent, size: 17),
           ),
-          const SizedBox(height: 8),
-          Text(label, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
           const SizedBox(height: 3),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(value, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CashflowRow extends StatelessWidget {
-  const _CashflowRow({required this.label, required this.value, this.strong = false});
-
-  final String label;
-  final double value;
-  final bool strong;
-
-  @override
-  Widget build(BuildContext context) {
-    final isNegative = value < 0;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 7),
-      child: Row(
-        children: [
-          Expanded(child: Text(label, style: AppTypography.bodySmall)),
-          Text(
-            '${isNegative ? '-' : '+'}${rupiah(value.abs())}',
-            style: AppTypography.labelMedium.copyWith(
-              fontWeight: strong ? FontWeight.w800 : FontWeight.w600,
-              color: isNegative ? AppColors.danger : AppColors.textPrimary,
+            child: Text(
+              value,
+              style: AppTypography.labelLarge.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],
@@ -303,7 +390,11 @@ class _CashflowRow extends StatelessWidget {
 }
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.trailing, required this.child});
+  const _SectionCard({
+    required this.title,
+    required this.trailing,
+    required this.child,
+  });
 
   final String title;
   final String trailing;
@@ -319,19 +410,64 @@ class _SectionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text(title, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700))),
-              Flexible(
+              Expanded(
                 child: Text(
-                  trailing,
-                  textAlign: TextAlign.end,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.labelMedium.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800),
+                  title,
+                  style: AppTypography.labelLarge.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Text(
+                trailing,
+                style: AppTypography.labelMedium.copyWith(
+                  color: AppColors.primaryLight,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
           child,
+        ],
+      ),
+    );
+  }
+}
+
+class _CashflowRow extends StatelessWidget {
+  const _CashflowRow({
+    required this.label,
+    required this.value,
+    this.strong = false,
+  });
+
+  final String label;
+  final double value;
+  final bool strong;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPositive = value >= 0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: strong
+                  ? AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w800)
+                  : AppTypography.bodySmall,
+            ),
+          ),
+          Text(
+            rupiah(value.abs()),
+            style: AppTypography.bodySmall.copyWith(
+              color: isPositive ? AppColors.success : AppColors.danger,
+              fontWeight: strong ? FontWeight.w800 : FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
