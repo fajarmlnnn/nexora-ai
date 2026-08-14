@@ -137,10 +137,12 @@ void main() {
             .eq('goal_id', goalId);
         expect(deletedContributions, isEmpty);
 
+        final transactionId = contributionTransactionId;
+        expect(transactionId, isNotNull);
         final deletedTransactions = await client
             .from('transactions')
             .select('id')
-            .eq('id', contributionTransactionId!);
+            .eq('id', transactionId!);
         expect(deletedTransactions, isEmpty);
       } finally {
         if (goalId != null) {
