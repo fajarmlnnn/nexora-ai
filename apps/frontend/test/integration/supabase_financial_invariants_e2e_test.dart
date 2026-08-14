@@ -98,6 +98,15 @@ void main() {
         await transactionRepository.deleteTransaction(expenseId);
         expect((await walletRepository.getWallet(walletId)).balance, 100000);
 
+        // Reversing the opening income would take the wallet below its configured
+        // minimum. Lower the minimum only for deterministic test teardown; the
+        // invariant itself was already exercised above.
+        await client
+            .from('wallets')
+            .update({'minimum_balance': 0})
+            .eq('id', walletId)
+            .eq('user_id', user.id);
+
         await transactionRepository.deleteTransaction(incomeId);
         expect((await walletRepository.getWallet(walletId)).balance, 0);
       } finally {
