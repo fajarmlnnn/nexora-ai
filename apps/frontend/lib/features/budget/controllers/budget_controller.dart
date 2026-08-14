@@ -40,7 +40,6 @@ class BudgetController extends AsyncNotifier<List<BudgetItem>> {
   Future<bool> updateBudget(BudgetItem budget) async {
     if (budget.limit <= 0) return false;
     try {
-      // Spent is derived from transactions and must never be persisted as input.
       await _repository.updateBudget(budget.copyWith(spent: 0));
       await _reload();
       return true;
@@ -81,7 +80,7 @@ class BudgetController extends AsyncNotifier<List<BudgetItem>> {
     );
 
     return [
-      for (final budget in budgets]
+      for (final budget in budgets)
         budget.copyWith(
           spent: analytics.expenseByCategory[budgetCategoryForItem(budget)] ?? 0,
         ),
@@ -89,20 +88,32 @@ class BudgetController extends AsyncNotifier<List<BudgetItem>> {
   }
 }
 
-/// Resolves the transaction category for a budget without using its database
-/// identity as a category key.
+/// Resolves a budget's transaction category.
 ///
-/// The id fallback is intentionally retained for legacy budgets created before
-/// the explicit `category` column existed. New budgets should always persist a
-/// category and therefore do not depend on this compatibility path.
+/// Current budgets use their id as the category key (for example `food` or
+/// `transport`). The display name is also accepted for human-readable budgets.
+/// Unknown values safely fall back to `other`.
 TransactionCategory budgetCategoryForItem(BudgetItem budget) {
-  final explicit = _transactionCategoryFromName(budget.category);
-  if (explicit != TransactionCategory.other || budget.category == 'other') {
-    return explicit;
-  }
+  final byId = _transactionCategoryFromName(budget.id.trim().toLowerCase());
+  if (byId != TransactionCategory.other) return byId;
 
-  final legacy = _transactionCategoryFromName(budget.id);
-  return legacy;
+  return _transactionCategoryFromName(_normalizeCategoryName(budget.name));
+}
+
+String _normalizeCategoryName(String value) {
+  final normalized = value.trim().toLowerCase();
+  const aliases = <String, String>{
+    'makanan': 'food',
+    'makan': 'food',
+    'transportasi': 'transport',
+    'belanja': 'shopping',
+    'tagihan': 'bills',
+    'hiburan': 'entertainment',
+    'kesehatan': 'health',
+    'pendidikan': 'education',
+    'lainnya': 'other',
+  };
+  return aliases[normalized] ?? normalized;
 }
 
 TransactionCategory _transactionCategoryFromName(String value) {
