@@ -37,9 +37,28 @@ final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
 
 final recentTransactionsProvider = FutureProvider<List<TransactionModel>>((ref) async {
   final transactions = ref.watch(financialTransactionsProvider);
-  final sorted = [...transactions]..sort((a, b) => b.date.compareTo(a.date));
+  final sorted = [...transactions]
+    ..sort(_compareTransactionsNewestFirst);
   return sorted;
 });
+
+int _compareTransactionsNewestFirst(TransactionModel a, TransactionModel b) {
+  final occurred = b.date.compareTo(a.date);
+  if (occurred != 0) return occurred;
+
+  final aCreated = a.createdAt;
+  final bCreated = b.createdAt;
+  if (aCreated != null && bCreated != null) {
+    final created = bCreated.compareTo(aCreated);
+    if (created != 0) return created;
+  } else if (aCreated != null) {
+    return -1;
+  } else if (bCreated != null) {
+    return 1;
+  }
+
+  return b.id.compareTo(a.id);
+}
 
 final dashboardProvider = FutureProvider<DashboardData>((ref) async {
   final summary = await ref.watch(dashboardSummaryProvider.future);
