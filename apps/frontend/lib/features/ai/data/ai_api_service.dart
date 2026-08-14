@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show Supabase, SupabaseClient;
 
 import '../../../core/network/api_exception.dart';
 import '../../finance/state/financial_analytics_provider.dart';
