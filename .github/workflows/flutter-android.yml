@@ -88,7 +88,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "$NEXORA_E2E_EMAIL" ] && [ -n "$NEXORA_E2E_PASSWORD" ]; then
-            echo "Running authenticated Supabase financial and security E2E tests."
+            echo "Running authenticated Supabase financial, security, and goal lifecycle E2E tests."
             flutter test test/integration/supabase_financial_e2e_test.dart \
               --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
               --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY" \
@@ -96,6 +96,12 @@ jobs:
               --dart-define=NEXORA_E2E_PASSWORD="$NEXORA_E2E_PASSWORD"
 
             flutter test test/integration/supabase_security_e2e_test.dart \
+              --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
+              --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY" \
+              --dart-define=NEXORA_E2E_EMAIL="$NEXORA_E2E_EMAIL" \
+              --dart-define=NEXORA_E2E_PASSWORD="$NEXORA_E2E_PASSWORD"
+
+            flutter test test/integration/supabase_goal_lifecycle_e2e_test.dart \
               --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
               --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY" \
               --dart-define=NEXORA_E2E_EMAIL="$NEXORA_E2E_EMAIL" \
