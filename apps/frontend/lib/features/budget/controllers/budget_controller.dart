@@ -40,7 +40,6 @@ class BudgetController extends AsyncNotifier<List<BudgetItem>> {
   Future<bool> updateBudget(BudgetItem budget) async {
     if (budget.limit <= 0) return false;
     try {
-      // Spent is derived from transactions and must never be persisted as input.
       await _repository.updateBudget(budget.copyWith(spent: 0));
       await _reload();
       return true;
@@ -83,17 +82,33 @@ class BudgetController extends AsyncNotifier<List<BudgetItem>> {
     return [
       for (final budget in budgets)
         budget.copyWith(
-          spent: analytics.expenseByCategory[_categoryForBudget(budget.id)] ?? 0,
+          spent: analytics.expenseByCategory[budgetCategoryForItem(budget)] ?? 0,
         ),
     ];
   }
+}
 
-  TransactionCategory _categoryForBudget(String id) {
-    for (final category in TransactionCategory.values) {
-      if (category.name == id) return category;
-    }
-    return TransactionCategory.other;
+/// Resolves the transaction category for a budget without using its database
+/// identity as a category key.
+///
+/// The id fallback is intentionally retained for legacy budgets created before
+/// the explicit `category` column existed. New budgets should always persist a
+/// category and therefore do not depend on this compatibility path.
+TransactionCategory budgetCategoryForItem(BudgetItem budget) {
+  final explicit = _transactionCategoryFromName(budget.category);
+  if (explicit != TransactionCategory.other || budget.category == 'other') {
+    return explicit;
   }
+
+  final legacy = _transactionCategoryFromName(budget.id);
+  return legacy;
+}
+
+TransactionCategory _transactionCategoryFromName(String value) {
+  for (final category in TransactionCategory.values) {
+    if (category.name == value) return category;
+  }
+  return TransactionCategory.other;
 }
 
 final totalBudgetLimitProvider = Provider<double>((ref) {

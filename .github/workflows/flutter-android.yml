@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feat/financial-engine-v1
+      - fix/budget-hardening-v1
 
   pull_request:
     branches:

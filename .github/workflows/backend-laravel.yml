@@ -6,6 +6,7 @@ on:
       - main
       - feat/backend-ci-v1
       - fix/backend-api-routing
+      - fix/budget-hardening-v1
   pull_request:
     branches:
       - main
@@ -20,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
