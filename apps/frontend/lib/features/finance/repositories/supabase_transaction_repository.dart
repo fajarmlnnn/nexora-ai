@@ -60,6 +60,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
 
     final rows = await query
         .order('occurred_at', ascending: false)
+        .order('created_at', ascending: false)
         .range(safeOffset, safeOffset + safeLimit - 1);
 
     return (rows as List)
@@ -252,6 +253,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
       type: _transactionType(row['type']?.toString()),
       category: _transactionCategory(row['category']?.toString()),
       date: _parseDate(row['occurred_at']),
+      createdAt: _parseOptionalDate(row['created_at']),
       note: metadataMap['note']?.toString(),
       walletId: row['wallet_id']?.toString(),
       sourceAccount: row['source_wallet_id']?.toString(),
@@ -281,6 +283,11 @@ class SupabaseTransactionRepository implements TransactionRepository {
   DateTime _parseDate(dynamic value) {
     final parsed = DateTime.tryParse(value?.toString() ?? '');
     return (parsed ?? DateTime.now().toUtc()).toLocal();
+  }
+
+  DateTime? _parseOptionalDate(dynamic value) {
+    if (value == null) return null;
+    return DateTime.tryParse(value.toString())?.toLocal();
   }
 
   double _number(dynamic value) =>
