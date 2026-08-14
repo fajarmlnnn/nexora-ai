@@ -81,6 +81,12 @@ void main() {
         final createdGoalId = goal['id'].toString();
         goalId = createdGoalId;
 
+        // Deleting a goal directly is a financial write and must be blocked.
+        await expectLater(
+          client.from('goals').delete().eq('id', createdGoalId).eq('user_id', user.id),
+          throwsA(isA<PostgrestException>()),
+        );
+
         final updatedGoal = await client.rpc(
           'nexora_contribute_to_goal_from_wallet',
           params: {
@@ -98,20 +104,19 @@ void main() {
             .from('goal_contributions')
             .select('id')
             .eq('goal_id', createdGoalId)
-            .maybeSingle();
-        final contributionId = contribution?['id']?.toString();
-        if (contributionId == null) throw StateError('Goal contribution was not created.');
+            .single();
+        final contributionId = contribution['id'].toString();
 
         final contributionTransaction = await client
             .from('transactions')
-            .select('id')
+            .select('id, metadata')
             .eq('wallet_id', walletId)
             .eq('type', 'expense')
-            .eq('amount', 100000)
-            .maybeSingle();
-        final transactionId = contributionTransaction?['id']?.toString();
-        if (transactionId == null) throw StateError('Goal funding transaction was not created.');
+            .eq('metadata->>goal_contribution_id', contributionId)
+            .single();
+        final transactionId = contributionTransaction['id'].toString();
         contributionTransactionId = transactionId;
+        expect((contributionTransaction['metadata'] as Map)['goal_id'].toString(), createdGoalId);
 
         await client.rpc('nexora_delete_goal', params: {'p_goal_id': createdGoalId});
         goalId = null;
