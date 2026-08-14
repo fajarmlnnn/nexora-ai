@@ -176,6 +176,50 @@ void main() {
         );
         expect((await walletRepository.getWallet(walletAId)).balance, 90000);
 
+        // Race two requests with the SAME idempotency key. One database insert
+        // must win; the losing request must resolve to the same persisted row.
+        // The wallet must be debited exactly once.
+        final concurrentKey = 'e2e-idempotency-${_uuid()}';
+        final concurrentDate = DateTime.now();
+        final concurrentIdA = _uuid();
+        final concurrentIdB = _uuid();
+        final concurrentRequestA = TransactionModel(
+          id: concurrentIdA,
+          title: 'E2E idempotent race',
+          amount: 5000,
+          type: TransactionType.expense,
+          category: TransactionCategory.other,
+          date: concurrentDate,
+          walletId: walletAId,
+        );
+        final concurrentRequestB = concurrentRequestA.copyWith(id: concurrentIdB);
+
+        final idempotentResults = await Future.wait([
+          transactionRepository.createTransaction(
+            concurrentRequestA,
+            idempotencyKey: concurrentKey,
+          ),
+          transactionRepository.createTransaction(
+            concurrentRequestB,
+            idempotencyKey: concurrentKey,
+          ),
+        ]);
+
+        expect(idempotentResults[0].id, idempotentResults[1].id);
+        expect(idempotentResults[0].amount, 5000);
+        expect(idempotentResults[0].title, 'E2E idempotent race');
+        transactionIds.add(idempotentResults[0].id);
+        expect((await walletRepository.getWallet(walletAId)).balance, 85000);
+
+        await expectLater(
+          transactionRepository.createTransaction(
+            concurrentRequestA.copyWith(amount: 5001),
+            idempotencyKey: concurrentKey,
+          ),
+          throwsA(isA<StateError>()),
+        );
+        expect((await walletRepository.getWallet(walletAId)).balance, 85000);
+
         final concurrentTransactions = [
           TransactionModel(
             id: _uuid(),
@@ -211,7 +255,7 @@ void main() {
 
         expect(results.where((success) => success).length, 1);
         expect(results.where((success) => !success).length, 1);
-        expect((await walletRepository.getWallet(walletAId)).balance, 35000);
+        expect((await walletRepository.getWallet(walletAId)).balance, 30000);
 
         persistenceProbeId = (await transactionRepository.getTransactions(limit: 1)).first.id;
         await client.auth.signOut();

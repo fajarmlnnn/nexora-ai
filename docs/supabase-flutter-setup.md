@@ -1,6 +1,6 @@
 # Supabase + Flutter setup
 
-Nexora uses Supabase as the target production backend while Laravel remains the transition/reference backend until end-to-end parity is verified.
+Nexora uses Supabase Auth and Supabase PostgreSQL as the current production source of truth for the Flutter application. Laravel remains a transition/reference backend until any server-side capabilities are migrated and verified against the Supabase identity/data boundary.
 
 ## Configuration
 
@@ -11,8 +11,10 @@ Run the app with:
 ```bash
 flutter run \
   --dart-define=NEXORA_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co \
-  --dart-define=NEXORA_SUPABASE_ANON_KEY=YOUR_PUBLISHABLE_KEY
+  --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 ```
+
+The Flutter configuration intentionally uses the publishable key variable name. Do not use a service-role key in the app.
 
 For CI/release builds, inject the same values through the build system's secret/configuration mechanism.
 
@@ -20,10 +22,11 @@ For CI/release builds, inject the same values through the build system's secret/
 
 - `lib/core/supabase/supabase_config.dart` — compile-time configuration.
 - `lib/core/supabase/supabase_client.dart` — single Supabase bootstrap/client boundary.
-- `lib/core/supabase/supabase_auth_repository.dart` — Auth adapter.
+- `lib/core/supabase/supabase_auth_repository.dart` — Supabase Auth adapter.
 - `lib/features/wallet/repositories/supabase_wallet_repository.dart` — Wallet adapter.
+- Transaction, goal, budget, and other user-owned financial repositories should use the same Supabase boundary unless a documented server-side orchestration path is required.
 
-The existing Laravel/Dio client is intentionally retained during migration. Do not delete it until Supabase Auth, Wallet, Transaction, and end-to-end financial consistency tests have reached parity.
+The unused Flutter Laravel/Dio authentication client has been removed. Laravel Sanctum remains only as legacy/backend foundation until all backend consumers are migrated and separately verified.
 
 ## Security rules
 
@@ -31,6 +34,7 @@ The existing Laravel/Dio client is intentionally retained during migration. Do n
 - RLS is the database authorization boundary.
 - Flutter must not write wallet `balance` directly during profile edits.
 - Financial balance changes must happen through transaction operations/database logic.
+- Multi-row financial mutations must use atomic PostgreSQL functions/RPCs where required.
 - Never trust a client-provided `user_id`; Supabase RLS must enforce ownership with `auth.uid()`.
 
 ## Local verification
@@ -41,4 +45,4 @@ flutter analyze
 flutter test
 ```
 
-If Supabase is not configured, the app keeps the legacy startup path during migration. Once the migration is complete, startup should require valid Supabase configuration.
+Supabase configuration is required for the authenticated production path. Test-only/local UI flows may use mocks where explicitly documented.

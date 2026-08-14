@@ -32,7 +32,6 @@ class FinancialGoalSnapshot {
   double get progress => target <= 0 ? 0 : (saved / target).clamp(0.0, 1.0);
   bool get isCompleted => status == 'completed' || (target > 0 && saved >= target);
   double get remaining => (target - saved).clamp(0.0, double.infinity);
-
   int get daysRemaining => deadline == null ? 0 : deadline!.difference(DateTime.now()).inDays;
 
   double get suggestedMonthlyContribution {
@@ -110,8 +109,19 @@ final financialGoalsProvider = NotifierProvider<SupabaseFinancialGoalsController
 class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapshot>> {
   @override
   List<FinancialGoalSnapshot> build() {
+    _bindAuthLifecycle();
     _load();
     return const [];
+  }
+
+  void _bindAuthLifecycle() {
+    if (!NexoraSupabase.isInitialized) return;
+    final subscription = NexoraSupabase.client.auth.onAuthStateChange.listen((_) {
+      // Never retain financial goals across users or a signed-out session.
+      state = const [];
+      _load();
+    });
+    ref.onDispose(subscription.cancel);
   }
 
   String get _userId {
@@ -125,10 +135,11 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
   Future<void> _load() async {
     if (!NexoraSupabase.isInitialized) return;
     try {
+      final userId = _userId;
       final rows = await NexoraSupabase.client
           .from('goals')
           .select()
-          .eq('user_id', _userId)
+          .eq('user_id', userId)
           .order('created_at', ascending: false);
       state = List.unmodifiable(
         (rows as List)
@@ -136,7 +147,10 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
             .where((goal) => goal.id.isNotEmpty && goal.title.isNotEmpty)
             .toList(growable: false),
       );
-    } catch (_) {}
+    } catch (_) {
+      // Keep the current UI on transient network failures, but never reuse a
+      // previous user's state because auth lifecycle clears it before reload.
+    }
   }
 
   Future<void> reload() => _load();
@@ -168,18 +182,9 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
         created = await _contributeRemote(created.id, goal.saved, walletId: fundingWalletId, note: 'Saldo awal goal');
       }
     } catch (_) {
-      // Goal deletion is intentionally RPC-only because contributions are
-      // backed by ledger transactions. This also makes rollback safe if the
-      // initial funding RPC partially succeeds before surfacing an error.
       try {
-        await NexoraSupabase.client.rpc(
-          'nexora_delete_goal',
-          params: {'p_goal_id': created.id},
-        );
-      } catch (_) {
-        // Preserve the original funding error; the database RPC remains the
-        // authoritative cleanup path and the goal can be retried safely.
-      }
+        await NexoraSupabase.client.rpc('nexora_delete_goal', params: {'p_goal_id': created.id});
+      } catch (_) {}
       rethrow;
     }
 
@@ -188,17 +193,45 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
   }
 
   Future<bool> contribute(String id, double amount, {String? note, String? walletId}) async {
-    if (amount <= 0 || !amount.isFinite) return false;
+    if (amount <= 0 || !amount.isFinite) {
+      throw StateError('Nominal kontribusi tidak valid.');
+    }
     final fundingWalletId = walletId ?? _primaryWalletId;
-    if (fundingWalletId == null) return false;
+    if (fundingWalletId == null) {
+      throw StateError('Belum ada wallet yang bisa digunakan untuk setoran.');
+    }
+
     try {
       final updated = await _contributeRemote(id, amount, walletId: fundingWalletId, note: note);
       _replace(updated);
       await _refreshFinancialState();
       return true;
-    } catch (_) {
-      return false;
+    } catch (error) {
+      throw StateError(_friendlyContributionError(error));
     }
+  }
+
+  String _friendlyContributionError(Object error) {
+    final raw = error.toString();
+    final message = raw.replaceFirst(RegExp(r'^.*?Exception:\s*'), '').trim();
+
+    if (message.contains('Wallet balance cannot fall below minimum balance')) {
+      return 'Saldo wallet tidak cukup untuk setoran ini. Sisakan saldo minimum wallet.';
+    }
+    if (message.contains('Funding wallet not found')) {
+      return 'Wallet sumber tidak ditemukan. Refresh wallet lalu coba lagi.';
+    }
+    if (message.contains('Goal is paused')) {
+      return 'Goal sedang dijeda. Lanjutkan goal sebelum menambah dana.';
+    }
+    if (message.contains('Goal not found')) {
+      return 'Goal sudah tidak tersedia. Refresh halaman lalu coba lagi.';
+    }
+    if (message.contains('Not authenticated')) {
+      return 'Sesi login sudah berakhir. Silakan login kembali.';
+    }
+    if (message.isEmpty) return 'Kontribusi gagal disimpan. Coba lagi.';
+    return message.length > 180 ? 'Kontribusi gagal disimpan. Coba lagi.' : message;
   }
 
   Future<FinancialGoalSnapshot> _contributeRemote(String id, double amount, {required String walletId, String? note}) async {
@@ -243,15 +276,24 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
 
   Future<void> removeGoal(String id) async {
     try {
-      await NexoraSupabase.client.rpc(
-        'nexora_delete_goal',
-        params: {'p_goal_id': id},
-      );
-      state = List.unmodifiable(state.where((goal) => goal.id != id));
+      await NexoraSupabase.client.rpc('nexora_delete_goal', params: {'p_goal_id': id});
+      // The database is the source of truth. Re-read it after deletion instead
+      // of relying on an optimistic local removal that could reappear after
+      // an app restart if the server state differs.
+      await _load();
       await _refreshFinancialState();
     } catch (error) {
-      throw StateError('Gagal menghapus goal dan mengembalikan dananya: $error');
+      throw StateError('Gagal menghapus goal dan mengembalikan dananya: ${_friendlyGoalDeleteError(error)}');
     }
+  }
+
+  String _friendlyGoalDeleteError(Object error) {
+    final message = error.toString().replaceFirst(RegExp(r'^.*?Exception:\s*'), '').trim();
+    if (message.contains('Goal not found')) return 'Goal sudah tidak ada di server.';
+    if (message.contains('unlinked contribution')) return 'Goal belum bisa dihapus karena histori setoran tidak lengkap.';
+    if (message.contains('Not authenticated')) return 'Sesi login sudah berakhir. Silakan login kembali.';
+    if (message.isEmpty) return 'Silakan coba lagi.';
+    return message.length > 180 ? 'Silakan coba lagi.' : message;
   }
 
   void _replace(FinancialGoalSnapshot updated) {
