@@ -40,7 +40,6 @@ void main() {
       final walletId = _uuid();
       final incomeId = _uuid();
       String? goalId;
-      String? contributionTransactionId;
 
       try {
         await walletRepository.createWallet(
@@ -115,7 +114,6 @@ void main() {
             .eq('metadata->>goal_contribution_id', contributionId)
             .single();
         final transactionId = contributionTransaction['id'].toString();
-        contributionTransactionId = transactionId;
         expect((contributionTransaction['metadata'] as Map)['goal_id'].toString(), createdGoalId);
 
         await client.rpc('nexora_delete_goal', params: {'p_goal_id': createdGoalId});
