@@ -238,7 +238,10 @@ void main() {
           expect(goal['user_id'].toString(), freshClient.auth.currentUser!.id);
         } finally {
           if (goalProbeId != null) {
-            await freshClient.from('goals').delete().eq('id', goalProbeId);
+            await freshClient.rpc(
+              'nexora_delete_goal',
+              params: {'p_goal_id': goalProbeId},
+            );
           }
           await freshClient.auth.signOut();
         }
