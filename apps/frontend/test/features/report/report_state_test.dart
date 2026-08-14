@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:frontend/features/dashboard/models/transaction_model.dart';
+import 'package:frontend/features/finance/state/financial_analytics_provider.dart';
 import 'package:frontend/features/report/state/report_state.dart';
 
 void main() {
