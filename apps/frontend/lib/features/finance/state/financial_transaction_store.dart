@@ -20,15 +20,35 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
   static const _maxPages = 50;
 
   final TransactionRepository _repository;
+  int _loadGeneration = 0;
+  Object? _lastLoadError;
 
+  bool get hasLoadError => _lastLoadError != null;
+  Object? get lastLoadError => _lastLoadError;
+
+  /// Loads the authoritative remote transaction list.
+  ///
+  /// A failed refresh must NEVER replace known-good financial data with an
+  /// empty list. This is especially important for pull-to-refresh: a
+  /// temporary network/session failure is not the same thing as "no data".
+  /// A generation token also prevents an older concurrent request from
+  /// overwriting a newer successful response.
   Future<void> load() async {
+    final generation = ++_loadGeneration;
+
     try {
       final loaded = await _loadAllTransactions();
+      if (generation != _loadGeneration || !mounted) return;
+
       state = loaded;
-    } catch (_) {
-      // Keep the store empty when there is no authenticated Supabase session
-      // yet. The auth/session layer will trigger reload after sign-in.
-      state = const [];
+      _lastLoadError = null;
+    } catch (error) {
+      if (generation != _loadGeneration || !mounted) return;
+
+      _lastLoadError = error;
+      // Intentionally preserve the previous state.
+      // [] means "there are no transactions"; it must never mean
+      // "the refresh request failed".
     }
   }
 
@@ -65,6 +85,7 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
     }
 
     state = [created, ...state];
+    _lastLoadError = null;
   }
 
   /// Records an internal wallet transfer. The database applies both wallet
