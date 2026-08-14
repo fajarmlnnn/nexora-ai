@@ -55,9 +55,8 @@ class _AddBudgetSheetState extends ConsumerState<_AddBudgetSheet> {
       return;
     }
 
-    final id = _category.name;
     final existing = ref.read(budgetItemsProvider).valueOrNull ?? const <BudgetItem>[];
-    if (existing.any((item) => item.id == id)) {
+    if (existing.any((item) => item.category == _category)) {
       _showError('Budget untuk kategori ini sudah ada.');
       return;
     }
@@ -68,11 +67,13 @@ class _AddBudgetSheetState extends ConsumerState<_AddBudgetSheet> {
 
     setState(() => _saving = true);
     final budget = BudgetItem(
-      id: id,
+      // Identity is intentionally independent from the financial category.
+      id: 'budget-${DateTime.now().microsecondsSinceEpoch}',
       name: name,
+      category: _category,
       spent: 0,
       limit: limit,
-      color: budgetColorForCategory(id),
+      color: budgetColorForCategory(_category.name),
     );
 
     final saved = await ref.read(budgetItemsProvider.notifier).addBudget(budget);
