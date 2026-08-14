@@ -33,9 +33,7 @@ class FinancialGoalSnapshot {
   bool get isCompleted => status == 'completed' || (target > 0 && saved >= target);
   double get remaining => (target - saved).clamp(0.0, double.infinity);
 
-  int get daysRemaining => deadline == null
-      ? 0
-      : deadline!.difference(DateTime.now()).inDays;
+  int get daysRemaining => deadline == null ? 0 : deadline!.difference(DateTime.now()).inDays;
 
   double get suggestedMonthlyContribution {
     if (remaining <= 0) return 0;
@@ -67,20 +65,14 @@ class FinancialGoalSnapshot {
 
   static FinancialGoalSnapshot fromMap(Map<String, dynamic> row) {
     final type = (row['type'] as String? ?? 'saving').toLowerCase();
-    final title = row['name'] as String? ?? '';
-    final id = row['id'] as String? ?? '';
-    final target = (row['target_amount'] as num?)?.toDouble() ?? 0;
-    final saved = (row['saved_amount'] as num?)?.toDouble() ?? 0;
     return FinancialGoalSnapshot(
-      id: id,
-      title: title,
+      id: row['id'] as String? ?? '',
+      title: row['name'] as String? ?? '',
       type: _displayType(type),
-      saved: saved,
-      target: target,
+      saved: (row['saved_amount'] as num?)?.toDouble() ?? 0,
+      target: (row['target_amount'] as num?)?.toDouble() ?? 0,
       icon: _iconForType(type),
-      deadline: row['deadline'] == null
-          ? null
-          : DateTime.tryParse(row['deadline'] as String),
+      deadline: row['deadline'] == null ? null : DateTime.tryParse(row['deadline'] as String),
       priority: row['priority'] as String? ?? 'normal',
       status: row['status'] as String? ?? 'active',
     );
@@ -89,39 +81,29 @@ class FinancialGoalSnapshot {
 
 String _dbType(String type) {
   switch (type.toLowerCase()) {
-    case 'wishlist':
-      return 'wishlist';
-    case 'debt':
-      return 'debt';
-    default:
-      return 'saving';
+    case 'wishlist': return 'wishlist';
+    case 'debt': return 'debt';
+    default: return 'saving';
   }
 }
 
 String _displayType(String type) {
   switch (type.toLowerCase()) {
-    case 'wishlist':
-      return 'Wishlist';
-    case 'debt':
-      return 'Debt';
-    default:
-      return 'Saving';
+    case 'wishlist': return 'Wishlist';
+    case 'debt': return 'Debt';
+    default: return 'Saving';
   }
 }
 
 IconData _iconForType(String type) {
   switch (type.toLowerCase()) {
-    case 'wishlist':
-      return LucideIcons.shoppingBag;
-    case 'debt':
-      return LucideIcons.creditCard;
-    default:
-      return LucideIcons.target;
+    case 'wishlist': return LucideIcons.shoppingBag;
+    case 'debt': return LucideIcons.creditCard;
+    default: return LucideIcons.target;
   }
 }
 
-final financialGoalsProvider =
-    NotifierProvider<SupabaseFinancialGoalsController, List<FinancialGoalSnapshot>>(
+final financialGoalsProvider = NotifierProvider<SupabaseFinancialGoalsController, List<FinancialGoalSnapshot>>(
   SupabaseFinancialGoalsController.new,
 );
 
@@ -134,14 +116,11 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
 
   String get _userId {
     final user = NexoraSupabase.client.auth.currentUser;
-    if (user == null) {
-      throw StateError('User belum terautentikasi.');
-    }
+    if (user == null) throw StateError('User belum terautentikasi.');
     return user.id;
   }
 
-  String? get _primaryWalletId =>
-      ref.read(primaryWalletProvider)?.id;
+  String? get _primaryWalletId => ref.read(primaryWalletProvider)?.id;
 
   Future<void> _load() async {
     if (!NexoraSupabase.isInitialized) return;
@@ -153,15 +132,11 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
           .order('created_at', ascending: false);
       state = List.unmodifiable(
         (rows as List)
-            .map((row) => FinancialGoalSnapshot.fromMap(
-                  Map<String, dynamic>.from(row as Map),
-                ))
+            .map((row) => FinancialGoalSnapshot.fromMap(Map<String, dynamic>.from(row as Map)))
             .where((goal) => goal.id.isNotEmpty && goal.title.isNotEmpty)
             .toList(growable: false),
       );
-    } catch (_) {
-      // Keep the previous in-memory state on transient refresh failures.
-    }
+    } catch (_) {}
   }
 
   Future<void> reload() => _load();
@@ -170,45 +145,30 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
     if (goal.title.trim().isEmpty || goal.target <= 0 || goal.saved < 0) {
       throw StateError('Data goal tidak valid.');
     }
-
     final userId = _userId;
     final fundingWalletId = goal.saved > 0 ? _primaryWalletId : null;
     if (goal.saved > 0 && fundingWalletId == null) {
       throw StateError('Tambahkan wallet utama sebelum mengisi dana awal goal.');
     }
 
-    final row = await NexoraSupabase.client
-        .from('goals')
-        .insert({
-          'user_id': userId,
-          'name': goal.title.trim(),
-          'type': _dbType(goal.type),
-          'target_amount': goal.target,
-          'saved_amount': 0,
-          'deadline': goal.deadline?.toIso8601String().split('T').first,
-          'priority': goal.priority,
-          'status': 'active',
-        })
-        .select()
-        .single();
+    final row = await NexoraSupabase.client.from('goals').insert({
+      'user_id': userId,
+      'name': goal.title.trim(),
+      'type': _dbType(goal.type),
+      'target_amount': goal.target,
+      'saved_amount': 0,
+      'deadline': goal.deadline?.toIso8601String().split('T').first,
+      'priority': goal.priority,
+      'status': 'active',
+    }).select().single();
 
     var created = FinancialGoalSnapshot.fromMap(Map<String, dynamic>.from(row));
-
     try {
       if (goal.saved > 0 && fundingWalletId != null) {
-        created = await _contributeRemote(
-          created.id,
-          goal.saved,
-          walletId: fundingWalletId,
-          note: 'Saldo awal goal',
-        );
+        created = await _contributeRemote(created.id, goal.saved, walletId: fundingWalletId, note: 'Saldo awal goal');
       }
     } catch (_) {
-      await NexoraSupabase.client
-          .from('goals')
-          .delete()
-          .eq('id', created.id)
-          .eq('user_id', userId);
+      await NexoraSupabase.client.from('goals').delete().eq('id', created.id).eq('user_id', userId);
       rethrow;
     }
 
@@ -216,23 +176,12 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
     await _refreshFinancialState();
   }
 
-  Future<bool> contribute(
-    String id,
-    double amount, {
-    String? note,
-    String? walletId,
-  }) async {
+  Future<bool> contribute(String id, double amount, {String? note, String? walletId}) async {
     if (amount <= 0 || !amount.isFinite) return false;
     final fundingWalletId = walletId ?? _primaryWalletId;
     if (fundingWalletId == null) return false;
-
     try {
-      final updated = await _contributeRemote(
-        id,
-        amount,
-        walletId: fundingWalletId,
-        note: note,
-      );
+      final updated = await _contributeRemote(id, amount, walletId: fundingWalletId, note: note);
       _replace(updated);
       await _refreshFinancialState();
       return true;
@@ -241,26 +190,16 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
     }
   }
 
-  Future<FinancialGoalSnapshot> _contributeRemote(
-    String id,
-    double amount, {
-    required String walletId,
-    String? note,
-  }) async {
+  Future<FinancialGoalSnapshot> _contributeRemote(String id, double amount, {required String walletId, String? note}) async {
     final idempotencyKey = '${id}_${DateTime.now().microsecondsSinceEpoch}';
-    final result = await NexoraSupabase.client.rpc(
-      'nexora_contribute_to_goal_from_wallet',
-      params: {
-        'p_goal_id': id,
-        'p_wallet_id': walletId,
-        'p_amount': amount,
-        'p_note': note,
-        'p_idempotency_key': idempotencyKey,
-      },
-    );
-    return FinancialGoalSnapshot.fromMap(
-      Map<String, dynamic>.from(result as Map),
-    );
+    final result = await NexoraSupabase.client.rpc('nexora_contribute_to_goal_from_wallet', params: {
+      'p_goal_id': id,
+      'p_wallet_id': walletId,
+      'p_amount': amount,
+      'p_note': note,
+      'p_idempotency_key': idempotencyKey,
+    });
+    return FinancialGoalSnapshot.fromMap(Map<String, dynamic>.from(result as Map));
   }
 
   Future<void> _refreshFinancialState() async {
@@ -270,14 +209,7 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
     ]);
   }
 
-  Future<bool> updateGoal(
-    String id, {
-    double? target,
-    String? title,
-    DateTime? deadline,
-    String? priority,
-    String? status,
-  }) async {
+  Future<bool> updateGoal(String id, {double? target, String? title, DateTime? deadline, String? priority, String? status}) async {
     if (target != null && target <= 0) return false;
     final payload = <String, dynamic>{};
     if (target != null) payload['target_amount'] = target;
@@ -286,15 +218,8 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
     if (priority != null) payload['priority'] = priority;
     if (status != null) payload['status'] = status;
     if (payload.isEmpty) return false;
-
     try {
-      final row = await NexoraSupabase.client
-          .from('goals')
-          .update(payload)
-          .eq('id', id)
-          .eq('user_id', _userId)
-          .select()
-          .single();
+      final row = await NexoraSupabase.client.from('goals').update(payload).eq('id', id).eq('user_id', _userId).select().single();
       _replace(FinancialGoalSnapshot.fromMap(Map<String, dynamic>.from(row)));
       return true;
     } catch (_) {
@@ -306,12 +231,16 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
   Future<bool> resumeGoal(String id) => updateGoal(id, status: 'active');
 
   Future<void> removeGoal(String id) async {
-    await NexoraSupabase.client
-        .from('goals')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', _userId);
-    state = List.unmodifiable(state.where((goal) => goal.id != id));
+    try {
+      await NexoraSupabase.client.rpc(
+        'nexora_delete_goal',
+        params: {'p_goal_id': id},
+      );
+      state = List.unmodifiable(state.where((goal) => goal.id != id));
+      await _refreshFinancialState();
+    } catch (error) {
+      throw StateError('Gagal menghapus goal dan mengembalikan dananya: $error');
+    }
   }
 
   void _replace(FinancialGoalSnapshot updated) {
