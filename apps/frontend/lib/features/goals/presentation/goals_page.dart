@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -103,11 +104,7 @@ class _GoalsHeader extends StatelessWidget {
             child: Ink(
               width: 42,
               height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.border.withValues(alpha: .45)),
-              ),
+              decoration: BoxDecoration(color: AppColors.card, shape: BoxShape.circle, border: Border.all(color: AppColors.border.withValues(alpha: .45))),
               child: const Center(child: Icon(LucideIcons.plus, color: AppColors.primaryLight, size: 20)),
             ),
           ),
@@ -132,30 +129,9 @@ class _GoalsOverview extends StatelessWidget {
       borderRadius: AppRadius.radiusXL,
       child: Row(
         children: [
-          SizedBox(
-            width: 58,
-            height: 58,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CircularProgressIndicator(value: progress, strokeWidth: 6, backgroundColor: AppColors.border.withValues(alpha: .35), valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight)),
-                Text('${(progress * 100).round()}%', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w800)),
-              ],
-            ),
-          ),
+          SizedBox(width: 58, height: 58, child: Stack(alignment: Alignment.center, children: [CircularProgressIndicator(value: progress, strokeWidth: 6, backgroundColor: AppColors.border.withValues(alpha: .35), valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight)), Text('${(progress * 100).round()}%', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w800))])),
           const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Progress semua goals', style: AppTypography.caption),
-                const SizedBox(height: 2),
-                Text('${rupiah(saved)} tersimpan', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
-                const SizedBox(height: 1),
-                Text('dari ${rupiah(target)} target', style: AppTypography.caption),
-              ],
-            ),
-          ),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Progress semua goals', style: AppTypography.caption), const SizedBox(height: 2), Text('${rupiah(saved)} tersimpan', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)), const SizedBox(height: 1), Text('dari ${rupiah(target)} target', style: AppTypography.caption)])),
           Text('${goals.length}', style: AppTypography.heading3.copyWith(color: AppColors.primaryLight)),
           const SizedBox(width: 3),
           Text('goals', style: AppTypography.caption),
@@ -177,35 +153,16 @@ class _GoalTabs extends StatelessWidget {
       height: 44,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(color: AppColors.card.withValues(alpha: .72), borderRadius: AppRadius.radiusLG, border: Border.all(color: AppColors.border.withValues(alpha: .3))),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final itemWidth = constraints.maxWidth / labels.length;
-          return Stack(
-            children: [
-              AnimatedAlign(
-                duration: const Duration(milliseconds: 280),
-                curve: Curves.easeOutCubic,
-                alignment: Alignment(-1 + (selected * 2 / (labels.length - 1)), 0),
-                child: Container(width: itemWidth, height: 38, decoration: BoxDecoration(gradient: AppGradients.primary, borderRadius: AppRadius.radiusMD, boxShadow: AppShadows.glow)),
-              ),
-              Row(
-                children: List.generate(labels.length, (index) {
-                  final active = selected == index;
-                  return Expanded(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => onSelected(index),
-                      child: Center(
-                        child: Text(labels[index], maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption.copyWith(color: active ? Colors.white : AppColors.textSecondary, fontWeight: active ? FontWeight.w800 : FontWeight.w600)),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ],
-          );
-        },
-      ),
+      child: LayoutBuilder(builder: (context, constraints) {
+        final itemWidth = constraints.maxWidth / labels.length;
+        return Stack(children: [
+          AnimatedAlign(duration: const Duration(milliseconds: 280), curve: Curves.easeOutCubic, alignment: Alignment(-1 + (selected * 2 / (labels.length - 1)), 0), child: Container(width: itemWidth, height: 38, decoration: BoxDecoration(gradient: AppGradients.primary, borderRadius: AppRadius.radiusMD, boxShadow: AppShadows.glow))),
+          Row(children: List.generate(labels.length, (index) {
+            final active = selected == index;
+            return Expanded(child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: () => onSelected(index), child: Center(child: Text(labels[index], maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption.copyWith(color: active ? Colors.white : AppColors.textSecondary, fontWeight: active ? FontWeight.w800 : FontWeight.w600))));
+          })),
+        ]);
+      }),
     );
   }
 }
@@ -224,7 +181,7 @@ class _GoalList extends StatelessWidget {
       separatorBuilder: (_, _) => const SizedBox(height: 7),
       itemBuilder: (context, index) {
         if (showInsight && index == goals.length) {
-          return const ContextAIInsight(message: 'Dana Darurat sudah menjadi prioritas. Saat sebuah goal selesai, Nexora bisa menyarankan mengalihkan dana ke target yang masih relevan.');
+          return const ContextAIInsight(message: 'Buka goal untuk melihat detail, progres, rekomendasi AI, dan saran menaikkan target saat target sudah tercapai.');
         }
         return _GoalCard(goal: goals[index]);
       },
@@ -239,37 +196,40 @@ class _GoalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = goal.progress;
-    final status = progress >= .75 ? 'On track' : progress >= .4 ? 'Berjalan' : 'Perlu dorongan';
+    final completed = progress >= 1;
+    final status = completed ? 'Tercapai' : progress >= .75 ? 'On track' : progress >= .4 ? 'Berjalan' : 'Perlu dorongan';
+    final accent = completed ? AppColors.success : AppColors.primaryLight;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadius.radiusXL, border: Border.all(color: AppColors.border.withValues(alpha: .5)), boxShadow: AppShadows.card),
-      child: Row(
-        children: [
-          Container(width: 42, height: 42, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .12), borderRadius: AppRadius.radiusLG), child: Icon(goal.icon, color: AppColors.primaryLight, size: 21)),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [Expanded(child: Text(goal.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800))), Text('${(progress * 100).round()}%', style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800))]),
-                const SizedBox(height: 1),
-                Row(children: [Text(goal.type, style: AppTypography.caption), const SizedBox(width: 6), Container(padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1), decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .10), borderRadius: AppRadius.radiusPill), child: Text(status, style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontSize: 9, fontWeight: FontWeight.w700)))]),
-                const SizedBox(height: 6),
-                AnimatedProgressBar(value: progress, color: AppColors.primaryLight),
-                const SizedBox(height: 4),
-                Text('${rupiah(goal.saved)} / ${rupiah(goal.target)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption),
-              ],
-            ),
-          ),
-        ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: AppRadius.radiusXL,
+        onTap: () => context.push('/goals/${goal.id}'),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+          decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadius.radiusXL, border: Border.all(color: AppColors.border.withValues(alpha: .5)), boxShadow: AppShadows.card),
+          child: Row(children: [
+            Container(width: 42, height: 42, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .12), borderRadius: AppRadius.radiusLG), child: Icon(goal.icon, color: accent, size: 21)),
+            const SizedBox(width: 9),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [Expanded(child: Text(goal.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800))), Text('${(progress * 100).round()}%', style: AppTypography.caption.copyWith(color: accent, fontWeight: FontWeight.w800))]),
+              const SizedBox(height: 1),
+              Row(children: [Text(goal.type, style: AppTypography.caption), const SizedBox(width: 6), Container(padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1), decoration: BoxDecoration(color: accent.withValues(alpha: .10), borderRadius: AppRadius.radiusPill), child: Text(status, style: AppTypography.caption.copyWith(color: accent, fontSize: 9, fontWeight: FontWeight.w700))), const Spacer(), const Icon(LucideIcons.chevronRight, size: 14, color: AppColors.textMuted)]),
+              const SizedBox(height: 6),
+              AnimatedProgressBar(value: progress, color: accent),
+              const SizedBox(height: 4),
+              Text('${rupiah(goal.saved)} / ${rupiah(goal.target)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption),
+            ])),
+          ]),
+        ),
       ),
     );
   }
 }
 
 class _GoalData {
-  const _GoalData(this.title, this.type, this.saved, this.target, this.icon);
+  const _GoalData(this.id, this.title, this.type, this.saved, this.target, this.icon);
+  final String id;
   final String title;
   final String type;
   final double saved;
@@ -278,5 +238,5 @@ class _GoalData {
 
   double get progress => target <= 0 ? 0 : (saved / target).clamp(0.0, 1.0);
 
-  factory _GoalData.fromSnapshot(FinancialGoalSnapshot snapshot) => _GoalData(snapshot.title, snapshot.type, snapshot.saved, snapshot.target, snapshot.icon);
+  factory _GoalData.fromSnapshot(FinancialGoalSnapshot snapshot) => _GoalData(snapshot.id, snapshot.title, snapshot.type, snapshot.saved, snapshot.target, snapshot.icon);
 }
