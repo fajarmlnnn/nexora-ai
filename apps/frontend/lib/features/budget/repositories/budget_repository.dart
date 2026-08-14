@@ -1,7 +1,6 @@
-import 'dart:convert';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:shared_preferences/shared_preferences.dart';
-
+import '../../../core/supabase/supabase_client.dart';
 import '../../dashboard/models/budget_item.dart';
 
 abstract interface class BudgetRepository {
@@ -11,67 +10,139 @@ abstract interface class BudgetRepository {
   Future<void> deleteBudget(String id);
 }
 
-class LocalBudgetRepository implements BudgetRepository {
-  static const String _storageKey = 'nexora.budgets.v1';
+/// Supabase-backed budget repository.
+///
+/// The database stores only the user's budget limit and presentation metadata.
+/// `spent` is deliberately derived from transactions by BudgetController so a
+/// client can never persist a forged spent amount.
+class SupabaseBudgetRepository implements BudgetRepository {
+  SupabaseBudgetRepository({SupabaseClient? client})
+      : _client = client ?? NexoraSupabase.client;
 
-  Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
+  final SupabaseClient _client;
+
+  String get _userId {
+    final user = _client.auth.currentUser;
+    if (user == null) {
+      throw StateError('User belum terautentikasi.');
+    }
+    return user.id;
+  }
 
   @override
   Future<List<BudgetItem>> getBudgets() async {
-    final prefs = await _prefs;
-    final raw = prefs.getString(_storageKey);
-    if (raw == null || raw.trim().isEmpty) return <BudgetItem>[];
+    final rows = await _client
+        .from('budgets')
+        .select('id, name, budget_limit, color')
+        .eq('user_id', _userId)
+        .order('name');
 
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! List) {
-        throw const FormatException('Format budget lokal tidak valid.');
-      }
-      return decoded
-          .whereType<Map>()
-          .map((item) => BudgetItem.fromJson(Map<String, dynamic>.from(item)))
-          .toList(growable: false);
-    } catch (error) {
-      throw StateError('Data budget lokal rusak: $error');
-    }
+    return rows
+        .map((row) => _fromRow(Map<String, dynamic>.from(row)))
+        .toList(growable: false);
   }
 
   @override
   Future<BudgetItem> createBudget(BudgetItem budget) async {
-    final budgets = await getBudgets();
-    if (budgets.any((item) => item.id == budget.id)) {
-      throw StateError('Budget untuk kategori ini sudah ada.');
-    }
-    final updated = List<BudgetItem>.from(budgets)..add(budget);
-    await _save(updated);
-    return budget;
+    _validate(budget);
+
+    final row = await _client
+        .from('budgets')
+        .insert(_toPayload(budget))
+        .select('id, name, budget_limit, color')
+        .single();
+
+    return _fromRow(Map<String, dynamic>.from(row));
   }
 
   @override
   Future<BudgetItem> updateBudget(BudgetItem budget) async {
-    final budgets = await getBudgets();
-    final index = budgets.indexWhere((item) => item.id == budget.id);
-    if (index == -1) throw StateError('Budget tidak ditemukan.');
-    final updated = List<BudgetItem>.from(budgets)..[index] = budget;
-    await _save(updated);
-    return budget;
+    _validate(budget);
+
+    final row = await _client
+        .from('budgets')
+        .update({
+          'name': budget.name.trim(),
+          'budget_limit': budget.limit.toStringAsFixed(2),
+          'color': budget.color.toARGB32(),
+        })
+        .eq('id', budget.id.trim())
+        .eq('user_id', _userId)
+        .select('id, name, budget_limit, color')
+        .maybeSingle();
+
+    if (row == null) {
+      throw StateError('Budget dengan id "${budget.id}" tidak ditemukan.');
+    }
+    return _fromRow(Map<String, dynamic>.from(row));
   }
 
   @override
   Future<void> deleteBudget(String id) async {
-    final budgets = await getBudgets();
-    final updated = List<BudgetItem>.from(budgets)
-      ..removeWhere((item) => item.id == id);
-    if (updated.length == budgets.length) throw StateError('Budget tidak ditemukan.');
-    await _save(updated);
+    final trimmed = id.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError('ID budget wajib diisi.');
+    }
+
+    final deleted = await _client
+        .from('budgets')
+        .delete()
+        .eq('id', trimmed)
+        .eq('user_id', _userId)
+        .select('id');
+
+    if (deleted.isEmpty) {
+      throw StateError('Budget dengan id "$trimmed" tidak ditemukan.');
+    }
   }
 
-  Future<void> _save(List<BudgetItem> budgets) async {
-    final prefs = await _prefs;
-    final saved = await prefs.setString(
-      _storageKey,
-      jsonEncode(budgets.map((budget) => budget.toJson()).toList(growable: false)),
+  Map<String, dynamic> _toPayload(BudgetItem budget) {
+    return {
+      'id': budget.id.trim(),
+      'user_id': _userId,
+      'name': budget.name.trim(),
+      'budget_limit': budget.limit.toStringAsFixed(2),
+      'color': budget.color.toARGB32(),
+    };
+  }
+
+  BudgetItem _fromRow(Map<String, dynamic> row) {
+    final rawLimit = row['budget_limit'];
+    final rawColor = row['color'];
+
+    final limit = rawLimit is num
+        ? rawLimit.toDouble()
+        : double.tryParse(rawLimit?.toString() ?? '');
+    final color = rawColor is num
+        ? rawColor.toInt()
+        : int.tryParse(rawColor?.toString() ?? '');
+
+    if (limit == null || !limit.isFinite || limit <= 0) {
+      throw StateError('Budget limit dari server tidak valid.');
+    }
+    if (color == null || color < 0) {
+      throw StateError('Warna budget dari server tidak valid.');
+    }
+
+    return BudgetItem(
+      id: row['id']?.toString() ?? '',
+      name: row['name']?.toString() ?? '',
+      // Never trust or persist a server-side spent value. It is derived later.
+      spent: 0,
+      limit: limit,
+      color: Color(color),
     );
-    if (!saved) throw StateError('Gagal menyimpan budget ke penyimpanan lokal.');
+  }
+
+  void _validate(BudgetItem budget) {
+    if (budget.id.trim().isEmpty) {
+      throw ArgumentError('ID budget wajib diisi.');
+    }
+    if (budget.name.trim().isEmpty) {
+      throw ArgumentError('Nama budget wajib diisi.');
+    }
+    if (!budget.limit.isFinite || budget.limit <= 0) {
+      throw ArgumentError('Limit budget harus lebih besar dari nol.');
+    }
   }
 }
