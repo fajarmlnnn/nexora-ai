@@ -32,11 +32,83 @@ class SupabaseWalletRepository implements WalletRepository {
 
   @override
   Future<WalletModel> getWallet(String id) async {
+    final trimmed = id.trim();
+    if (!_isUuid(trimmed)) {
+      throw ArgumentError('ID wallet tidak valid untuk Supabase.');
+    }
+
     final row = await _client
         .from('wallets')
         .select()
+        .eq('id', trimmed)
+        .eq('user_id', _userId)
+        .maybeSingle();
+
+    if (row == null) {
+      throw StateError('Wallet dengan id "$trimmed" tidak ditemukan.');
+    }
+    return _fromRow(row);
+  }
+
+  @override
+  Future<WalletModel> createWallet(WalletModel wallet) async {
+    // Wallet IDs are UUIDs in Supabase. Older UI flows may provide a local
+    // timestamp-style ID, so let Postgres generate a UUID unless the supplied
+    // ID is already a valid UUID.
+    final payload = <String, dynamic>{
+      'user_id': _userId,
+      'name': wallet.name.trim(),
+      'bank_name': wallet.bankName.trim().isEmpty ? null : wallet.bankName.trim(),
+      'account_number': wallet.accountNumber.trim().isEmpty
+          ? null
+          : wallet.accountNumber.trim(),
+      'type': wallet.type.name,
+      // Balance is derived from transactions and is column-protected.
+      // A new wallet therefore always starts at the database default (0).
+      'minimum_balance': wallet.minimumBalance,
+      'color': _colorToHex(wallet.color),
+      'is_primary': wallet.isPrimary,
+      'is_hidden': wallet.isHidden,
+    };
+
+    final suppliedId = wallet.id.trim();
+    if (_isUuid(suppliedId)) {
+      payload['id'] = suppliedId;
+    }
+
+    final row = await _client
+        .from('wallets')
+        .insert(payload)
+        .select()
+        .single();
+
+    return _fromRow(row);
+  }
+
+  @override
+  Future<WalletModel> updateWallet(WalletModel wallet) async {
+    final id = wallet.id.trim();
+    if (!_isUuid(id)) {
+      throw ArgumentError('ID wallet tidak valid untuk Supabase.');
+    }
+
+    final row = await _client
+        .from('wallets')
+        .update({
+          'name': wallet.name.trim(),
+          'bank_name': wallet.bankName.trim().isEmpty ? null : wallet.bankName.trim(),
+          'account_number': wallet.accountNumber.trim().isEmpty
+              ? null
+              : wallet.accountNumber.trim(),
+          'type': wallet.type.name,
+          'minimum_balance': wallet.minimumBalance,
+          'color': _colorToHex(wallet.color),
+          'is_primary': wallet.isPrimary,
+          'is_hidden': wallet.isHidden,
+        })
         .eq('id', id)
         .eq('user_id', _userId)
+        .select()
         .maybeSingle();
 
     if (row == null) {
@@ -46,66 +118,39 @@ class SupabaseWalletRepository implements WalletRepository {
   }
 
   @override
-  Future<WalletModel> createWallet(WalletModel wallet) async {
-    // Balance is a derived financial value. It must never be accepted from
-    // an untrusted Flutter client. Opening funds should be recorded as an
-    // income transaction so the database trigger remains the single source
-    // of truth for balance changes.
-    final row = await _client
-        .from('wallets')
-        .insert({
-          'id': wallet.id,
-          'user_id': _userId,
-          'name': wallet.name,
-          'bank_name': wallet.bankName.isEmpty ? null : wallet.bankName,
-          'account_number':
-              wallet.accountNumber.isEmpty ? null : wallet.accountNumber,
-          'type': wallet.type.name,
-          'balance': 0,
-          'minimum_balance': wallet.minimumBalance,
-          'color': _colorToHex(wallet.color),
-          'is_primary': wallet.isPrimary,
-          'is_hidden': wallet.isHidden,
-        })
-        .select()
-        .single();
-
-    return _fromRow(row);
-  }
-
-  @override
-  Future<WalletModel> updateWallet(WalletModel wallet) async {
-    final row = await _client
-        .from('wallets')
-        .update({
-          'name': wallet.name,
-          'bank_name': wallet.bankName.isEmpty ? null : wallet.bankName,
-          'account_number':
-              wallet.accountNumber.isEmpty ? null : wallet.accountNumber,
-          'type': wallet.type.name,
-          'minimum_balance': wallet.minimumBalance,
-          'color': _colorToHex(wallet.color),
-          'is_primary': wallet.isPrimary,
-          'is_hidden': wallet.isHidden,
-        })
-        .eq('id', wallet.id)
-        .eq('user_id', _userId)
-        .select()
-        .maybeSingle();
-
-    if (row == null) {
-      throw StateError('Wallet dengan id "${wallet.id}" tidak ditemukan.');
-    }
-    return _fromRow(row);
-  }
-
-  @override
   Future<void> deleteWallet(String id) async {
-    await _client
+    final trimmed = id.trim();
+    if (!_isUuid(trimmed)) {
+      throw ArgumentError('ID wallet tidak valid untuk Supabase.');
+    }
+
+    // Transactions deliberately use ON DELETE RESTRICT. Never silently erase
+    // financial history just because the user removes a wallet.
+    final references = await _client
+        .from('transactions')
+        .select('id')
+        .eq('user_id', _userId)
+        .or(
+          'wallet_id.eq.$trimmed,source_wallet_id.eq.$trimmed,destination_wallet_id.eq.$trimmed',
+        )
+        .limit(1);
+
+    if (references.isNotEmpty) {
+      throw StateError(
+        'Wallet tidak bisa dihapus karena masih memiliki transaksi. Hapus atau pindahkan transaksi terlebih dahulu.',
+      );
+    }
+
+    final deleted = await _client
         .from('wallets')
         .delete()
-        .eq('id', id)
-        .eq('user_id', _userId);
+        .eq('id', trimmed)
+        .eq('user_id', _userId)
+        .select('id');
+
+    if (deleted.isEmpty) {
+      throw StateError('Wallet tidak ditemukan atau gagal dihapus.');
+    }
   }
 
   WalletModel _fromRow(Map<String, dynamic> row) {
@@ -138,6 +183,12 @@ class SupabaseWalletRepository implements WalletRepository {
   }
 
   double _number(dynamic value) => value is num ? value.toDouble() : 0;
+
+  bool _isUuid(String value) {
+    return RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
+    ).hasMatch(value.trim());
+  }
 
   Color _colorFromDb(dynamic value) {
     if (value is int) return Color(value);
