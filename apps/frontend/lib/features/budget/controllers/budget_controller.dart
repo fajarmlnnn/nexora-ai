@@ -8,7 +8,7 @@ import '../../finance/state/financial_transaction_store.dart';
 import '../repositories/budget_repository.dart';
 
 final budgetRepositoryProvider = Provider<BudgetRepository>((ref) {
-  return LocalBudgetRepository();
+  return SupabaseBudgetRepository();
 });
 
 final budgetItemsProvider = AsyncNotifierProvider<BudgetController, List<BudgetItem>>(
@@ -40,7 +40,7 @@ class BudgetController extends AsyncNotifier<List<BudgetItem>> {
   Future<bool> updateBudget(BudgetItem budget) async {
     if (budget.limit <= 0) return false;
     try {
-      // Spent is derived from transactions and must never be persisted as user input.
+      // Spent is derived from transactions and must never be persisted as input.
       await _repository.updateBudget(budget.copyWith(spent: 0));
       await _reload();
       return true;
