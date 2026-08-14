@@ -45,12 +45,8 @@ class SupabaseTransactionRepository implements TransactionRepository {
         'wallet_id.eq.$id,source_wallet_id.eq.$id,destination_wallet_id.eq.$id',
       );
     }
-    if (type != null) {
-      query = query.eq('type', type.name);
-    }
-    if (category != null) {
-      query = query.eq('category', category.name);
-    }
+    if (type != null) query = query.eq('type', type.name);
+    if (category != null) query = query.eq('category', category.name);
     if (search != null && search.trim().isNotEmpty) {
       final escaped = _escapeIlike(search.trim());
       query = query.ilike('description', '%$escaped%');
@@ -66,8 +62,10 @@ class SupabaseTransactionRepository implements TransactionRepository {
         .order('occurred_at', ascending: false)
         .range(safeOffset, safeOffset + safeLimit - 1);
 
-    return rows
-        .map((row) => _fromRow(Map<String, dynamic>.from(row)))
+    return (rows as List)
+        .map<TransactionModel>(
+          (row) => _fromRow(Map<String, dynamic>.from(row as Map)),
+        )
         .toList(growable: false);
   }
 
@@ -77,16 +75,10 @@ class SupabaseTransactionRepository implements TransactionRepository {
     String? idempotencyKey,
   }) async {
     _validate(transaction);
-
     final key = (idempotencyKey ?? transaction.id).trim();
-    if (key.isEmpty) {
-      throw ArgumentError('Idempotency key transaksi wajib diisi.');
-    }
+    if (key.isEmpty) throw ArgumentError('Idempotency key transaksi wajib diisi.');
 
     final payload = <String, dynamic>{
-      // Supabase uses uuid for transaction IDs. Older UI flows used local
-      // values such as "tx-<timestamp>" as idempotency keys, so normalize
-      // those values into a real UUID instead of sending them as the PK.
       'id': _transactionIdForInsert(transaction.id),
       'user_id': _userId,
       'type': transaction.type.name,
@@ -122,8 +114,6 @@ class SupabaseTransactionRepository implements TransactionRepository {
           .single();
       return _fromRow(Map<String, dynamic>.from(row));
     } on PostgrestException catch (error) {
-      // A concurrent retry can win either the idempotency constraint or the
-      // primary-key constraint between the lookup above and the insert.
       if (_isUniqueViolation(error)) {
         final existingAfterConflict = await _findByIdempotencyKey(key) ??
             (_isUuid(transaction.id)
