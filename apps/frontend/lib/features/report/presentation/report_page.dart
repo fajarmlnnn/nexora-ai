@@ -229,7 +229,7 @@ class _MonthSelector extends ConsumerWidget {
         shrinkWrap: true,
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
         itemCount: months.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
+        separatorBuilder: (_, _) => const Divider(height: 1),
         itemBuilder: (context, index) {
           final month = months[index];
           final isSelected = month.year == selected.start.year && month.month == selected.start.month;
