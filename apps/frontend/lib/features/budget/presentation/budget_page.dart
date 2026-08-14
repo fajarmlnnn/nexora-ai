@@ -12,6 +12,7 @@ import '../../../core/widgets/premium_widgets.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 import '../../dashboard/models/ai_insight.dart';
 import '../../dashboard/models/budget_item.dart';
+import 'add_budget_sheet.dart';
 
 class BudgetPage extends ConsumerWidget {
   const BudgetPage({super.key});
@@ -69,6 +70,15 @@ class BudgetPage extends ConsumerWidget {
                         style: AppTypography.bodySmall,
                       ),
                     ],
+                  ),
+                ),
+                IconButton.filled(
+                  onPressed: () => showAddBudgetSheet(context, ref),
+                  icon: const Icon(LucideIcons.plus, size: 20),
+                  tooltip: 'Tambah budget',
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
                   ),
                 ),
               ],
