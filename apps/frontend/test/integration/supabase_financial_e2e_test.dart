@@ -176,10 +176,6 @@ void main() {
         );
         expect((await walletRepository.getWallet(walletAId)).balance, 90000);
 
-        // Two requests deliberately start together. The database trigger locks
-        // the wallet row before checking the balance. Exactly one 55k expense
-        // may therefore commit; the other must see the new 35k balance and
-        // fail instead of allowing a negative/corrupted balance.
         final concurrentTransactions = [
           TransactionModel(
             id: _uuid(),
@@ -217,9 +213,6 @@ void main() {
         expect(results.where((success) => !success).length, 1);
         expect((await walletRepository.getWallet(walletAId)).balance, 35000);
 
-        // Persistence regression test: a fresh Supabase client simulates a
-        // cold start/reinstall. After signing in again, transactions must be
-        // loaded from Supabase rather than from an in-memory/local-only store.
         persistenceProbeId = (await transactionRepository.getTransactions(limit: 1)).first.id;
         await client.auth.signOut();
         final freshClient = SupabaseClient(
@@ -232,8 +225,6 @@ void main() {
               .getTransactions(limit: 100);
           expect(freshTransactions.any((item) => item.id == persistenceProbeId), isTrue);
 
-          // Goal insert regression test: user_id must be explicit because the
-          // goals RLS policy intentionally requires user_id = auth.uid().
           final goal = await freshClient.from('goals').insert({
             'user_id': freshClient.auth.currentUser!.id,
             'name': 'E2E goal',
@@ -247,12 +238,11 @@ void main() {
           expect(goal['user_id'].toString(), freshClient.auth.currentUser!.id);
         } finally {
           if (goalProbeId != null) {
-            await freshClient.from('goals').delete().eq('id', goalProbeId!);
+            await freshClient.from('goals').delete().eq('id', goalProbeId);
           }
           await freshClient.auth.signOut();
         }
 
-        // Restore the original authenticated client for deterministic cleanup.
         await client.auth.signInWithPassword(email: email, password: password);
       } finally {
         if (persistenceProbeId != null && !transactionIds.contains(persistenceProbeId)) {
@@ -261,9 +251,7 @@ void main() {
         for (final id in transactionIds.reversed) {
           try {
             await transactionRepository.deleteTransaction(id);
-          } catch (_) {
-            // Best-effort cleanup; preserve the original test failure.
-          }
+          } catch (_) {}
         }
         try {
           await walletRepository.deleteWallet(walletAId);
