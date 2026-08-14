@@ -67,6 +67,20 @@ void main() {
             .single();
         expect(unchanged['saved_amount'], 0);
 
+        // Goal deletion is financial because contributions are paired with
+        // wallet ledger transactions. Direct DELETE must therefore be denied.
+        await expectLater(
+          client.from('goals').delete().eq('id', goalId),
+          throwsA(isA<PostgrestException>()),
+        );
+
+        final stillPresent = await client
+            .from('goals')
+            .select('id')
+            .eq('id', goalId)
+            .single();
+        expect(stillPresent['id'], goalId);
+
         // Contributions are read-only to the client. Creating one directly
         // would bypass the wallet ledger and is therefore rejected.
         await expectLater(
