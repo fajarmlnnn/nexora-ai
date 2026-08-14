@@ -128,12 +128,21 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
     return const [];
   }
 
+  String get _userId {
+    final user = NexoraSupabase.client.auth.currentUser;
+    if (user == null) {
+      throw StateError('User belum terautentikasi.');
+    }
+    return user.id;
+  }
+
   Future<void> _load() async {
     if (!NexoraSupabase.isInitialized) return;
     try {
       final rows = await NexoraSupabase.client
           .from('goals')
           .select()
+          .eq('user_id', _userId)
           .order('created_at', ascending: false);
       state = List.unmodifiable(
         (rows as List)
@@ -153,9 +162,14 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
       throw StateError('Data goal tidak valid.');
     }
 
+    // RLS requires the inserted owner to match auth.uid(). Explicitly send
+    // the authenticated user's UUID instead of relying on a database default.
+    // This is the same ownership contract already used by transactions.
+    final userId = _userId;
     final row = await NexoraSupabase.client
         .from('goals')
         .insert({
+          'user_id': userId,
           'name': goal.title.trim(),
           'type': _dbType(goal.type),
           'target_amount': goal.target,
@@ -184,7 +198,11 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
         );
       }
     } catch (_) {
-      await NexoraSupabase.client.from('goals').delete().eq('id', created.id);
+      await NexoraSupabase.client
+          .from('goals')
+          .delete()
+          .eq('id', created.id)
+          .eq('user_id', userId);
       rethrow;
     }
 
@@ -234,6 +252,7 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
           .from('goals')
           .update(payload)
           .eq('id', id)
+          .eq('user_id', _userId)
           .select()
           .single();
       _replace(FinancialGoalSnapshot.fromMap(Map<String, dynamic>.from(row)));
@@ -247,7 +266,11 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
   Future<bool> resumeGoal(String id) => updateGoal(id, status: 'active');
 
   Future<void> removeGoal(String id) async {
-    await NexoraSupabase.client.from('goals').delete().eq('id', id);
+    await NexoraSupabase.client
+        .from('goals')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', _userId);
     state = List.unmodifiable(state.where((goal) => goal.id != id));
   }
 
