@@ -64,6 +64,25 @@ class AiGatewayServiceTest extends TestCase
         ]);
     }
 
+    public function test_empty_provider_response_is_rejected(): void
+    {
+        config()->set('ai.api_key', 'test-secret');
+        config()->set('ai.base_url', 'https://ai.test/v1');
+
+        Http::fake([
+            'https://ai.test/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['content' => '   ']]],
+            ], 200),
+        ]);
+
+        $this->expectException(AiProviderException::class);
+        $this->expectExceptionMessage('AI provider returned an empty response.');
+
+        app(AiGatewayService::class)->chat([
+            ['role' => 'user', 'content' => 'test'],
+        ]);
+    }
+
     public function test_missing_provider_key_fails_closed(): void
     {
         config()->set('ai.api_key', null);
