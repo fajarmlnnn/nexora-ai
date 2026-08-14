@@ -19,13 +19,28 @@ String _uuid() {
   return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
 }
 
+Future<Map<String, dynamic>> _reconcile(SupabaseClient client, String walletId) async {
+  final result = await client.rpc(
+    'nexora_reconcile_wallet',
+    params: {'p_wallet_id': walletId},
+  );
+  final rows = result as List;
+  expect(rows, hasLength(1));
+  return Map<String, dynamic>.from(rows.single as Map);
+}
+
+void _expectReconciled(Map<String, dynamic> result) {
+  expect(result['is_consistent'], isTrue);
+  expect((result['difference'] as num).abs(), lessThan(0.005));
+}
+
 void main() {
   const email = String.fromEnvironment('NEXORA_E2E_EMAIL');
   const password = String.fromEnvironment('NEXORA_E2E_PASSWORD');
   final configured = SupabaseConfig.isConfigured && email.isNotEmpty && password.isNotEmpty;
 
   test(
-    'Transaction lifecycle preserves minimum balance and reverses updates/deletes',
+    'Transaction lifecycle preserves minimum balance and wallet reconciliation',
     () async {
       final client = SupabaseClient(
         SupabaseConfig.url,
@@ -45,7 +60,7 @@ void main() {
         await walletRepository.createWallet(
           WalletModel(
             id: walletId,
-            name: 'E2E Minimum Balance Wallet',
+            name: 'E2E Reconciliation Wallet',
             bankName: '',
             accountNumber: '',
             balance: 0,
@@ -55,6 +70,7 @@ void main() {
             minimumBalance: 10000,
           ),
         );
+        _expectReconciled(await _reconcile(client, walletId));
 
         await transactionRepository.createTransaction(
           TransactionModel(
@@ -68,6 +84,7 @@ void main() {
           ),
         );
         expect((await walletRepository.getWallet(walletId)).balance, 100000);
+        _expectReconciled(await _reconcile(client, walletId));
 
         final expense = await transactionRepository.createTransaction(
           TransactionModel(
@@ -82,21 +99,25 @@ void main() {
         );
         expect(expense.id, expenseId);
         expect((await walletRepository.getWallet(walletId)).balance, 15000);
+        _expectReconciled(await _reconcile(client, walletId));
 
         final updated = await transactionRepository.updateTransaction(
           expense.copyWith(amount: 90000),
         );
         expect(updated.amount, 90000);
         expect((await walletRepository.getWallet(walletId)).balance, 10000);
+        _expectReconciled(await _reconcile(client, walletId));
 
         await expectLater(
           transactionRepository.updateTransaction(expense.copyWith(amount: 90001)),
           throwsA(isA<PostgrestException>()),
         );
         expect((await walletRepository.getWallet(walletId)).balance, 10000);
+        _expectReconciled(await _reconcile(client, walletId));
 
         await transactionRepository.deleteTransaction(expenseId);
         expect((await walletRepository.getWallet(walletId)).balance, 100000);
+        _expectReconciled(await _reconcile(client, walletId));
 
         // Reversing the opening income would take the wallet below its configured
         // minimum. Lower the minimum only for deterministic test teardown; the
@@ -109,6 +130,7 @@ void main() {
 
         await transactionRepository.deleteTransaction(incomeId);
         expect((await walletRepository.getWallet(walletId)).balance, 0);
+        _expectReconciled(await _reconcile(client, walletId));
       } finally {
         for (final id in [expenseId, incomeId]) {
           try {
