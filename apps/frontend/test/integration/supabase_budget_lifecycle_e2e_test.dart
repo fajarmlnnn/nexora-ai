@@ -25,12 +25,10 @@ void main() {
       if (user == null) throw StateError('E2E authentication failed.');
 
       final repository = SupabaseBudgetRepository(client: client);
-      const budgetId = 'food';
+      const budgetId = 'budget-e2e-food';
       var created = false;
 
       try {
-        // The CI E2E account owns this deterministic fixture. Reusing only this
-        // category id keeps the test repeatable without touching other budgets.
         await client
             .from('budgets')
             .delete()
@@ -41,6 +39,7 @@ void main() {
           const BudgetItem(
             id: budgetId,
             name: 'Makan E2E',
+            category: TransactionCategory.food,
             spent: 999999,
             limit: 100000,
             color: Color(0xFF35D07F),
@@ -48,16 +47,17 @@ void main() {
         );
         created = true;
 
-        // The repository/database never persists a forged spent value.
+        expect(budget.category, TransactionCategory.food);
         expect(budget.spent, 0);
         final stored = await client
             .from('budgets')
-            .select('id, name, budget_limit, color')
+            .select('id, name, category, budget_limit, color')
             .eq('id', budgetId)
             .eq('user_id', user.id)
             .single();
         expect((stored['budget_limit'] as num).toDouble(), 100000);
         expect(stored['name'], 'Makan E2E');
+        expect(stored['category'], 'food');
 
         final transactions = <TransactionModel>[
           TransactionModel(
@@ -92,20 +92,22 @@ void main() {
         expect(analytics.transferIn, 500000);
         expect(analytics.transactionCount, 2);
 
-        // Repository reads keep spent derived rather than trusting the DB row.
         final reloaded = await repository.getBudgets();
         expect(reloaded.singleWhere((item) => item.id == budgetId).spent, 0);
+        expect(reloaded.singleWhere((item) => item.id == budgetId).category, TransactionCategory.food);
 
         final updated = await repository.updateBudget(
           budget.copyWith(limit: 120000, spent: 777777),
         );
         expect(updated.limit, 120000);
         expect(updated.spent, 0);
+        expect(updated.category, TransactionCategory.food);
 
         final afterUpdate = await repository.getBudgets();
         final updatedRow = afterUpdate.singleWhere((item) => item.id == budgetId);
         expect(updatedRow.limit, 120000);
         expect(updatedRow.spent, 0);
+        expect(updatedRow.category, TransactionCategory.food);
 
         await repository.deleteBudget(budgetId);
         created = false;
