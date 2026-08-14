@@ -109,8 +109,19 @@ final financialGoalsProvider = NotifierProvider<SupabaseFinancialGoalsController
 class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapshot>> {
   @override
   List<FinancialGoalSnapshot> build() {
+    _bindAuthLifecycle();
     _load();
     return const [];
+  }
+
+  void _bindAuthLifecycle() {
+    if (!NexoraSupabase.isInitialized) return;
+    final subscription = NexoraSupabase.client.auth.onAuthStateChange.listen((_) {
+      // Never retain financial goals across users or a signed-out session.
+      state = const [];
+      _load();
+    });
+    ref.onDispose(subscription.cancel);
   }
 
   String get _userId {
@@ -124,10 +135,11 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
   Future<void> _load() async {
     if (!NexoraSupabase.isInitialized) return;
     try {
+      final userId = _userId;
       final rows = await NexoraSupabase.client
           .from('goals')
           .select()
-          .eq('user_id', _userId)
+          .eq('user_id', userId)
           .order('created_at', ascending: false);
       state = List.unmodifiable(
         (rows as List)
@@ -135,7 +147,10 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
             .where((goal) => goal.id.isNotEmpty && goal.title.isNotEmpty)
             .toList(growable: false),
       );
-    } catch (_) {}
+    } catch (_) {
+      // Keep the current UI on transient network failures, but never reuse a
+      // previous user's state because auth lifecycle clears it before reload.
+    }
   }
 
   Future<void> reload() => _load();
@@ -262,11 +277,23 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
   Future<void> removeGoal(String id) async {
     try {
       await NexoraSupabase.client.rpc('nexora_delete_goal', params: {'p_goal_id': id});
-      state = List.unmodifiable(state.where((goal) => goal.id != id));
+      // The database is the source of truth. Re-read it after deletion instead
+      // of relying on an optimistic local removal that could reappear after
+      // an app restart if the server state differs.
+      await _load();
       await _refreshFinancialState();
     } catch (error) {
-      throw StateError('Gagal menghapus goal dan mengembalikan dananya: $error');
+      throw StateError('Gagal menghapus goal dan mengembalikan dananya: ${_friendlyGoalDeleteError(error)}');
     }
+  }
+
+  String _friendlyGoalDeleteError(Object error) {
+    final message = error.toString().replaceFirst(RegExp(r'^.*?Exception:\s*'), '').trim();
+    if (message.contains('Goal not found')) return 'Goal sudah tidak ada di server.';
+    if (message.contains('unlinked contribution')) return 'Goal belum bisa dihapus karena histori setoran tidak lengkap.';
+    if (message.contains('Not authenticated')) return 'Sesi login sudah berakhir. Silakan login kembali.';
+    if (message.isEmpty) return 'Silakan coba lagi.';
+    return message.length > 180 ? 'Silakan coba lagi.' : message;
   }
 
   void _replace(FinancialGoalSnapshot updated) {
