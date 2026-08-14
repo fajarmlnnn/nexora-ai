@@ -32,7 +32,6 @@ class FinancialGoalSnapshot {
   double get progress => target <= 0 ? 0 : (saved / target).clamp(0.0, 1.0);
   bool get isCompleted => status == 'completed' || (target > 0 && saved >= target);
   double get remaining => (target - saved).clamp(0.0, double.infinity);
-
   int get daysRemaining => deadline == null ? 0 : deadline!.difference(DateTime.now()).inDays;
 
   double get suggestedMonthlyContribution {
@@ -168,18 +167,9 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
         created = await _contributeRemote(created.id, goal.saved, walletId: fundingWalletId, note: 'Saldo awal goal');
       }
     } catch (_) {
-      // Goal deletion is intentionally RPC-only because contributions are
-      // backed by ledger transactions. This also makes rollback safe if the
-      // initial funding RPC partially succeeds before surfacing an error.
       try {
-        await NexoraSupabase.client.rpc(
-          'nexora_delete_goal',
-          params: {'p_goal_id': created.id},
-        );
-      } catch (_) {
-        // Preserve the original funding error; the database RPC remains the
-        // authoritative cleanup path and the goal can be retried safely.
-      }
+        await NexoraSupabase.client.rpc('nexora_delete_goal', params: {'p_goal_id': created.id});
+      } catch (_) {}
       rethrow;
     }
 
@@ -188,17 +178,45 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
   }
 
   Future<bool> contribute(String id, double amount, {String? note, String? walletId}) async {
-    if (amount <= 0 || !amount.isFinite) return false;
+    if (amount <= 0 || !amount.isFinite) {
+      throw StateError('Nominal kontribusi tidak valid.');
+    }
     final fundingWalletId = walletId ?? _primaryWalletId;
-    if (fundingWalletId == null) return false;
+    if (fundingWalletId == null) {
+      throw StateError('Belum ada wallet yang bisa digunakan untuk setoran.');
+    }
+
     try {
       final updated = await _contributeRemote(id, amount, walletId: fundingWalletId, note: note);
       _replace(updated);
       await _refreshFinancialState();
       return true;
-    } catch (_) {
-      return false;
+    } catch (error) {
+      throw StateError(_friendlyContributionError(error));
     }
+  }
+
+  String _friendlyContributionError(Object error) {
+    final raw = error.toString();
+    final message = raw.replaceFirst(RegExp(r'^.*?Exception:\s*'), '').trim();
+
+    if (message.contains('Wallet balance cannot fall below minimum balance')) {
+      return 'Saldo wallet tidak cukup untuk setoran ini. Sisakan saldo minimum wallet.';
+    }
+    if (message.contains('Funding wallet not found')) {
+      return 'Wallet sumber tidak ditemukan. Refresh wallet lalu coba lagi.';
+    }
+    if (message.contains('Goal is paused')) {
+      return 'Goal sedang dijeda. Lanjutkan goal sebelum menambah dana.';
+    }
+    if (message.contains('Goal not found')) {
+      return 'Goal sudah tidak tersedia. Refresh halaman lalu coba lagi.';
+    }
+    if (message.contains('Not authenticated')) {
+      return 'Sesi login sudah berakhir. Silakan login kembali.';
+    }
+    if (message.isEmpty) return 'Kontribusi gagal disimpan. Coba lagi.';
+    return message.length > 180 ? 'Kontribusi gagal disimpan. Coba lagi.' : message;
   }
 
   Future<FinancialGoalSnapshot> _contributeRemote(String id, double amount, {required String walletId, String? note}) async {
@@ -243,10 +261,7 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
 
   Future<void> removeGoal(String id) async {
     try {
-      await NexoraSupabase.client.rpc(
-        'nexora_delete_goal',
-        params: {'p_goal_id': id},
-      );
+      await NexoraSupabase.client.rpc('nexora_delete_goal', params: {'p_goal_id': id});
       state = List.unmodifiable(state.where((goal) => goal.id != id));
       await _refreshFinancialState();
     } catch (error) {
