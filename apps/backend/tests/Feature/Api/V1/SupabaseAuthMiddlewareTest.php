@@ -4,6 +4,7 @@ namespace Tests\Feature\Api\V1;
 
 use App\Http\Middleware\AuthenticateSupabaseUser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
@@ -67,11 +68,9 @@ class SupabaseAuthMiddlewareTest extends TestCase
 
     public function test_supabase_auth_outage_returns_503_without_leaking_provider_details(): void
     {
-        Http::fake([
-            'https://example.supabase.co/auth/v1/user' => Http::response([
-                'error' => 'upstream internal detail',
-            ], 500),
-        ]);
+        Http::fake(function (): void {
+            throw new ConnectionException('upstream internal detail');
+        });
 
         $this->withHeader('Authorization', 'Bearer valid-token')
             ->postJson('/api/v1/ai/chat', [
@@ -79,8 +78,8 @@ class SupabaseAuthMiddlewareTest extends TestCase
                     ['role' => 'user', 'content' => 'test'],
                 ],
             ])
-            ->assertUnauthorized()
-            ->assertJsonPath('error.code', 'UNAUTHENTICATED')
+            ->assertStatus(503)
+            ->assertJsonPath('error.code', 'AUTH_PROVIDER_UNAVAILABLE')
             ->assertJsonMissing(['upstream internal detail']);
     }
 }
