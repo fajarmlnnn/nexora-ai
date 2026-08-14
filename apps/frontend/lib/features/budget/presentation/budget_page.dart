@@ -123,11 +123,12 @@ class _BudgetOverview extends StatelessWidget {
   Widget build(BuildContext context) {
     final totalLimit = items.fold<double>(0, (sum, item) => sum + item.limit);
     final totalSpent = items.fold<double>(0, (sum, item) => sum + item.spent);
-    final remaining = (totalLimit - totalSpent).clamp(0.0, double.infinity);
+    final remaining = totalLimit - totalSpent;
+    final isOver = remaining < 0;
     final progress = totalLimit <= 0
         ? 0.0
         : (totalSpent / totalLimit).clamp(0.0, 1.0);
-    final percentage = (progress * 100).round();
+    final percentage = totalLimit <= 0 ? 0 : ((totalSpent / totalLimit) * 100).round();
 
     return NCard(
       padding: const EdgeInsets.fromLTRB(18, 17, 18, 17),
@@ -146,7 +147,7 @@ class _BudgetOverview extends StatelessWidget {
                   ),
                 ),
               ),
-              _StatusBadge(percentage: percentage),
+              _StatusBadge(percentage: percentage, isOver: isOver),
             ],
           ),
           const SizedBox(height: 7),
@@ -170,7 +171,9 @@ class _BudgetOverview extends StatelessWidget {
               value: progress,
               minHeight: 8,
               backgroundColor: Colors.white.withValues(alpha: .06),
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isOver ? AppColors.danger : AppColors.primary,
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -185,9 +188,9 @@ class _BudgetOverview extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: _OverviewMetric(
-                  label: 'Sisa',
-                  value: rupiah(remaining),
-                  color: AppColors.success,
+                  label: isOver ? 'Over' : 'Sisa',
+                  value: rupiah(remaining.abs()),
+                  color: isOver ? AppColors.danger : AppColors.success,
                 ),
               ),
             ],
@@ -232,17 +235,20 @@ class _OverviewMetric extends StatelessWidget {
 }
 
 class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.percentage});
+  const _StatusBadge({required this.percentage, required this.isOver});
 
   final int percentage;
+  final bool isOver;
 
   @override
   Widget build(BuildContext context) {
-    final color = percentage >= 90
+    final color = isOver
         ? AppColors.danger
-        : percentage >= 75
-            ? AppColors.warning
-            : AppColors.success;
+        : percentage >= 90
+            ? AppColors.danger
+            : percentage >= 75
+                ? AppColors.warning
+                : AppColors.success;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
@@ -252,7 +258,7 @@ class _StatusBadge extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: .18)),
       ),
       child: Text(
-        '$percentage% used',
+        isOver ? 'OVER BUDGET' : '$percentage% used',
         style: AppTypography.caption.copyWith(
           color: color,
           fontWeight: FontWeight.w800,
@@ -295,12 +301,13 @@ class _BudgetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final percentage = (item.progress * 100).round();
+    final percentage = item.limit <= 0 ? 0 : ((item.spent / item.limit) * 100).round();
     final accent = item.isOverBudget
         ? AppColors.danger
         : item.progress >= .85
             ? AppColors.warning
             : item.color;
+    final overAmount = item.spent - item.limit;
 
     return NCard(
       padding: const EdgeInsets.fromLTRB(13, 12, 13, 12),
@@ -322,13 +329,37 @@ class _BudgetRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.labelLarge.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.labelLarge.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        if (item.isOverBudget) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.danger.withValues(alpha: .10),
+                              borderRadius: AppRadius.radiusPill,
+                            ),
+                            child: Text(
+                              'OVER',
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.danger,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 8,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 2),
                     FittedBox(
@@ -356,6 +387,19 @@ class _BudgetRow extends StatelessWidget {
               ),
             ],
           ),
+          if (item.isOverBudget) ...[
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Melebihi budget ${rupiah(overAmount)}',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.danger,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 9),
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
