@@ -21,6 +21,7 @@ class TransactionModel {
     required this.type,
     required this.category,
     required this.date,
+    this.createdAt,
     this.note,
     this.walletId,
     this.sourceAccount,
@@ -33,6 +34,9 @@ class TransactionModel {
   final TransactionType type;
   final TransactionCategory category;
   final DateTime date;
+  /// Server insertion timestamp used as a deterministic tie-breaker when
+  /// multiple transactions share the same user-selected occurred_at date.
+  final DateTime? createdAt;
   final String? note;
   final String? walletId;
   final String? sourceAccount;
@@ -50,6 +54,9 @@ class TransactionModel {
       type: TransactionType.values.byName(json['type'] as String),
       category: TransactionCategory.values.byName(json['category'] as String),
       date: DateTime.parse(json['date'] as String),
+      createdAt: json['createdAt'] == null
+          ? null
+          : DateTime.tryParse(json['createdAt'] as String),
       note: json['note'] as String?,
       walletId: json['walletId'] as String?,
       sourceAccount: json['sourceAccount'] as String?,
@@ -65,6 +72,7 @@ class TransactionModel {
       'type': type.name,
       'category': category.name,
       'date': date.toIso8601String(),
+      'createdAt': createdAt?.toIso8601String(),
       'note': note,
       'walletId': walletId,
       'sourceAccount': sourceAccount,
@@ -81,6 +89,7 @@ class TransactionModel {
     TransactionType? type,
     TransactionCategory? category,
     DateTime? date,
+    Object? createdAt = _unset,
     Object? note = _unset,
     Object? walletId = _unset,
     Object? sourceAccount = _unset,
@@ -93,6 +102,9 @@ class TransactionModel {
       type: type ?? this.type,
       category: category ?? this.category,
       date: date ?? this.date,
+      createdAt: identical(createdAt, _unset)
+          ? this.createdAt
+          : createdAt as DateTime?,
       note: identical(note, _unset) ? this.note : note as String?,
       walletId: identical(walletId, _unset) ? this.walletId : walletId as String?,
       sourceAccount: identical(sourceAccount, _unset)
