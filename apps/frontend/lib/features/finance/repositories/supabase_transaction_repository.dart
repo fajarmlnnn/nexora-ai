@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/supabase/supabase_client.dart';
@@ -82,7 +84,10 @@ class SupabaseTransactionRepository implements TransactionRepository {
     }
 
     final payload = <String, dynamic>{
-      'id': transaction.id.trim(),
+      // Supabase uses uuid for transaction IDs. Older UI flows used local
+      // values such as "tx-<timestamp>" as idempotency keys, so normalize
+      // those values into a real UUID instead of sending them as the PK.
+      'id': _transactionIdForInsert(transaction.id),
       'user_id': _userId,
       'type': transaction.type.name,
       'amount': transaction.amount.toStringAsFixed(2),
@@ -121,7 +126,9 @@ class SupabaseTransactionRepository implements TransactionRepository {
       // primary-key constraint between the lookup above and the insert.
       if (_isUniqueViolation(error)) {
         final existingAfterConflict = await _findByIdempotencyKey(key) ??
-            await _findById(transaction.id.trim());
+            (_isUuid(transaction.id)
+                ? await _findById(transaction.id.trim())
+                : null);
         if (existingAfterConflict != null) {
           _assertSameIdempotentRequest(existingAfterConflict, transaction);
           return existingAfterConflict;
@@ -143,6 +150,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
   }
 
   Future<TransactionModel?> _findById(String id) async {
+    if (!_isUuid(id)) return null;
     final row = await _client
         .from('transactions')
         .select()
@@ -160,6 +168,9 @@ class SupabaseTransactionRepository implements TransactionRepository {
     _validate(transaction);
     if (transaction.id.trim().isEmpty) {
       throw ArgumentError('ID transaksi wajib diisi.');
+    }
+    if (!_isUuid(transaction.id)) {
+      throw ArgumentError('ID transaksi tidak valid untuk Supabase.');
     }
 
     final payload = <String, dynamic>{
@@ -198,6 +209,9 @@ class SupabaseTransactionRepository implements TransactionRepository {
     final trimmed = id.trim();
     if (trimmed.isEmpty) {
       throw ArgumentError('ID transaksi wajib diisi.');
+    }
+    if (!_isUuid(trimmed)) {
+      throw ArgumentError('ID transaksi tidak valid untuk Supabase.');
     }
 
     await _client
@@ -303,6 +317,26 @@ class SupabaseTransactionRepository implements TransactionRepository {
   bool _isUniqueViolation(PostgrestException error) {
     return error.code == '23505' ||
         error.message.toLowerCase().contains('unique');
+  }
+
+  bool _isUuid(String value) {
+    return RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
+    ).hasMatch(value.trim());
+  }
+
+  String _transactionIdForInsert(String value) {
+    final trimmed = value.trim();
+    return _isUuid(trimmed) ? trimmed : _generateUuidV4();
+  }
+
+  String _generateUuidV4() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    final hex = bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
   }
 
   void _validate(TransactionModel transaction) {
