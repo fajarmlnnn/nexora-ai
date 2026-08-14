@@ -82,7 +82,7 @@ class BudgetController extends AsyncNotifier<List<BudgetItem>> {
     return [
       for (final budget in budgets)
         budget.copyWith(
-          spent: analytics.expenseByCategory[budgetCategoryForItem(budget)] ?? 0,
+          spent: analytics.expenseByCategory[budget.category] ?? 0,
         ),
     ];
   }
@@ -90,37 +90,12 @@ class BudgetController extends AsyncNotifier<List<BudgetItem>> {
 
 /// Resolves a budget's transaction category.
 ///
-/// Current budgets use their id as the category key (for example `food` or
-/// `transport`). The display name is also accepted for human-readable budgets.
-/// Unknown values safely fall back to `other`.
+/// New records use the explicit database category. This legacy helper remains
+/// only for callers/tests that construct an old BudgetItem without category.
+/// It must never infer a category from the budget database id once category is
+/// present on the model.
 TransactionCategory budgetCategoryForItem(BudgetItem budget) {
-  final byId = _transactionCategoryFromName(budget.id.trim().toLowerCase());
-  if (byId != TransactionCategory.other) return byId;
-
-  return _transactionCategoryFromName(_normalizeCategoryName(budget.name));
-}
-
-String _normalizeCategoryName(String value) {
-  final normalized = value.trim().toLowerCase();
-  const aliases = <String, String>{
-    'makanan': 'food',
-    'makan': 'food',
-    'transportasi': 'transport',
-    'belanja': 'shopping',
-    'tagihan': 'bills',
-    'hiburan': 'entertainment',
-    'kesehatan': 'health',
-    'pendidikan': 'education',
-    'lainnya': 'other',
-  };
-  return aliases[normalized] ?? normalized;
-}
-
-TransactionCategory _transactionCategoryFromName(String value) {
-  for (final category in TransactionCategory.values) {
-    if (category.name == value) return category;
-  }
-  return TransactionCategory.other;
+  return budget.category;
 }
 
 final totalBudgetLimitProvider = Provider<double>((ref) {
