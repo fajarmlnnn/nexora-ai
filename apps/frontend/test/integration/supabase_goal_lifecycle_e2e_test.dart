@@ -7,7 +7,6 @@ import 'package:supabase/supabase.dart';
 import 'package:frontend/core/supabase/supabase_config.dart';
 import 'package:frontend/features/dashboard/models/transaction_model.dart';
 import 'package:frontend/features/finance/repositories/supabase_transaction_repository.dart';
-import 'package:frontend/features/goals/controllers/supabase_goals_controller.dart';
 import 'package:frontend/features/wallet/models/wallet_model.dart';
 import 'package:frontend/features/wallet/repositories/supabase_wallet_repository.dart';
 
@@ -34,7 +33,7 @@ void main() {
       );
       await client.auth.signInWithPassword(email: email, password: password);
       final user = client.auth.currentUser;
-      expect(user, isNotNull);
+      if (user == null) throw StateError('E2E authentication failed.');
 
       final walletRepository = SupabaseWalletRepository(client: client);
       final transactionRepository = SupabaseTransactionRepository(client: client);
@@ -71,7 +70,7 @@ void main() {
         expect((await walletRepository.getWallet(walletId)).balance, 100000);
 
         final goal = await client.from('goals').insert({
-          'user_id': user!.id,
+          'user_id': user.id,
           'name': 'E2E rollback goal',
           'type': 'saving',
           'target_amount': 100000,
@@ -79,12 +78,13 @@ void main() {
           'priority': 'normal',
           'status': 'active',
         }).select().single();
-        goalId = goal['id'].toString();
+        final createdGoalId = goal['id'].toString();
+        goalId = createdGoalId;
 
         final updatedGoal = await client.rpc(
           'nexora_contribute_to_goal_from_wallet',
           params: {
-            'p_goal_id': goalId,
+            'p_goal_id': createdGoalId,
             'p_wallet_id': walletId,
             'p_amount': 100000,
             'p_note': 'E2E contribution',
@@ -97,31 +97,40 @@ void main() {
         final contribution = await client
             .from('goal_contributions')
             .select('id')
-            .eq('goal_id', goalId)
+            .eq('goal_id', createdGoalId)
             .maybeSingle();
-        expect(contribution, isNotNull);
-        contributionTransactionId = (await client
-                .from('transactions')
-                .select('id')
-                .eq('wallet_id', walletId)
-                .eq('type', 'expense')
-                .eq('amount', 100000)
-                .maybeSingle())?['id']
-            ?.toString();
-        expect(contributionTransactionId, isNotNull);
+        final contributionId = contribution?['id']?.toString();
+        if (contributionId == null) throw StateError('Goal contribution was not created.');
 
-        await client.rpc('nexora_delete_goal', params: {'p_goal_id': goalId});
+        final contributionTransaction = await client
+            .from('transactions')
+            .select('id')
+            .eq('wallet_id', walletId)
+            .eq('type', 'expense')
+            .eq('amount', 100000)
+            .maybeSingle();
+        final transactionId = contributionTransaction?['id']?.toString();
+        if (transactionId == null) throw StateError('Goal funding transaction was not created.');
+        contributionTransactionId = transactionId;
+
+        await client.rpc('nexora_delete_goal', params: {'p_goal_id': createdGoalId});
         goalId = null;
 
         expect((await walletRepository.getWallet(walletId)).balance, 100000);
 
+        final deletedGoal = await client
+            .from('goals')
+            .select('id')
+            .eq('id', createdGoalId)
+            .maybeSingle();
+        expect(deletedGoal, isNull);
+
         final deletedContributions = await client
             .from('goal_contributions')
             .select('id')
-            .eq('goal_id', contribution['id']);
+            .eq('id', contributionId);
         expect(deletedContributions, isEmpty);
 
-        final transactionId = contributionTransactionId!;
         final deletedTransactions = await client
             .from('transactions')
             .select('id')
