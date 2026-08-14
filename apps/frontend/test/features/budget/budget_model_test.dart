@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import '../../../lib/features/dashboard/models/budget_item.dart';
-import '../../../lib/features/budget/controllers/budget_controller.dart';
-import '../../../lib/features/dashboard/models/transaction_model.dart';
+import 'package:frontend/features/budget/controllers/budget_controller.dart';
+import 'package:frontend/features/dashboard/models/budget_item.dart';
+import 'package:frontend/features/dashboard/models/transaction_model.dart';
 
 group('BudgetItem', () {
   test('defaults category to other for backward compatibility', () {
