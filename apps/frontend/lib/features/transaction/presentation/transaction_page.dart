@@ -287,48 +287,43 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
       ),
     );
   }
-
-  String _categoryLabel(TransactionCategory category) {
-    switch (category) {
-      case TransactionCategory.food:
-        return 'Makanan';
-      case TransactionCategory.transport:
-        return 'Transportasi';
-      case TransactionCategory.shopping:
-        return 'Belanja';
-      case TransactionCategory.salary:
-        return 'Gaji';
-      case TransactionCategory.investment:
-        return 'Investasi';
-      case TransactionCategory.bills:
-        return 'Tagihan';
-      case TransactionCategory.entertainment:
-        return 'Hiburan';
-      case TransactionCategory.health:
-        return 'Kesehatan';
-      case TransactionCategory.education:
-        return 'Pendidikan';
-      case TransactionCategory.other:
-        return 'Lainnya';
-    }
-  }
 }
 
 class _TransactionHeader extends StatelessWidget {
-  const _TransactionHeader({required this.onFilter});
+  const _TransactionHeader({this.onFilter});
 
-  final VoidCallback onFilter;
+  final VoidCallback? onFilter;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Expanded(
-          child: Text('Transaksi', style: AppTypography.heading1),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Transaksi', style: AppTypography.heading1),
+              const SizedBox(height: 1),
+              Text('Pantau arus uangmu', style: AppTypography.bodySmall),
+            ],
+          ),
         ),
-        IconButton(
-          onPressed: onFilter,
-          icon: const Icon(LucideIcons.slidersHorizontal),
+        Material(
+          color: AppColors.card.withValues(alpha: .72),
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: onFilter,
+            customBorder: const CircleBorder(),
+            child: const SizedBox(
+              width: 44,
+              height: 44,
+              child: Icon(
+                LucideIcons.slidersHorizontal,
+                size: 20,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -339,39 +334,69 @@ class _SearchBar extends StatelessWidget {
   const _SearchBar({
     required this.controller,
     required this.onChanged,
-    required this.onFilter,
+    this.onFilter,
   });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
-  final VoidCallback onFilter;
+  final VoidCallback? onFilter;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: controller,
-            onChanged: onChanged,
-            decoration: InputDecoration(
-              hintText: 'Cari transaksi...',
-              prefixIcon: const Icon(LucideIcons.search),
-              filled: true,
-              fillColor: AppColors.card,
-              border: OutlineInputBorder(
-                borderRadius: AppRadius.radiusLG,
-                borderSide: BorderSide.none,
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 13),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: AppRadius.radiusXL,
+        border: Border.all(color: AppColors.border.withValues(alpha: .4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(LucideIcons.search, color: AppColors.textMuted, size: 20),
+          const SizedBox(width: 9),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              textInputAction: TextInputAction.search,
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textPrimary,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Cari transaksi',
+                hintStyle: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textMuted,
+                ),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        IconButton.filledTonal(
-          onPressed: onFilter,
-          icon: const Icon(LucideIcons.slidersHorizontal),
-        ),
-      ],
+          if (controller.text.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                controller.clear();
+                onChanged('');
+              },
+              child: const Icon(
+                LucideIcons.x,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
+            ),
+          const SizedBox(width: 5),
+          GestureDetector(
+            onTap: onFilter,
+            child: const Icon(
+              LucideIcons.listFilter,
+              color: AppColors.primaryLight,
+              size: 19,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -382,56 +407,69 @@ class _FilterTabs extends StatelessWidget {
   final TransactionType? selected;
   final ValueChanged<TransactionType?> onChanged;
 
+  int _index() {
+    if (selected == TransactionType.income) return 1;
+    if (selected == TransactionType.expense) return 2;
+    if (selected == TransactionType.transfer) return 3;
+    return 0;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final options = <(String, TransactionType?)>[
-      ('Semua', null),
-      ('Pemasukan', TransactionType.income),
-      ('Pengeluaran', TransactionType.expense),
-      ('Transfer', TransactionType.transfer),
-    ];
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (final option in options) ...[
-            ChoiceChip(
-              label: Text(option.$1),
-              selected: selected == option.$2,
-              onSelected: (_) => onChanged(option.$2),
-            ),
-            const SizedBox(width: 8),
-          ],
-        ],
+    return Container(
+      height: 50,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppColors.card.withValues(alpha: .68),
+        borderRadius: AppRadius.radiusLG,
+        border: Border.all(color: AppColors.border.withValues(alpha: .28)),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final itemWidth = constraints.maxWidth / 4;
+          final index = _index();
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              AnimatedPositioned(
+                left: itemWidth * index,
+                top: 0,
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                child: Container(
+                  width: itemWidth,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.primary,
+                    borderRadius: AppRadius.radiusMD,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: .22),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  _Tab(label: 'Semua', selected: selected == null, onTap: () => onChanged(null)),
+                  _Tab(label: 'Masuk', selected: selected == TransactionType.income, onTap: () => onChanged(TransactionType.income)),
+                  _Tab(label: 'Keluar', selected: selected == TransactionType.expense, onTap: () => onChanged(TransactionType.expense)),
+                  _Tab(label: 'Transfer', selected: selected == TransactionType.transfer, onTap: () => onChanged(TransactionType.transfer)),
+                ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _NoResults extends StatelessWidget {
-  const _NoResults({required this.query});
-
-  final String query;
-
-  @override
-  Widget build(BuildContext context) {
-    return EmptyStateCard(
-      icon: LucideIcons.searchX,
-      title: 'Tidak ada transaksi',
-      message: query.isEmpty
-          ? 'Belum ada transaksi sesuai filter.'
-          : 'Tidak ada transaksi yang cocok dengan "$query".',
-    );
-  }
-}
-
-class _SheetOption extends StatelessWidget {
-  const _SheetOption({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+class _Tab extends StatelessWidget {
+  const _Tab({required this.label, required this.selected, required this.onTap});
 
   final String label;
   final bool selected;
@@ -439,13 +477,21 @@ class _SheetOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      leading: Icon(
-        selected ? LucideIcons.circleCheck : LucideIcons.circle,
-        color: selected ? AppColors.primaryLight : AppColors.textMuted,
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Center(
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 180),
+            style: AppTypography.caption.copyWith(
+              color: selected ? Colors.white : AppColors.textSecondary,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+            ),
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+        ),
       ),
-      title: Text(label),
     );
   }
 }
@@ -460,8 +506,8 @@ class _Group extends StatelessWidget {
 
   final String title;
   final List<TransactionModel> items;
-  final Future<void> Function(TransactionModel item) onEdit;
-  final Future<void> Function(TransactionModel item) onDelete;
+  final ValueChanged<TransactionModel> onEdit;
+  final ValueChanged<TransactionModel> onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -469,22 +515,28 @@ class _Group extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
-          child: Text(
-            title,
-            style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800),
+          padding: const EdgeInsets.fromLTRB(0, 9, 0, 8),
+          child: Row(
+            children: [
+              Text(title, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
+              const SizedBox(width: 7),
+              Expanded(child: Divider(color: AppColors.border.withValues(alpha: .35), height: 1)),
+            ],
           ),
         ),
-        for (final item in items) ...[
-          _TransactionTile(item: item, onEdit: onEdit, onDelete: onDelete),
-          const SizedBox(height: 8),
-        ],
+        for (final item in items)
+          _TransactionTile(
+            item: item,
+            onEdit: onEdit,
+            onDelete: onDelete,
+          ),
+        const SizedBox(height: 4),
       ],
     );
   }
 }
 
-class _TransactionTile extends StatelessWidget {
+class _TransactionTile extends StatefulWidget {
   const _TransactionTile({
     required this.item,
     required this.onEdit,
@@ -492,110 +544,214 @@ class _TransactionTile extends StatelessWidget {
   });
 
   final TransactionModel item;
-  final Future<void> Function(TransactionModel item) onEdit;
-  final Future<void> Function(TransactionModel item) onDelete;
+  final ValueChanged<TransactionModel> onEdit;
+  final ValueChanged<TransactionModel> onDelete;
+
+  @override
+  State<_TransactionTile> createState() => _TransactionTileState();
+}
+
+class _TransactionTileState extends State<_TransactionTile> {
+  static const double _actionWidth = 76;
+  static const double _openThreshold = 34;
+  static const Duration _settleDuration = Duration(milliseconds: 190);
+
+  double _offset = 0;
+  bool _open = false;
+
+  void _dragUpdate(DragUpdateDetails details) {
+    setState(() => _offset = (_offset + details.delta.dx).clamp(-_actionWidth, 0.0));
+  }
+
+  void _dragEnd(DragEndDetails details) {
+    final shouldOpen = _offset.abs() >= _openThreshold || details.velocity.pixelsPerSecond.dx < -450;
+    setState(() {
+      _open = shouldOpen;
+      _offset = shouldOpen ? -_actionWidth : 0;
+    });
+  }
+
+  void _close() {
+    if (!_open) return;
+    setState(() {
+      _open = false;
+      _offset = 0;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final accent = item.isIncome
+    final item = widget.item;
+    final color = item.isIncome
         ? AppColors.success
-        : item.isTransfer
-            ? AppColors.primaryLight
-            : AppColors.danger;
-    final prefix = item.isIncome ? '+' : item.isTransfer ? '' : '-';
+        : item.isExpense
+            ? AppColors.danger
+            : AppColors.primaryLight;
+    final prefix = item.isIncome ? '+' : item.isExpense ? '-' : '↔';
 
-    return GestureDetector(
-      onTap: () => onEdit(item),
-      child: PremiumCard(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        borderRadius: AppRadius.radiusLG,
-        child: Row(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 7),
+      child: ClipRRect(
+        borderRadius: AppRadius.radiusXL,
+        child: Stack(
+          alignment: Alignment.centerRight,
           children: [
-            CircleAvatar(
-              radius: 21,
-              backgroundColor: accent.withValues(alpha: .12),
-              child: Icon(
-                item.isIncome
-                    ? LucideIcons.arrowDownLeft
-                    : item.isTransfer
-                        ? LucideIcons.arrowLeftRight
-                        : LucideIcons.arrowUpRight,
-                color: accent,
-                size: 19,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${_categoryLabel(item.category)} • ${DateFormat('dd MMM', 'id_ID').format(item.date)}',
-                    style: AppTypography.caption,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '$prefix${rupiah(item.amount)}',
-                  style: AppTypography.labelMedium.copyWith(
-                    color: accent,
-                    fontWeight: FontWeight.w900,
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.danger.withValues(alpha: .12),
+                  borderRadius: AppRadius.radiusXL,
+                ),
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 18),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => widget.onDelete(item),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 100),
+                    opacity: _offset < -8 ? 1 : .35,
+                    child: const Icon(LucideIcons.trash2, color: AppColors.danger, size: 20),
                   ),
                 ),
-                PopupMenuButton<String>(
-                  padding: EdgeInsets.zero,
-                  iconSize: 18,
-                  onSelected: (value) {
-                    if (value == 'edit') onEdit(item);
-                    if (value == 'delete') onDelete(item);
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'edit', child: Text('Edit')),
-                    PopupMenuItem(value: 'delete', child: Text('Hapus')),
-                  ],
+              ),
+            ),
+            AnimatedContainer(
+              duration: _settleDuration,
+              curve: Curves.easeOutCubic,
+              transform: Matrix4.translationValues(_offset, 0, 0),
+              transformAlignment: Alignment.center,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragUpdate: _dragUpdate,
+                onHorizontalDragEnd: _dragEnd,
+                onTap: _open ? _close : () => widget.onEdit(item),
+                child: PremiumCard(
+                  borderRadius: AppRadius.radiusXL,
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: .13),
+                          borderRadius: AppRadius.radiusLG,
+                        ),
+                        child: Icon(
+                          item.isTransfer ? LucideIcons.arrowLeftRight : _icon(item.category),
+                          color: color,
+                          size: 21,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 1),
+                            Row(
+                              children: [
+                                Flexible(child: Text(item.isTransfer ? 'Transfer' : _categoryLabel(item.category), maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption)),
+                                const SizedBox(width: 5),
+                                Container(width: 3, height: 3, decoration: const BoxDecoration(color: AppColors.textMuted, shape: BoxShape.circle)),
+                                const SizedBox(width: 5),
+                                Flexible(child: Text(DateFormat('dd MMM').format(item.date), maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text('$prefix${rupiah(item.amount)}', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.end, style: AppTypography.labelMedium.copyWith(color: color, fontWeight: FontWeight.w800)),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  String _categoryLabel(TransactionCategory category) {
-    switch (category) {
-      case TransactionCategory.food:
-        return 'Makanan';
-      case TransactionCategory.transport:
-        return 'Transportasi';
-      case TransactionCategory.shopping:
-        return 'Belanja';
-      case TransactionCategory.salary:
-        return 'Gaji';
-      case TransactionCategory.investment:
-        return 'Investasi';
-      case TransactionCategory.bills:
-        return 'Tagihan';
-      case TransactionCategory.entertainment:
-        return 'Hiburan';
-      case TransactionCategory.health:
-        return 'Kesehatan';
-      case TransactionCategory.education:
-        return 'Pendidikan';
-      case TransactionCategory.other:
-        return 'Lainnya';
-    }
+class _NoResults extends StatelessWidget {
+  const _NoResults({required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 70),
+        child: Column(
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .12), shape: BoxShape.circle),
+              child: const Icon(LucideIcons.searchX, color: AppColors.primaryLight, size: 25),
+            ),
+            const SizedBox(height: 12),
+            Text('Transaksi tidak ditemukan', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text(query.isEmpty ? 'Belum ada transaksi pada filter ini.' : 'Coba gunakan kata kunci lain.', textAlign: TextAlign.center, style: AppTypography.caption),
+          ],
+        ),
+      ),
+    );
   }
+}
+
+class _SheetOption extends StatelessWidget {
+  const _SheetOption({required this.label, required this.selected, required this.onTap});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      onTap: onTap,
+      title: Text(label, style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600)),
+      trailing: Icon(selected ? LucideIcons.circleCheck : LucideIcons.circle, size: 20, color: selected ? AppColors.primaryLight : AppColors.textMuted),
+    );
+  }
+}
+
+IconData _icon(TransactionCategory c) => switch (c) {
+      TransactionCategory.food => LucideIcons.utensils,
+      TransactionCategory.transport => LucideIcons.car,
+      TransactionCategory.shopping => LucideIcons.shoppingBag,
+      TransactionCategory.salary => LucideIcons.wallet,
+      TransactionCategory.investment => LucideIcons.chartColumn,
+      TransactionCategory.bills => LucideIcons.receiptText,
+      TransactionCategory.entertainment => LucideIcons.gamepad2,
+      TransactionCategory.health => LucideIcons.heartPulse,
+      TransactionCategory.education => LucideIcons.graduationCap,
+      TransactionCategory.other => LucideIcons.circleDollarSign,
+    };
+
+String _categoryLabel(TransactionCategory category) {
+  final labels = <TransactionCategory, String>{
+    TransactionCategory.food: 'Makan & Minum',
+    TransactionCategory.transport: 'Transportasi',
+    TransactionCategory.shopping: 'Belanja',
+    TransactionCategory.salary: 'Gaji',
+    TransactionCategory.investment: 'Investasi',
+    TransactionCategory.bills: 'Tagihan',
+    TransactionCategory.entertainment: 'Hiburan',
+    TransactionCategory.health: 'Kesehatan',
+    TransactionCategory.education: 'Pendidikan',
+    TransactionCategory.other: 'Lainnya',
+  };
+  return labels[category] ?? 'Lainnya';
 }
