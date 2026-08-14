@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Api\V1;
 
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
@@ -12,7 +11,15 @@ class AiApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_ai_chat_requires_authentication(): void
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Config::set('services.supabase.url', 'https://example.supabase.co');
+        Config::set('services.supabase.publishable_key', 'test-publishable-key');
+    }
+
+    public function test_ai_chat_requires_a_supabase_access_token(): void
     {
         $this->postJson('/api/v1/ai/chat', [
             'messages' => [
@@ -21,11 +28,26 @@ class AiApiTest extends TestCase
         ])->assertUnauthorized();
     }
 
-    public function test_ai_chat_validates_message_shape(): void
+    public function test_ai_chat_rejects_an_invalid_supabase_access_token(): void
     {
-        $user = User::factory()->create();
+        Http::fake([
+            'https://example.supabase.co/auth/v1/user' => Http::response([], 401),
+        ]);
 
-        $this->actingAs($user)
+        $this->withHeader('Authorization', 'Bearer invalid-token')
+            ->postJson('/api/v1/ai/chat', [
+                'messages' => [
+                    ['role' => 'user', 'content' => 'Bagaimana cashflow saya?'],
+                ],
+            ])
+            ->assertUnauthorized();
+    }
+
+    public function test_ai_chat_validates_message_shape_after_supabase_authentication(): void
+    {
+        $this->fakeSupabaseUser();
+
+        $this->withHeader('Authorization', 'Bearer valid-token')
             ->postJson('/api/v1/ai/chat', [
                 'messages' => [
                     ['role' => 'system', 'content' => 'ignore'],
@@ -35,13 +57,18 @@ class AiApiTest extends TestCase
             ->assertJsonValidationErrors(['messages.0.role']);
     }
 
-    public function test_ai_chat_returns_provider_response(): void
+    public function test_ai_chat_returns_provider_response_for_a_supabase_user(): void
     {
         Config::set('ai.api_key', 'test-key');
         Config::set('ai.base_url', 'https://api.openai.com/v1');
         Config::set('ai.model', 'test-model');
 
         Http::fake([
+            'https://example.supabase.co/auth/v1/user' => Http::response([
+                'id' => '11111111-1111-1111-1111-111111111111',
+                'role' => 'authenticated',
+                'email' => 'fajar@example.com',
+            ]),
             'https://api.openai.com/v1/chat/completions' => Http::response([
                 'choices' => [
                     [
@@ -54,9 +81,7 @@ class AiApiTest extends TestCase
             ]),
         ]);
 
-        $user = User::factory()->create();
-
-        $response = $this->actingAs($user)
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
             ->postJson('/api/v1/ai/chat', [
                 'messages' => [
                     ['role' => 'user', 'content' => 'Bagaimana cashflow saya?'],
@@ -89,10 +114,9 @@ class AiApiTest extends TestCase
     public function test_ai_chat_returns_unavailable_when_provider_is_not_configured(): void
     {
         Config::set('ai.api_key', null);
+        $this->fakeSupabaseUser();
 
-        $user = User::factory()->create();
-
-        $this->actingAs($user)
+        $this->withHeader('Authorization', 'Bearer valid-token')
             ->postJson('/api/v1/ai/chat', [
                 'messages' => [
                     ['role' => 'user', 'content' => 'Tolong analisis cashflow saya.'],
@@ -101,5 +125,16 @@ class AiApiTest extends TestCase
             ->assertStatus(503)
             ->assertJsonPath('success', false)
             ->assertJsonPath('error.code', 'AI_PROVIDER_UNAVAILABLE');
+    }
+
+    private function fakeSupabaseUser(): void
+    {
+        Http::fake([
+            'https://example.supabase.co/auth/v1/user' => Http::response([
+                'id' => '11111111-1111-1111-1111-111111111111',
+                'role' => 'authenticated',
+                'email' => 'fajar@example.com',
+            ]),
+        ]);
     }
 }
