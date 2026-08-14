@@ -34,12 +34,13 @@ class AiGatewayService
         try {
             $response = Http::acceptJson()
                 ->withToken($apiKey)
-                ->timeout((int) config('ai.timeout', 30))
+                ->connectTimeout(3)
+                ->timeout(max(5, min((int) config('ai.timeout', 30), 30)))
                 ->post(config('ai.base_url').'/chat/completions', [
                     'model' => config('ai.model'),
                     'messages' => array_merge([$system], $messages),
                     'temperature' => 0.2,
-                    'max_tokens' => (int) config('ai.max_tokens', 700),
+                    'max_tokens' => max(128, min((int) config('ai.max_tokens', 700), 1000)),
                 ]);
         } catch (\Throwable $e) {
             report($e);
