@@ -220,18 +220,23 @@ class SupabaseTransactionRepository implements TransactionRepository {
     final sameType = existing.type == requested.type;
     final sameCategory = existing.category == requested.category;
     final sameTitle = existing.title.trim() == requested.title.trim();
+    final sameNote = (existing.note ?? '').trim() == (requested.note ?? '').trim();
     final sameWallet = existing.walletId == requested.walletId;
     final sameSource = existing.sourceAccount == requested.sourceAccount;
     final sameDestination =
         existing.destinationAccount == requested.destinationAccount;
+    final sameDate = existing.date.toUtc().difference(requested.date.toUtc()).abs() <=
+        const Duration(seconds: 1);
 
     if (!sameAmount ||
         !sameType ||
         !sameCategory ||
         !sameTitle ||
+        !sameNote ||
         !sameWallet ||
         !sameSource ||
-        !sameDestination) {
+        !sameDestination ||
+        !sameDate) {
       throw StateError(
         'Idempotency key sudah digunakan untuk transaksi dengan payload berbeda.',
       );
