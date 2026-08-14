@@ -7,6 +7,7 @@ class BudgetItem {
     required this.spent,
     required this.limit,
     required this.color,
+    this.category = 'other',
   });
 
   final String id;
@@ -14,6 +15,12 @@ class BudgetItem {
   final double spent;
   final double limit;
   final Color color;
+
+  /// Stable transaction category used to calculate spending.
+  ///
+  /// This is intentionally separate from [id]. A budget id is an entity key;
+  /// it must not also be treated as a transaction category key.
+  final String category;
 
   double get remaining => limit - spent;
 
@@ -31,6 +38,7 @@ class BudgetItem {
       spent: (json['spent'] as num).toDouble(),
       limit: (json['limit'] as num).toDouble(),
       color: Color(json['color'] as int),
+      category: (json['category'] as String?) ?? 'other',
     );
   }
 
@@ -41,6 +49,7 @@ class BudgetItem {
       'spent': spent,
       'limit': limit,
       'color': color.toARGB32(),
+      'category': category,
     };
   }
 
@@ -50,6 +59,7 @@ class BudgetItem {
     double? spent,
     double? limit,
     Color? color,
+    String? category,
   }) {
     return BudgetItem(
       id: id ?? this.id,
@@ -57,6 +67,7 @@ class BudgetItem {
       spent: spent ?? this.spent,
       limit: limit ?? this.limit,
       color: color ?? this.color,
+      category: category ?? this.category,
     );
   }
 }
