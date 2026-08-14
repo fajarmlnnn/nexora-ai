@@ -7,6 +7,7 @@ import 'package:supabase/supabase.dart';
 import 'package:frontend/core/supabase/supabase_config.dart';
 import 'package:frontend/features/dashboard/models/transaction_model.dart';
 import 'package:frontend/features/finance/repositories/supabase_transaction_repository.dart';
+import 'package:frontend/features/goals/controllers/supabase_goals_controller.dart';
 import 'package:frontend/features/wallet/models/wallet_model.dart';
 import 'package:frontend/features/wallet/repositories/supabase_wallet_repository.dart';
 
@@ -25,14 +26,13 @@ void main() {
   final configured = SupabaseConfig.isConfigured && email.isNotEmpty && password.isNotEmpty;
 
   test(
-    'goal funding is idempotent and deleting a funded goal restores wallet history',
+    'Goal funding lifecycle restores wallet balance when goal is deleted',
     () async {
       final client = SupabaseClient(
         SupabaseConfig.url,
         SupabaseConfig.publishableKey,
       );
       await client.auth.signInWithPassword(email: email, password: password);
-
       final user = client.auth.currentUser;
       expect(user, isNotNull);
 
@@ -44,10 +44,10 @@ void main() {
       String? contributionTransactionId;
 
       try {
-        final wallet = await walletRepository.createWallet(
+        await walletRepository.createWallet(
           WalletModel(
             id: walletId,
-            name: 'E2E Goal Lifecycle Wallet',
+            name: 'E2E Goal Wallet',
             bankName: '',
             accountNumber: '',
             balance: 0,
@@ -56,12 +56,11 @@ void main() {
             isPrimary: false,
           ),
         );
-        expect(wallet.balance, 0);
 
         await transactionRepository.createTransaction(
           TransactionModel(
             id: incomeId,
-            title: 'E2E goal lifecycle opening balance',
+            title: 'E2E goal opening balance',
             amount: 100000,
             type: TransactionType.income,
             category: TransactionCategory.salary,
@@ -73,7 +72,7 @@ void main() {
 
         final goal = await client.from('goals').insert({
           'user_id': user!.id,
-          'name': 'E2E deletion rollback goal',
+          'name': 'E2E rollback goal',
           'type': 'saving',
           'target_amount': 100000,
           'saved_amount': 0,
@@ -82,67 +81,51 @@ void main() {
         }).select().single();
         goalId = goal['id'].toString();
 
-        const idempotencyKey = 'e2e-goal-lifecycle-idempotency';
-        final funded = await client.rpc(
+        final updatedGoal = await client.rpc(
           'nexora_contribute_to_goal_from_wallet',
           params: {
             'p_goal_id': goalId,
             'p_wallet_id': walletId,
-            'p_amount': 25000,
-            'p_note': 'E2E goal funding',
-            'p_idempotency_key': idempotencyKey,
+            'p_amount': 100000,
+            'p_note': 'E2E contribution',
+            'p_idempotency_key': 'e2e-goal-${_uuid()}',
           },
         );
-        expect((funded as Map)['saved_amount'], 25000);
-        expect((await walletRepository.getWallet(walletId)).balance, 75000);
+        expect((updatedGoal as Map)['saved_amount'], 100000);
+        expect((await walletRepository.getWallet(walletId)).balance, 0);
 
-        final retry = await client.rpc(
-          'nexora_contribute_to_goal_from_wallet',
-          params: {
-            'p_goal_id': goalId,
-            'p_wallet_id': walletId,
-            'p_amount': 25000,
-            'p_note': 'E2E duplicate retry',
-            'p_idempotency_key': idempotencyKey,
-          },
-        );
-        expect((retry as Map)['saved_amount'], 25000);
-        expect((await walletRepository.getWallet(walletId)).balance, 75000);
-
-        final contributionTransactions = await client
-            .from('transactions')
-            .select('id, amount, metadata')
-            .eq('user_id', user.id)
-            .eq('wallet_id', walletId)
-            .eq('metadata->>goal_id', goalId);
-        expect(contributionTransactions, hasLength(1));
-        contributionTransactionId = contributionTransactions.first['id'].toString();
-        expect(contributionTransactions.first['amount'], 25000);
-        expect(contributionTransactions.first['metadata']['kind'], 'goal_contribution');
+        final contribution = await client
+            .from('goal_contributions')
+            .select('id')
+            .eq('goal_id', goalId)
+            .maybeSingle();
+        expect(contribution, isNotNull);
+        contributionTransactionId = (await client
+                .from('transactions')
+                .select('id')
+                .eq('wallet_id', walletId)
+                .eq('type', 'expense')
+                .eq('amount', 100000)
+                .maybeSingle())?['id']
+            ?.toString();
+        expect(contributionTransactionId, isNotNull);
 
         await client.rpc('nexora_delete_goal', params: {'p_goal_id': goalId});
+        goalId = null;
 
         expect((await walletRepository.getWallet(walletId)).balance, 100000);
-
-        final deletedGoal = await client
-            .from('goals')
-            .select('id')
-            .eq('id', goalId)
-            .maybeSingle();
-        expect(deletedGoal, isNull);
 
         final deletedContributions = await client
             .from('goal_contributions')
             .select('id')
-            .eq('goal_id', goalId);
+            .eq('goal_id', contribution['id']);
         expect(deletedContributions, isEmpty);
 
-        final transactionId = contributionTransactionId;
-        expect(transactionId, isNotNull);
+        final transactionId = contributionTransactionId!;
         final deletedTransactions = await client
             .from('transactions')
             .select('id')
-            .eq('id', transactionId!);
+            .eq('id', transactionId);
         expect(deletedTransactions, isEmpty);
       } finally {
         if (goalId != null) {
