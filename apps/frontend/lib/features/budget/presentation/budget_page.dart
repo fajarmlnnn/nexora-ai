@@ -20,6 +20,8 @@ class BudgetPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final budgetsAsync = ref.watch(budgetItemsProvider);
     final insight = ref.watch(aiInsightProvider);
+    final now = DateTime.now();
+    final periodLabel = _formatBudgetPeriod(now);
 
     return PremiumScaffold(
       child: budgetsAsync.when(
@@ -63,7 +65,7 @@ class BudgetPage extends ConsumerWidget {
                     children: [
                       Text('Budget', style: AppTypography.heading1),
                       Text(
-                        'Ringkasan Budget Mei 2024',
+                        'Ringkasan Budget $periodLabel',
                         style: AppTypography.bodySmall,
                       ),
                     ],
@@ -82,6 +84,24 @@ class BudgetPage extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _formatBudgetPeriod(DateTime date) {
+  const months = <String>[
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+  ];
+  return '${months[date.month - 1]} ${date.year}';
 }
 
 class _BudgetOverview extends StatelessWidget {
