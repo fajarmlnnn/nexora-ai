@@ -31,7 +31,14 @@ Laravel Sanctum endpoints are legacy/foundation code and must not be treated as 
 3. Multi-row financial mutations use transactional PostgreSQL functions/RPCs where atomicity matters.
 4. Idempotency keys are used for retryable transaction mutations.
 5. Wallet deletion is blocked while financial history references the wallet.
-6. RLS remains enabled even when server-side functions are used.
+6. Goal contributions are read-only to the authenticated table API; contribution creation and removal must use atomic server-side RPCs so the goal and wallet ledger cannot diverge.
+7. RLS remains enabled even when server-side functions are used.
+
+## Security boundary
+
+`goal_contributions` is intentionally readable by the authenticated owner but does not grant client `INSERT`, `UPDATE`, or `DELETE`. This prevents a client from manufacturing an accounting record that is not paired with the corresponding wallet transaction.
+
+The goal contribution RPCs remain callable by authenticated users because they are the intended application mutation boundary. They validate `auth.uid()`, ownership, amount, wallet state, minimum balance, and idempotency before changing financial state.
 
 ## Migration rule
 
