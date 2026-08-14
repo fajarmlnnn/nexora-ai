@@ -45,15 +45,15 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
     state = result;
   }
 
-  Future<bool> addWallet(WalletModel wallet) async {
+  Future<WalletModel?> addWallet(WalletModel wallet) async {
     try {
-      await _repository.createWallet(wallet);
+      final created = await _repository.createWallet(wallet);
       await refreshWallets();
-      return true;
+      return created;
     } catch (error, stackTrace) {
       state = AsyncValue<List<WalletModel>>.error(error, stackTrace)
           .copyWithPrevious(state);
-      return false;
+      return null;
     }
   }
 
