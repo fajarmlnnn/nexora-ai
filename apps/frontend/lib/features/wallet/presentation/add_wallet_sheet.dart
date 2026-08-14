@@ -7,6 +7,8 @@ import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../dashboard/models/transaction_model.dart';
+import '../../finance/state/financial_transaction_store.dart';
 import '../controllers/wallet_controller.dart';
 import '../models/wallet_model.dart';
 
@@ -76,7 +78,9 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
   Future<void> _save() async {
     if (_saving || !_formKey.currentState!.validate()) return;
 
-    final balance = double.tryParse(_balanceController.text.replaceAll('.', '').replaceAll(',', ''));
+    final balance = double.tryParse(
+      _balanceController.text.replaceAll('.', '').replaceAll(',', ''),
+    );
     if (balance == null || balance < 0) {
       _showError('Saldo awal tidak valid.');
       return;
@@ -84,15 +88,18 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
 
     setState(() => _saving = true);
 
-    final id = 'wallet_${DateTime.now().microsecondsSinceEpoch}';
-    final provider = _providerController.text.trim();
-    final account = _accountController.text.trim();
     final wallet = WalletModel(
-      id: id,
+      // The Supabase repository replaces this local ID with a database UUID
+      // when it is not already a UUID. The returned WalletModel is canonical.
+      id: 'wallet_${DateTime.now().microsecondsSinceEpoch}',
       name: _nameController.text.trim(),
-      bankName: provider.isEmpty ? _defaultProvider(_type) : provider,
-      accountNumber: account.isEmpty ? _type.name.toUpperCase() : account,
-      balance: balance,
+      bankName: _providerController.text.trim().isEmpty
+          ? _defaultProvider(_type)
+          : _providerController.text.trim(),
+      accountNumber: _accountController.text.trim().isEmpty
+          ? _type.name.toUpperCase()
+          : _accountController.text.trim(),
+      balance: 0,
       type: _type,
       color: AppColors.primary,
       isPrimary: _isPrimary,
@@ -101,21 +108,49 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
     final created = await ref.read(walletProvider.notifier).addWallet(wallet);
     if (!mounted) return;
 
-    if (!created) {
+    if (created == null) {
       setState(() => _saving = false);
       _showError('Wallet gagal disimpan. Coba lagi.');
       return;
     }
 
-    if (_isPrimary) {
-      await ref.read(walletProvider.notifier).setPrimaryWallet(id);
+    try {
+      if (balance > 0) {
+        await ref.read(financialTransactionStoreProvider.notifier).add(
+          TransactionModel(
+            id: 'opening-${DateTime.now().microsecondsSinceEpoch}',
+            title: 'Saldo awal ${created.name}',
+            amount: balance,
+            type: TransactionType.income,
+            category: TransactionCategory.other,
+            date: DateTime.now(),
+            walletId: created.id,
+          ),
+        );
+      }
+
+      if (_isPrimary) {
+        final primarySet = await ref
+            .read(walletProvider.notifier)
+            .setPrimaryWallet(created.id);
+        if (!primarySet) {
+          throw StateError('Wallet berhasil dibuat, tetapi gagal dijadikan wallet utama.');
+        }
+      }
+    } catch (error) {
+      // Avoid leaving an orphan wallet when the opening transaction fails.
+      await ref.read(walletProvider.notifier).deleteWallet(created.id);
+      if (!mounted) return;
+      setState(() => _saving = false);
+      _showError('Gagal menyimpan saldo awal: $error');
+      return;
     }
 
     if (!mounted) return;
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${wallet.name} berhasil ditambahkan.'),
+        content: Text('${created.name} berhasil ditambahkan.'),
         behavior: SnackBarBehavior.floating,
       ),
     );
