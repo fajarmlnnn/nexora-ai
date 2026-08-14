@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_radius.dart';
@@ -9,6 +10,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../../finance/state/financial_analytics_provider.dart';
+import '../data/ai_api_service.dart';
 
 class AIPage extends ConsumerStatefulWidget {
   const AIPage({super.key});
@@ -20,12 +22,13 @@ class AIPage extends ConsumerStatefulWidget {
 class _AIPageState extends ConsumerState<AIPage> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
-  final List<_ChatMessage> _messages = [
-    const _ChatMessage(
+  final _ai = AiApiService();
+  final List<_ChatMessage> _messages = const [
+    _ChatMessage(
       text: 'Halo! Aku Nexora AI. Aku bisa membaca ringkasan keuanganmu dan membantu membuat keputusan yang lebih aman.',
       fromUser: false,
     ),
-  ];
+  ].toList();
 
   static const _prompts = [
     'Bagaimana kondisi cashflow saya?',
@@ -34,6 +37,9 @@ class _AIPageState extends ConsumerState<AIPage> {
     'Kasih saya prioritas keuangan bulan ini',
   ];
 
+  bool _isSending = false;
+  String? _error;
+
   @override
   void dispose() {
     _controller.dispose();
@@ -41,16 +47,55 @@ class _AIPageState extends ConsumerState<AIPage> {
     super.dispose();
   }
 
-  void _ask(String question) {
+  Future<void> _ask(String question) async {
     final text = question.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isSending) return;
+
     final analytics = ref.read(financialAnalyticsProvider);
+    final history = [
+      for (final message in _messages)
+        AiChatMessage(
+          role: message.fromUser ? 'user' : 'assistant',
+          content: message.text,
+        ),
+      AiChatMessage(role: 'user', content: text),
+    ];
 
     setState(() {
       _messages.add(_ChatMessage(text: text, fromUser: true));
-      _messages.add(_ChatMessage(text: _answer(text, analytics), fromUser: false));
+      _isSending = true;
+      _error = null;
     });
     _controller.clear();
+    _scrollToBottom();
+
+    try {
+      final answer = await _ai.chat(
+        messages: history.length > 20 ? history.sublist(history.length - 20) : history,
+        analytics: analytics,
+      );
+      if (!mounted) return;
+      setState(() {
+        _messages.add(_ChatMessage(text: answer, fromUser: false));
+        _isSending = false;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isSending = false;
+        _error = error.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isSending = false;
+        _error = 'Terjadi kesalahan saat menghubungi Nexora AI.';
+      });
+    }
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
       _scrollController.animateTo(
@@ -59,50 +104,6 @@ class _AIPageState extends ConsumerState<AIPage> {
         curve: Curves.easeOut,
       );
     });
-  }
-
-  String _answer(String question, FinancialAnalyticsSnapshot data) {
-    final q = question.toLowerCase();
-    final top = data.topExpenseCategory;
-    final topName = top == null ? null : _categoryName(top.key.name);
-    final topValue = top?.value ?? 0;
-
-    if (q.contains('cashflow') || q.contains('arus')) {
-      if (data.income <= 0 && data.expense <= 0) {
-        return 'Belum ada pemasukan atau pengeluaran yang tercatat untuk periode ini. Tambahkan transaksi dulu supaya analisis cashflow punya data yang cukup.';
-      }
-      final direction = data.netCashflow >= 0 ? 'positif' : 'negatif';
-      return 'Cashflow bulan ini $direction: pemasukan ${_rupiah(data.income)}, pengeluaran ${_rupiah(data.expense)}, sehingga net cashflow ${_signed(data.netCashflow)}. Saving rate sekitar ${(data.savingsRate * 100).clamp(0, 100).toStringAsFixed(0)}%.';
-    }
-
-    if (q.contains('boros') || q.contains('kategori') || q.contains('pengeluaran')) {
-      if (topName == null) return 'Belum ada pengeluaran yang tercatat bulan ini, jadi belum ada kategori yang bisa dibandingkan.';
-      return 'Kategori pengeluaran terbesar saat ini adalah $topName sebesar ${_rupiah(topValue)}. Mulai dari kategori ini kalau targetmu adalah memangkas pengeluaran tanpa mengganggu kebutuhan utama.';
-    }
-
-    if (q.contains('500') || q.contains('hemat') || q.contains('saving') || q.contains('tabung')) {
-      if (data.netCashflow <= 0) {
-        return 'Target hemat Rp 500.000 belum aman kalau cashflow masih negatif. Prioritas pertama: hentikan defisit, lalu tetapkan target tabungan dari surplus yang benar-benar tersisa.';
-      }
-      final target = 500000.0;
-      final gap = target - data.netCashflow;
-      if (gap <= 0) {
-        return 'Secara arus kas, surplus bulan ini sudah mencapai ${_rupiah(data.netCashflow)}, jadi target hemat Rp 500.000 secara matematis sudah terlampaui. Tetap sisakan buffer untuk kewajiban dan pengeluaran tak terduga.';
-      }
-      return 'Surplus saat ini ${_rupiah(data.netCashflow)}. Untuk mencapai Rp 500.000, kamu masih perlu memperbesar surplus sekitar ${_rupiah(gap)}. Fokus dulu pada ${topName ?? 'pengeluaran terbesar'} karena itu memberi ruang penghematan paling jelas.';
-    }
-
-    if (q.contains('prioritas') || q.contains('bulan ini') || q.contains('rekomendasi')) {
-      if (data.netCashflow < 0) {
-        return 'Prioritas 1: hentikan defisit. Prioritas 2: pangkas kategori pengeluaran terbesar. Prioritas 3: jangan menaikkan target tabungan sebelum cashflow kembali positif.';
-      }
-      if (data.savingsRate < 0.10) {
-        return 'Cashflow sudah positif, tetapi saving rate masih di bawah 10%. Prioritas bulan ini adalah membangun buffer dengan menyisihkan sebagian surplus sebelum uang habis untuk pengeluaran lain.';
-      }
-      return 'Kondisi bulan ini cukup sehat. Pertahankan cashflow positif, amankan dana untuk kebutuhan wajib, lalu arahkan sebagian surplus ke goal utama sebelum menambah pengeluaran baru.';
-    }
-
-    return 'Aku bisa bantu dari data finansial bulan ini. Coba tanyakan cashflow, kategori pengeluaran terbesar, target hemat Rp 500.000, atau prioritas keuangan bulan ini.';
   }
 
   @override
@@ -134,7 +135,7 @@ class _AIPageState extends ConsumerState<AIPage> {
                       AppSpacing.gapSM,
                       Text('Hai! 👋', style: AppTypography.heading2),
                       Text(
-                        'Aku Nexora AI. Tanya soal cashflow dan pola pengeluaranmu. Jawabanku memakai financial analytics yang sama dengan Reports.',
+                        'Aku Nexora AI. Jawabanku sekarang diproses oleh Gemini melalui server Laravel, dengan financial analytics yang sama seperti Reports.',
                         textAlign: TextAlign.center,
                         style: AppTypography.bodySmall.copyWith(color: Colors.white70),
                       ),
@@ -151,7 +152,7 @@ class _AIPageState extends ConsumerState<AIPage> {
                     for (final prompt in _prompts)
                       ActionChip(
                         label: Text(prompt),
-                        onPressed: () => _ask(prompt),
+                        onPressed: _isSending ? null : () => _ask(prompt),
                         backgroundColor: AppColors.card,
                         labelStyle: AppTypography.caption.copyWith(color: AppColors.textPrimary),
                         side: const BorderSide(color: AppColors.border),
@@ -163,6 +164,16 @@ class _AIPageState extends ConsumerState<AIPage> {
                 AppSpacing.gapMD,
                 for (final message in _messages)
                   _Bubble(text: message.text, fromUser: message.fromUser),
+                if (_isSending) const _TypingBubble(),
+                if (_error != null) ...[
+                  _ErrorBubble(message: _error!),
+                  AppSpacing.gapSM,
+                  TextButton.icon(
+                    onPressed: () => _ask(_messages.isNotEmpty && _messages.last.fromUser ? _messages.last.text : ''),
+                    icon: const Icon(LucideIcons.refreshCw, size: 16),
+                    label: const Text('Coba lagi'),
+                  ),
+                ],
               ],
             ),
           ),
@@ -178,6 +189,7 @@ class _AIPageState extends ConsumerState<AIPage> {
                     Expanded(
                       child: TextField(
                         controller: _controller,
+                        enabled: !_isSending,
                         textInputAction: TextInputAction.send,
                         onSubmitted: _ask,
                         decoration: const InputDecoration(
@@ -188,8 +200,10 @@ class _AIPageState extends ConsumerState<AIPage> {
                       ),
                     ),
                     IconButton(
-                      onPressed: () => _ask(_controller.text),
-                      icon: const Icon(LucideIcons.sendHorizontal, color: AppColors.primaryLight),
+                      onPressed: _isSending ? null : () => _ask(_controller.text),
+                      icon: _isSending
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(LucideIcons.sendHorizontal, color: AppColors.primaryLight),
                     ),
                   ],
                 ),
@@ -236,7 +250,12 @@ class _Bubble extends StatelessWidget {
                 const Icon(LucideIcons.bot, size: 18, color: AppColors.primaryLight),
                 AppSpacing.hGapSM,
               ],
-              Flexible(child: Text(text, style: AppTypography.bodySmall.copyWith(color: fromUser ? Colors.white : null))),
+              Flexible(
+                child: Text(
+                  text,
+                  style: AppTypography.bodySmall.copyWith(color: fromUser ? Colors.white : null),
+                ),
+              ),
             ],
           ),
         ),
@@ -245,11 +264,51 @@ class _Bubble extends StatelessWidget {
   }
 }
 
-String _rupiah(double value) => 'Rp ${value.round().toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
+class _TypingBubble extends StatelessWidget {
+  const _TypingBubble();
 
-String _signed(double value) => value >= 0 ? '+${_rupiah(value)}' : '-${_rupiah(value.abs())}';
+  @override
+  Widget build(BuildContext context) {
+    return const Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: 10),
+        child: PremiumCard(
+          borderRadius: AppRadius.radiusXL,
+          padding: EdgeInsets.all(14),
+          child: SizedBox(
+            height: 22,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(LucideIcons.bot, size: 18, color: AppColors.primaryLight),
+                SizedBox(width: 8),
+                SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
-String _categoryName(String value) {
-  final normalized = value.replaceAll('_', ' ');
-  return normalized.isEmpty ? 'lainnya' : '${normalized[0].toUpperCase()}${normalized.substring(1)}';
+class _ErrorBubble extends StatelessWidget {
+  const _ErrorBubble({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return PremiumCard(
+      borderRadius: AppRadius.radiusXL,
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          const Icon(LucideIcons.circleAlert, size: 20, color: AppColors.danger),
+          AppSpacing.hGapSM,
+          Expanded(child: Text(message, style: AppTypography.bodySmall)),
+        ],
+      ),
+    );
+  }
 }
