@@ -6,9 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../goals/controllers/supabase_goals_controller.dart' as goals;
 import '../../wallet/controllers/wallet_controller.dart';
 
-// Financial Overview and the Goals screen must read the same Supabase source.
-// These aliases preserve the existing overview API while removing the old
-// SharedPreferences-only goal database that caused Goal to display as Rp 0.
 final financialGoalsProvider = goals.financialGoalsProvider;
 final totalGoalSavedProvider = goals.totalGoalSavedProvider;
 final totalGoalTargetProvider = goals.totalGoalTargetProvider;
@@ -116,9 +113,7 @@ class InstallmentsController extends Notifier<List<InstallmentSnapshot>> {
     }
   }
 
-  Future<void> replaceInstallments(
-    List<InstallmentSnapshot> installments,
-  ) async {
+  Future<void> replaceInstallments(List<InstallmentSnapshot> installments) async {
     state = List.unmodifiable(installments);
     await _persist();
   }
@@ -193,6 +188,7 @@ class FinancialStateSnapshot {
   final double liabilities;
   final double dueThisPeriod;
 
+  double get walletAssets => (totalAssets - goalSaved).clamp(0.0, double.infinity);
   double get netWorth => totalAssets - liabilities;
   double get goalProgress =>
       goalTarget <= 0 ? 0 : (goalSaved / goalTarget).clamp(0.0, 1.0);
@@ -201,9 +197,15 @@ class FinancialStateSnapshot {
 }
 
 final financialStateSnapshotProvider = Provider<FinancialStateSnapshot>((ref) {
+  final walletAssets = ref.watch(totalWalletBalanceProvider);
+  final goalSaved = ref.watch(totalGoalSavedProvider);
+
   return FinancialStateSnapshot(
-    totalAssets: ref.watch(totalWalletBalanceProvider),
-    goalSaved: ref.watch(totalGoalSavedProvider),
+    // Goal savings are still owned assets; they are simply no longer liquid
+    // wallet balance. This avoids double-counting the same money as an expense
+    // while keeping Available equal to spendable wallet funds.
+    totalAssets: walletAssets + goalSaved,
+    goalSaved: goalSaved,
     goalTarget: ref.watch(totalGoalTargetProvider),
     completedGoals: ref.watch(completedGoalsProvider),
     liabilities: ref.watch(totalInstallmentRemainingProvider),
