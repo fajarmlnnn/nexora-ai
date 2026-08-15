@@ -23,22 +23,24 @@ class _AIPageState extends ConsumerState<AIPage> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final _ai = AiApiService();
-  final List<_ChatMessage> _messages = const [
-    _ChatMessage(
-      text: 'Halo! Aku Nexora AI. Aku bisa membaca ringkasan keuanganmu dan membantu membuat keputusan yang lebih aman.',
+  final List<_ChatMessage> _messages = [
+    const _ChatMessage(
+      text:
+          'Halo! Aku Nexora AI. Aku bisa membaca ringkasan keuanganmu dan membantu kamu mengambil keputusan yang lebih aman.',
       fromUser: false,
     ),
-  ].toList();
+  ];
 
   static const _prompts = [
-    'Bagaimana kondisi cashflow saya?',
-    'Di kategori mana saya paling boros?',
-    'Apakah saya bisa hemat Rp 500.000?',
-    'Kasih saya prioritas keuangan bulan ini',
+    _Prompt('Cashflow', 'Bagaimana kondisi cashflow saya?', LucideIcons.chartNoAxesCombined),
+    _Prompt('Pengeluaran', 'Di kategori mana saya paling boros?', LucideIcons.walletCards),
+    _Prompt('Hemat', 'Apakah saya bisa hemat Rp 500.000?', LucideIcons.target),
+    _Prompt('Prioritas', 'Kasih saya prioritas keuangan bulan ini', LucideIcons.listChecks),
   ];
 
   bool _isSending = false;
   String? _error;
+  String? _lastFailedQuestion;
 
   @override
   void dispose() {
@@ -65,6 +67,7 @@ class _AIPageState extends ConsumerState<AIPage> {
       _messages.add(_ChatMessage(text: text, fromUser: true));
       _isSending = true;
       _error = null;
+      _lastFailedQuestion = null;
     });
     _controller.clear();
     _scrollToBottom();
@@ -84,14 +87,34 @@ class _AIPageState extends ConsumerState<AIPage> {
       setState(() {
         _isSending = false;
         _error = error.message;
+        _lastFailedQuestion = text;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _isSending = false;
         _error = 'Terjadi kesalahan saat menghubungi Nexora AI.';
+        _lastFailedQuestion = text;
       });
     }
+    _scrollToBottom();
+  }
+
+  void _startNewChat() {
+    if (_isSending) return;
+    setState(() {
+      _messages
+        ..clear()
+        ..add(
+          const _ChatMessage(
+            text:
+                'Percakapan baru siap. Ceritakan kondisi keuangan yang ingin kamu pahami.',
+            fromUser: false,
+          ),
+        );
+      _error = null;
+      _lastFailedQuestion = null;
+    });
     _scrollToBottom();
   }
 
@@ -100,8 +123,8 @@ class _AIPageState extends ConsumerState<AIPage> {
       if (!_scrollController.hasClients) return;
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 240),
-        curve: Curves.easeOut,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
       );
     });
   }
@@ -113,104 +136,273 @@ class _AIPageState extends ConsumerState<AIPage> {
       child: Column(
         children: [
           Expanded(
-            child: ListView(
+            child: CustomScrollView(
               controller: _scrollController,
-              padding: AppSpacing.screen.copyWith(bottom: 16),
-              children: [
-                Row(
-                  children: [
-                    BackButton(color: AppColors.textPrimary, onPressed: () => Navigator.maybePop(context)),
-                    const Spacer(),
-                    Text('AI Assistant', style: AppTypography.heading2),
-                    const Spacer(),
-                    const SizedBox(width: 48),
-                  ],
-                ),
-                AppSpacing.gapLG,
-                PremiumCard(
-                  gradient: AppGradients.primary,
-                  child: Column(
-                    children: [
-                      const NexoraRobot(size: 142),
-                      AppSpacing.gapSM,
-                      Text('Hai! 👋', style: AppTypography.heading2),
-                      Text(
-                        'Aku Nexora AI. Jawabanku sekarang diproses oleh Gemini melalui server Laravel, dengan financial analytics yang sama seperti Reports.',
-                        textAlign: TextAlign.center,
-                        style: AppTypography.bodySmall.copyWith(color: Colors.white70),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              slivers: [
+                SliverToBoxAdapter(child: _buildHeader()),
+                SliverToBoxAdapter(child: _buildHero()),
+                SliverToBoxAdapter(child: _buildPromptSection()),
+                SliverToBoxAdapter(child: _buildConversationHeader()),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _Bubble(
+                        text: _messages[index].text,
+                        fromUser: _messages[index].fromUser,
                       ),
-                    ],
+                      childCount: _messages.length,
+                    ),
                   ),
                 ),
-                AppSpacing.gapLG,
-                const SectionHeader('Suggested prompts'),
-                AppSpacing.gapMD,
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    for (final prompt in _prompts)
-                      ActionChip(
-                        label: Text(prompt),
-                        onPressed: _isSending ? null : () => _ask(prompt),
-                        backgroundColor: AppColors.card,
-                        labelStyle: AppTypography.caption.copyWith(color: AppColors.textPrimary),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                  ],
-                ),
-                AppSpacing.gapLG,
-                const SectionHeader('Conversation'),
-                AppSpacing.gapMD,
-                for (final message in _messages)
-                  _Bubble(text: message.text, fromUser: message.fromUser),
-                if (_isSending) const _TypingBubble(),
-                if (_error != null) ...[
-                  _ErrorBubble(message: _error!),
-                  AppSpacing.gapSM,
-                  TextButton.icon(
-                    onPressed: () => _ask(_messages.isNotEmpty && _messages.last.fromUser ? _messages.last.text : ''),
-                    icon: const Icon(LucideIcons.refreshCw, size: 16),
-                    label: const Text('Coba lagi'),
+                if (_isSending)
+                  const SliverPadding(
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    sliver: SliverToBoxAdapter(child: _TypingBubble()),
                   ),
-                ],
+                if (_error != null)
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                    sliver: SliverToBoxAdapter(
+                      child: _ErrorBubble(
+                        message: _error!,
+                        onRetry: _lastFailedQuestion == null
+                            ? null
+                            : () => _ask(_lastFailedQuestion!),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: PremiumCard(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                borderRadius: AppRadius.radiusXL,
-                child: Row(
+          _buildComposer(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: 'Kembali',
+            onPressed: () => Navigator.maybePop(context),
+            icon: const Icon(LucideIcons.arrowLeft, size: 21),
+          ),
+          const SizedBox(width: 2),
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              gradient: AppGradients.primary,
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: const Icon(LucideIcons.sparkles, size: 19, color: Colors.white),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Nexora AI', style: AppTypography.title),
+                Row(
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _controller,
-                        enabled: !_isSending,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: _ask,
-                        decoration: const InputDecoration(
-                          hintText: 'Tanya soal keuanganmu...',
-                          border: InputBorder.none,
-                          isDense: true,
-                        ),
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: AppColors.success,
+                        shape: BoxShape.circle,
                       ),
                     ),
-                    IconButton(
-                      onPressed: _isSending ? null : () => _ask(_controller.text),
-                      icon: _isSending
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(LucideIcons.sendHorizontal, color: AppColors.primaryLight),
-                    ),
+                    const SizedBox(width: 6),
+                    Text('Assistant aktif', style: AppTypography.caption),
                   ],
                 ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Percakapan baru',
+            onPressed: _startNewChat,
+            icon: const Icon(LucideIcons.squarePen, size: 20),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHero() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: PremiumCard(
+        gradient: AppGradients.primary,
+        padding: const EdgeInsets.all(18),
+        borderRadius: AppRadius.radiusXL,
+        child: Row(
+          children: [
+            const NexoraRobot(size: 72),
+            AppSpacing.hGapMD,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Teman finansialmu',
+                    style: AppTypography.heading3.copyWith(color: Colors.white),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    'Tanya cashflow, pengeluaran, target, atau keputusan finansialmu.',
+                    style: AppTypography.bodySmall.copyWith(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      'Gemini • Secure gateway',
+                      style: AppTypography.caption.copyWith(color: Colors.white),
+                    ),
+                  ),
+                ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPromptSection() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 22, 0, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Row(
+              children: [
+                Text('Mulai dari sini', style: AppTypography.heading3),
+                const Spacer(),
+                Text('Geser →', style: AppTypography.caption),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 92,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(right: 16),
+              itemCount: _prompts.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                final prompt = _prompts[index];
+                return _PromptCard(
+                  prompt: prompt,
+                  enabled: !_isSending,
+                  onTap: () => _ask(prompt.question),
+                );
+              },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildConversationHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Row(
+        children: [
+          Text('Percakapan', style: AppTypography.heading3),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Text('${_messages.length}', style: AppTypography.caption),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComposer() {
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          border: Border(top: BorderSide(color: AppColors.border.withValues(alpha: 0.7))),
+        ),
+        child: PremiumCard(
+          padding: const EdgeInsets.fromLTRB(14, 8, 7, 8),
+          borderRadius: AppRadius.radiusXL,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  enabled: !_isSending,
+                  minLines: 1,
+                  maxLines: 4,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (value) {
+                    if (!value.contains('\n')) _ask(value);
+                  },
+                  decoration: InputDecoration(
+                    hintText: _isSending ? 'Nexora sedang berpikir...' : 'Tanya soal keuanganmu...',
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 7),
+                    hintStyle: AppTypography.bodySmall,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Material(
+                color: _isSending ? AppColors.cardMuted : AppColors.primary,
+                borderRadius: BorderRadius.circular(15),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(15),
+                  onTap: _isSending ? null : () => _ask(_controller.text),
+                  child: SizedBox(
+                    width: 42,
+                    height: 42,
+                    child: Center(
+                      child: _isSending
+                          ? const SizedBox(
+                              width: 17,
+                              height: 17,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(
+                              LucideIcons.arrowUp,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -218,12 +410,68 @@ class _AIPageState extends ConsumerState<AIPage> {
 
 class _ChatMessage {
   const _ChatMessage({required this.text, required this.fromUser});
+
   final String text;
   final bool fromUser;
 }
 
+class _Prompt {
+  const _Prompt(this.title, this.question, this.icon);
+
+  final String title;
+  final String question;
+  final IconData icon;
+}
+
+class _PromptCard extends StatelessWidget {
+  const _PromptCard({required this.prompt, required this.enabled, required this.onTap});
+
+  final _Prompt prompt;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 172,
+      child: Material(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(17),
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          borderRadius: BorderRadius.circular(17),
+          child: Container(
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(17),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(prompt.icon, size: 16, color: AppColors.primaryLight),
+                ),
+                const Spacer(),
+                Text(prompt.title, style: AppTypography.label),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Bubble extends StatelessWidget {
   const _Bubble({required this.text, required this.fromUser});
+
   final String text;
   final bool fromUser;
 
@@ -232,32 +480,48 @@ class _Bubble extends StatelessWidget {
     return Align(
       alignment: fromUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 330),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: fromUser ? AppGradients.button : null,
-            color: fromUser ? null : AppColors.card,
-            borderRadius: BorderRadius.circular(18),
-            border: fromUser ? null : Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!fromUser) ...[
-                const Icon(LucideIcons.bot, size: 18, color: AppColors.primaryLight),
-                AppSpacing.hGapSM,
-              ],
-              Flexible(
-                child: Text(
-                  text,
-                  style: AppTypography.bodySmall.copyWith(color: fromUser ? Colors.white : null),
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (!fromUser) ...[
+              Container(
+                width: 28,
+                height: 28,
+                margin: const EdgeInsets.only(right: 8, bottom: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
                 ),
+                child: const Icon(LucideIcons.sparkles, size: 14, color: AppColors.primaryLight),
               ),
             ],
-          ),
+            Flexible(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 330),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: fromUser ? AppGradients.button : null,
+                  color: fromUser ? null : AppColors.card,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(18),
+                    topRight: const Radius.circular(18),
+                    bottomLeft: Radius.circular(fromUser ? 18 : 5),
+                    bottomRight: Radius.circular(fromUser ? 5 : 18),
+                  ),
+                  border: fromUser ? null : Border.all(color: AppColors.border),
+                ),
+                child: Text(
+                  text,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: fromUser ? Colors.white : AppColors.textPrimary,
+                    height: 1.45,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -269,24 +533,27 @@ class _TypingBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Align(
+    return Align(
       alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: EdgeInsets.only(bottom: 10),
-        child: PremiumCard(
-          borderRadius: AppRadius.radiusXL,
-          padding: EdgeInsets.all(14),
-          child: SizedBox(
-            height: 22,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(LucideIcons.bot, size: 18, color: AppColors.primaryLight),
-                SizedBox(width: 8),
-                SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-              ],
-            ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(18),
+            topRight: Radius.circular(18),
+            bottomRight: Radius.circular(18),
+            bottomLeft: Radius.circular(5),
           ),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.sparkles, size: 15, color: AppColors.primaryLight),
+            SizedBox(width: 8),
+            SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)),
+          ],
         ),
       ),
     );
@@ -294,19 +561,48 @@ class _TypingBubble extends StatelessWidget {
 }
 
 class _ErrorBubble extends StatelessWidget {
-  const _ErrorBubble({required this.message});
+  const _ErrorBubble({required this.message, required this.onRetry});
+
   final String message;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
-    return PremiumCard(
-      borderRadius: AppRadius.radiusXL,
-      padding: const EdgeInsets.all(14),
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.2)),
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(LucideIcons.circleAlert, size: 20, color: AppColors.danger),
+          const Icon(LucideIcons.circleAlert, size: 19, color: AppColors.danger),
           AppSpacing.hGapSM,
-          Expanded(child: Text(message, style: AppTypography.bodySmall)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Nexora belum bisa menjawab', style: AppTypography.label),
+                const SizedBox(height: 3),
+                Text(message, style: AppTypography.caption),
+                if (onRetry != null) ...[
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: onRetry,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    icon: const Icon(LucideIcons.refreshCw, size: 15),
+                    label: const Text('Coba lagi'),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );
