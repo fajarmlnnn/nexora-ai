@@ -81,9 +81,12 @@ class AiApiTest extends TestCase
         Config::set('ai.base_url', 'https://api.openai.com/v1');
         Config::set('ai.model', 'test-model');
 
+        // Use a dedicated identity so earlier tests cannot consume this user's
+        // named rate-limit bucket. RefreshDatabase resets database state, but
+        // it does not reset the application's cache-backed rate limiter.
         Http::fake([
             'https://example.supabase.co/auth/v1/user' => Http::response([
-                'id' => '11111111-1111-1111-1111-111111111111',
+                'id' => '22222222-2222-2222-2222-222222222222',
                 'role' => 'authenticated',
             ]),
             'https://api.openai.com/v1/chat/completions' => Http::response([
