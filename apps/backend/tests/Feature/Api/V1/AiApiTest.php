@@ -57,6 +57,24 @@ class AiApiTest extends TestCase
             ->assertJsonValidationErrors(['messages.0.role']);
     }
 
+    public function test_ai_chat_rejects_an_aggregate_message_payload_above_budget(): void
+    {
+        $this->fakeSupabaseUser();
+
+        $messages = array_map(
+            static fn (int $index): array => [
+                'role' => $index === 0 ? 'user' : 'assistant',
+                'content' => str_repeat('x', 2500),
+            ],
+            range(0, 4),
+        );
+
+        $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/v1/ai/chat', ['messages' => $messages])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['messages']);
+    }
+
     public function test_ai_chat_returns_provider_response_for_a_supabase_user(): void
     {
         Config::set('ai.api_key', 'test-key');
