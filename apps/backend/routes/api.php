@@ -35,5 +35,5 @@ Route::prefix('v1')->group(function (): void {
     // mint or require a second Laravel identity; it verifies the Supabase user
     // access token before entering the server-side AI gateway.
     Route::post('/ai/chat', [AiController::class, 'chat'])
-        ->middleware([AuthenticateSupabaseUser::class, 'throttle:20,1']);
+        ->middleware([AuthenticateSupabaseUser::class, 'throttle:ai']);
 });
