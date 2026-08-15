@@ -303,7 +303,7 @@ class _AIPageState extends ConsumerState<AIPage> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.only(right: 16),
               itemCount: _prompts.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
               itemBuilder: (context, index) {
                 final prompt = _prompts[index];
                 return _PromptCard(
