@@ -31,6 +31,9 @@ abstract final class AppColors {
 
   static const cardSecondary = Color(0xFF171525);
 
+  // Alias for feature surfaces that need a visibly muted card state.
+  static const cardMuted = cardSecondary;
+
   // ==================================================
   // Text
   // ==================================================

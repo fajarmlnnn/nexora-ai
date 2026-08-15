@@ -135,4 +135,8 @@ abstract final class AppTypography {
     letterSpacing: .3,
     color: AppColors.textMuted,
   );
+
+  // Compact UI aliases used by feature-specific surfaces.
+  static const TextStyle title = labelLarge;
+  static const TextStyle label = labelLarge;
 }
