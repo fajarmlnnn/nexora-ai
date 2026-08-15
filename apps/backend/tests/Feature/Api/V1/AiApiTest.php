@@ -75,6 +75,46 @@ class AiApiTest extends TestCase
             ->assertJsonValidationErrors(['messages']);
     }
 
+    public function test_ai_chat_is_rate_limited_per_authenticated_supabase_user(): void
+    {
+        Config::set('ai.api_key', 'test-key');
+        Config::set('ai.base_url', 'https://api.openai.com/v1');
+        Config::set('ai.model', 'test-model');
+
+        Http::fake([
+            'https://example.supabase.co/auth/v1/user' => Http::response([
+                'id' => '11111111-1111-1111-1111-111111111111',
+                'role' => 'authenticated',
+            ]),
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [
+                    [
+                        'message' => [
+                            'role' => 'assistant',
+                            'content' => 'OK',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $payload = [
+            'messages' => [
+                ['role' => 'user', 'content' => 'Test'],
+            ],
+        ];
+
+        for ($attempt = 1; $attempt <= 20; $attempt++) {
+            $this->withHeader('Authorization', 'Bearer valid-token')
+                ->postJson('/api/v1/ai/chat', $payload)
+                ->assertOk();
+        }
+
+        $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/v1/ai/chat', $payload)
+            ->assertTooManyRequests();
+    }
+
     public function test_ai_chat_returns_provider_response_for_a_supabase_user(): void
     {
         Config::set('ai.api_key', 'test-key');
