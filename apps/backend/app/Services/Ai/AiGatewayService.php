@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Log;
 
 class AiGatewayService
 {
+    private const MAX_RESPONSE_CHARS = 8000;
+
     /**
      * @param array<int, array{role:string,content:string}> $messages
      * @param array<string, mixed> $financialContext
@@ -71,7 +73,19 @@ class AiGatewayService
             throw new AiProviderException('AI provider returned an empty response.');
         }
 
-        return trim($content);
+        $content = trim($content);
+
+        if (mb_strlen($content) > self::MAX_RESPONSE_CHARS) {
+            // A provider can ignore or exceed the requested token budget. Never
+            // pass an unexpectedly large response through to the client.
+            Log::warning('AI provider response exceeded gateway limit.', [
+                'response_chars' => mb_strlen($content),
+            ]);
+
+            throw new AiProviderException('AI provider returned an oversized response.');
+        }
+
+        return $content;
     }
 
     /**
