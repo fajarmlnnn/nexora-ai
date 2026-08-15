@@ -4,6 +4,7 @@ namespace App\Services\Ai;
 
 use App\Exceptions\AiProviderException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class AiGatewayService
 {
@@ -43,12 +44,24 @@ class AiGatewayService
                     'max_tokens' => max(128, min((int) config('ai.max_tokens', 700), 1000)),
                 ]);
         } catch (\Throwable $e) {
-            report($e);
+            // Never report the raw exception: transport exceptions may contain
+            // request URLs, headers, or provider-specific details. Keep logs
+            // intentionally metadata-only so prompts, financial context, and
+            // credentials cannot leak through observability.
+            Log::warning('AI provider request failed.', [
+                'exception' => $e::class,
+            ]);
+
             throw new AiProviderException('AI provider request failed.', 0, $e);
         }
 
         if ($response->failed()) {
-            report(new \RuntimeException('AI provider returned HTTP '.$response->status()));
+            // Do not log the provider response body: it may contain sensitive
+            // request-correlated data or provider internals.
+            Log::warning('AI provider rejected request.', [
+                'status' => $response->status(),
+            ]);
+
             throw new AiProviderException('AI provider rejected the request.');
         }
 

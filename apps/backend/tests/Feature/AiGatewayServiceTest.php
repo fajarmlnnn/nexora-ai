@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Exceptions\AiProviderException;
 use App\Services\Ai\AiGatewayService;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class AiGatewayServiceTest extends TestCase
@@ -62,6 +63,38 @@ class AiGatewayServiceTest extends TestCase
         app(AiGatewayService::class)->chat([
             ['role' => 'user', 'content' => 'test'],
         ]);
+    }
+
+    public function test_provider_failure_logging_contains_only_safe_metadata(): void
+    {
+        config()->set('ai.api_key', 'super-secret-api-key');
+        config()->set('ai.base_url', 'https://ai.test/v1');
+
+        Http::fake([
+            'https://ai.test/v1/chat/completions' => Http::response([
+                'error' => [
+                    'message' => 'provider internal detail',
+                    'secret' => 'response-secret',
+                    'prompt' => 'private financial prompt',
+                ],
+            ], 429),
+        ]);
+
+        Log::shouldReceive('warning')
+            ->once()
+            ->with('AI provider rejected request.', ['status' => 429]);
+
+        try {
+            app(AiGatewayService::class)->chat([
+                ['role' => 'user', 'content' => 'private user message'],
+            ], [
+                'income' => 5000000,
+                'expense' => 4000000,
+            ]);
+            $this->fail('Expected AiProviderException was not thrown.');
+        } catch (AiProviderException $e) {
+            $this->assertSame('AI provider rejected the request.', $e->getMessage());
+        }
     }
 
     public function test_empty_provider_response_is_rejected(): void
