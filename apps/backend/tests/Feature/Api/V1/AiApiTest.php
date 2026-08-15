@@ -188,6 +188,43 @@ class AiApiTest extends TestCase
             ->assertJsonPath('error.code', 'AI_PROVIDER_UNAVAILABLE');
     }
 
+    public function test_ai_chat_rejects_an_oversized_provider_response(): void
+    {
+        Config::set('ai.api_key', 'test-key');
+        Config::set('ai.base_url', 'https://api.openai.com/v1');
+        Config::set('ai.model', 'test-model');
+
+        $oversizedContent = str_repeat('A', 8001);
+
+        Http::fake([
+            'https://example.supabase.co/auth/v1/user' => Http::response([
+                'id' => '33333333-3333-3333-3333-333333333333',
+                'role' => 'authenticated',
+            ]),
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [
+                    [
+                        'message' => [
+                            'role' => 'assistant',
+                            'content' => $oversizedContent,
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/v1/ai/chat', [
+                'messages' => [
+                    ['role' => 'user', 'content' => 'Berikan analisis.'],
+                ],
+            ])
+            ->assertStatus(503)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'AI_PROVIDER_UNAVAILABLE')
+            ->assertJsonMissing(['content' => $oversizedContent]);
+    }
+
     private function fakeSupabaseUser(): void
     {
         Http::fake([
