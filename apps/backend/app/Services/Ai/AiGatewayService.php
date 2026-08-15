@@ -59,9 +59,20 @@ class AiGatewayService
 
         if ($response->failed()) {
             // Do not log the provider response body: it may contain sensitive
-            // request-correlated data or provider internals.
+            // request-correlated data or provider internals. Classification is
+            // intentionally coarse so operators can distinguish throttling,
+            // upstream outages, and other provider rejections without payloads.
+            $status = $response->status();
+            $failureClass = match (true) {
+                $status === 429 => 'rate_limited',
+                $status >= 500 => 'upstream_server_error',
+                $status >= 400 => 'provider_client_error',
+                default => 'provider_error',
+            };
+
             Log::warning('AI provider rejected request.', [
-                'status' => $response->status(),
+                'status' => $status,
+                'failure_class' => $failureClass,
             ]);
 
             throw new AiProviderException('AI provider rejected the request.');

@@ -81,9 +81,6 @@ class AiApiTest extends TestCase
         Config::set('ai.base_url', 'https://api.openai.com/v1');
         Config::set('ai.model', 'test-model');
 
-        // Use a dedicated identity so earlier tests cannot consume this user's
-        // named rate-limit bucket. RefreshDatabase resets database state, but
-        // it does not reset the application's cache-backed rate limiter.
         Http::fake([
             'https://example.supabase.co/auth/v1/user' => Http::response([
                 'id' => '22222222-2222-2222-2222-222222222222',
@@ -223,6 +220,66 @@ class AiApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('error.code', 'AI_PROVIDER_UNAVAILABLE')
             ->assertJsonMissing(['content' => $oversizedContent]);
+    }
+
+    public function test_ai_chat_hides_provider_rate_limit_details(): void
+    {
+        Config::set('ai.api_key', 'test-key');
+        Config::set('ai.base_url', 'https://api.openai.com/v1');
+        Config::set('ai.model', 'test-model');
+
+        Http::fake([
+            'https://example.supabase.co/auth/v1/user' => Http::response([
+                'id' => '44444444-4444-4444-4444-444444444444',
+                'role' => 'authenticated',
+            ]),
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'error' => [
+                    'message' => 'provider-secret-rate-limit-detail',
+                ],
+            ], 429),
+        ]);
+
+        $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/v1/ai/chat', [
+                'messages' => [
+                    ['role' => 'user', 'content' => 'Cek cashflow.'],
+                ],
+            ])
+            ->assertStatus(503)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'AI_PROVIDER_UNAVAILABLE')
+            ->assertJsonMissing(['message' => 'provider-secret-rate-limit-detail']);
+    }
+
+    public function test_ai_chat_hides_upstream_server_error_details(): void
+    {
+        Config::set('ai.api_key', 'test-key');
+        Config::set('ai.base_url', 'https://api.openai.com/v1');
+        Config::set('ai.model', 'test-model');
+
+        Http::fake([
+            'https://example.supabase.co/auth/v1/user' => Http::response([
+                'id' => '55555555-5555-5555-5555-555555555555',
+                'role' => 'authenticated',
+            ]),
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'error' => [
+                    'message' => 'provider-internal-server-detail',
+                ],
+            ], 503),
+        ]);
+
+        $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/v1/ai/chat', [
+                'messages' => [
+                    ['role' => 'user', 'content' => 'Cek cashflow.'],
+                ],
+            ])
+            ->assertStatus(503)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'AI_PROVIDER_UNAVAILABLE')
+            ->assertJsonMissing(['message' => 'provider-internal-server-detail']);
     }
 
     private function fakeSupabaseUser(): void

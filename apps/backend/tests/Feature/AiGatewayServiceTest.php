@@ -82,7 +82,10 @@ class AiGatewayServiceTest extends TestCase
 
         Log::shouldReceive('warning')
             ->once()
-            ->with('AI provider rejected request.', ['status' => 429]);
+            ->with('AI provider rejected request.', [
+                'status' => 429,
+                'failure_class' => 'rate_limited',
+            ]);
 
         try {
             app(AiGatewayService::class)->chat([
