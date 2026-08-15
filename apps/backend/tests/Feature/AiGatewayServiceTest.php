@@ -80,7 +80,9 @@ class AiGatewayServiceTest extends TestCase
             ], 429),
         ]);
 
-        Log::fake();
+        Log::shouldReceive('warning')
+            ->once()
+            ->with('AI provider rejected request.', ['status' => 429]);
 
         try {
             app(AiGatewayService::class)->chat([
@@ -93,15 +95,6 @@ class AiGatewayServiceTest extends TestCase
         } catch (AiProviderException $e) {
             $this->assertSame('AI provider rejected the request.', $e->getMessage());
         }
-
-        Log::assertLogged('warning', function (string $message, array $context): bool {
-            return $message === 'AI provider rejected request.'
-                && $context === ['status' => 429]
-                && ! str_contains(serialize($context), 'super-secret-api-key')
-                && ! str_contains(serialize($context), 'response-secret')
-                && ! str_contains(serialize($context), 'private financial prompt')
-                && ! str_contains(serialize($context), 'private user message');
-        });
     }
 
     public function test_empty_provider_response_is_rejected(): void
