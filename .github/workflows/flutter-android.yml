@@ -30,6 +30,7 @@ jobs:
     env:
       NEXORA_SUPABASE_URL: ${{ secrets.NEXORA_SUPABASE_URL }}
       NEXORA_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXORA_SUPABASE_PUBLISHABLE_KEY }}
+      NEXORA_API_BASE_URL: ${{ secrets.NEXORA_API_BASE_URL }}
 
     steps:
       - name: Checkout repository
@@ -48,7 +49,7 @@ jobs:
           flutter-version: "3.44.8"
           cache: true
 
-      - name: Validate production Supabase configuration
+      - name: Validate production configuration
         run: |
           set -euo pipefail
           if [ -z "$NEXORA_SUPABASE_URL" ]; then
@@ -59,10 +60,28 @@ jobs:
             echo "::error::Missing GitHub Actions secret NEXORA_SUPABASE_PUBLISHABLE_KEY"
             exit 1
           fi
+          if [ -z "$NEXORA_API_BASE_URL" ]; then
+            echo "::error::Missing GitHub Actions secret NEXORA_API_BASE_URL"
+            exit 1
+          fi
           case "$NEXORA_SUPABASE_URL" in
             https://*.supabase.co) ;;
             *)
               echo "::error::NEXORA_SUPABASE_URL must be an https://*.supabase.co URL"
+              exit 1
+              ;;
+          esac
+          case "$NEXORA_API_BASE_URL" in
+            https://*) ;;
+            *)
+              echo "::error::NEXORA_API_BASE_URL must use HTTPS for production builds"
+              exit 1
+              ;;
+          esac
+          case "$NEXORA_API_BASE_URL" in
+            */api/v1) ;;
+            *)
+              echo "::error::NEXORA_API_BASE_URL must end with /api/v1"
               exit 1
               ;;
           esac
@@ -127,7 +146,8 @@ jobs:
         run: |
           flutter build apk --release \
             --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
-            --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY"
+            --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define=NEXORA_API_BASE_URL="$NEXORA_API_BASE_URL"
 
       - name: Verify APK output
         run: |
