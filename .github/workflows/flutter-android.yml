@@ -79,6 +79,25 @@ jobs:
               ;;
           esac
 
+      - name: Smoke test production API health
+        run: |
+          set -euo pipefail
+          base="${NEXORA_API_BASE_URL%/}"
+          case "$base" in
+            */api/v1) api_root="$base" ;;
+            */api) api_root="$base/v1" ;;
+            *) api_root="$base/api/v1" ;;
+          esac
+          health_url="$api_root/health"
+          echo "Checking production Nexora API health endpoint"
+          curl --fail --silent --show-error \
+            --retry 4 \
+            --retry-delay 2 \
+            --connect-timeout 10 \
+            --max-time 20 \
+            "$health_url"
+          echo
+
       - name: Install dependencies
         run: flutter pub get
 
