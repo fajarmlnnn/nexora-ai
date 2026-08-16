@@ -11,16 +11,56 @@ class AiGatewayService
     private const MAX_RESPONSE_CHARS = 8000;
 
     /**
+     * Verify that the configured AI provider can answer a minimal request.
+     * No prompt or provider response is returned to the caller.
+     */
+    public function healthCheck(): void
+    {
+        $this->validateConfiguration();
+
+        try {
+            $response = Http::acceptJson()
+                ->withToken((string) config('ai.api_key'))
+                ->connectTimeout(3)
+                ->timeout(10)
+                ->retry(2, 250, throw: false)
+                ->post($this->chatCompletionsUrl(), [
+                    'model' => config('ai.model'),
+                    'messages' => [
+                        ['role' => 'user', 'content' => 'Reply with OK only.'],
+                    ],
+                    'temperature' => 0,
+                    'max_tokens' => 8,
+                ]);
+        } catch (\Throwable $e) {
+            Log::warning('AI provider health check failed.', [
+                'exception' => $e::class,
+            ]);
+            throw new AiProviderException('AI provider health check failed.', 0, $e);
+        }
+
+        if ($response->failed()) {
+            Log::warning('AI provider health check rejected.', [
+                'status' => $response->status(),
+                'failure_class' => $this->failureClass($response->status()),
+            ]);
+            throw new AiProviderException('AI provider health check rejected.');
+        }
+
+        $content = $response->json('choices.0.message.content');
+        if (! is_string($content) || trim($content) === '') {
+            Log::warning('AI provider health check returned an empty response.');
+            throw new AiProviderException('AI provider health check returned an empty response.');
+        }
+    }
+
+    /**
      * @param array<int, array{role:string,content:string}> $messages
      * @param array<string, mixed> $financialContext
      */
     public function chat(array $messages, array $financialContext = []): string
     {
-        $apiKey = config('ai.api_key');
-
-        if (! is_string($apiKey) || trim($apiKey) === '') {
-            throw new AiProviderException('AI provider is not configured.');
-        }
+        $this->validateConfiguration();
 
         $system = [
             'role' => 'system',
@@ -36,67 +76,78 @@ class AiGatewayService
 
         try {
             $response = Http::acceptJson()
-                ->withToken($apiKey)
+                ->withToken((string) config('ai.api_key'))
                 ->connectTimeout(3)
                 ->timeout(max(5, min((int) config('ai.timeout', 30), 30)))
-                ->post(config('ai.base_url').'/chat/completions', [
+                ->retry(2, 250, throw: false)
+                ->post($this->chatCompletionsUrl(), [
                     'model' => config('ai.model'),
                     'messages' => array_merge([$system], $messages),
                     'temperature' => 0.2,
                     'max_tokens' => max(128, min((int) config('ai.max_tokens', 700), 1000)),
                 ]);
         } catch (\Throwable $e) {
-            // Never report the raw exception: transport exceptions may contain
-            // request URLs, headers, or provider-specific details. Keep logs
-            // intentionally metadata-only so prompts, financial context, and
-            // credentials cannot leak through observability.
             Log::warning('AI provider request failed.', [
                 'exception' => $e::class,
             ]);
-
             throw new AiProviderException('AI provider request failed.', 0, $e);
         }
 
         if ($response->failed()) {
-            // Do not log the provider response body: it may contain sensitive
-            // request-correlated data or provider internals. Classification is
-            // intentionally coarse so operators can distinguish throttling,
-            // upstream outages, and other provider rejections without payloads.
             $status = $response->status();
-            $failureClass = match (true) {
-                $status === 429 => 'rate_limited',
-                $status >= 500 => 'upstream_server_error',
-                $status >= 400 => 'provider_client_error',
-                default => 'provider_error',
-            };
-
             Log::warning('AI provider rejected request.', [
                 'status' => $status,
-                'failure_class' => $failureClass,
+                'failure_class' => $this->failureClass($status),
             ]);
-
             throw new AiProviderException('AI provider rejected the request.');
         }
 
         $content = $response->json('choices.0.message.content');
-
         if (! is_string($content) || trim($content) === '') {
             throw new AiProviderException('AI provider returned an empty response.');
         }
 
         $content = trim($content);
-
         if (mb_strlen($content) > self::MAX_RESPONSE_CHARS) {
-            // A provider can ignore or exceed the requested token budget. Never
-            // pass an unexpectedly large response through to the client.
             Log::warning('AI provider response exceeded gateway limit.', [
                 'response_chars' => mb_strlen($content),
             ]);
-
             throw new AiProviderException('AI provider returned an oversized response.');
         }
 
         return $content;
+    }
+
+    private function validateConfiguration(): void
+    {
+        $apiKey = config('ai.api_key');
+        $baseUrl = config('ai.base_url');
+        $model = config('ai.model');
+
+        if (! is_string($apiKey) || trim($apiKey) === '' ||
+            ! is_string($baseUrl) || trim($baseUrl) === '' ||
+            ! is_string($model) || trim($model) === '') {
+            throw new AiProviderException('AI provider is not configured.');
+        }
+
+        if (! filter_var($baseUrl, FILTER_VALIDATE_URL) || ! str_starts_with($baseUrl, 'https://')) {
+            throw new AiProviderException('AI provider URL is invalid.');
+        }
+    }
+
+    private function chatCompletionsUrl(): string
+    {
+        return rtrim((string) config('ai.base_url'), '/').'/chat/completions';
+    }
+
+    private function failureClass(int $status): string
+    {
+        return match (true) {
+            $status === 429 => 'rate_limited',
+            $status >= 500 => 'upstream_server_error',
+            $status >= 400 => 'provider_client_error',
+            default => 'provider_error',
+        };
     }
 
     /**
