@@ -11,11 +11,26 @@ class AiApiService {
     String? baseUrl,
   })  : _supabase = supabase ?? Supabase.instance.client,
         _dio = dio ?? Dio(),
-        _baseUrl = (baseUrl ?? const String.fromEnvironment('NEXORA_API_BASE_URL')).replaceAll(RegExp(r'/$'), '');
+        _baseUrl = _normalizeBaseUrl(
+          baseUrl ?? const String.fromEnvironment('NEXORA_API_BASE_URL'),
+        );
 
   final SupabaseClient _supabase;
   final Dio _dio;
   final String _baseUrl;
+
+  /// Accept either the complete API root (`.../api/v1`) or the backend host.
+  ///
+  /// This prevents a production build from silently calling `/ai/chat` when
+  /// the configured value only contains the backend host. The Laravel route
+  /// is registered under `/api/v1/ai/chat`.
+  static String _normalizeBaseUrl(String raw) {
+    final value = raw.trim().replaceFirst(RegExp(r'/+$'), '');
+    if (value.isEmpty) return '';
+    if (value.endsWith('/api/v1')) return value;
+    if (value.endsWith('/api')) return '$value/v1';
+    return '$value/api/v1';
+  }
 
   Future<String> chat({
     required List<AiChatMessage> messages,
@@ -108,6 +123,27 @@ class AiApiService {
           message: 'Sesi login perlu diperbarui.',
         );
       }
+      if (status == 403) {
+        throw const ApiException(
+          statusCode: 403,
+          code: 'FORBIDDEN',
+          message: 'Akses ke server Nexora ditolak.',
+        );
+      }
+      if (status == 404) {
+        throw const ApiException(
+          statusCode: 404,
+          code: 'API_ENDPOINT_NOT_FOUND',
+          message: 'Endpoint server Nexora tidak ditemukan. Periksa konfigurasi API.',
+        );
+      }
+      if (status == 422) {
+        throw const ApiException(
+          statusCode: 422,
+          code: 'INVALID_REQUEST',
+          message: 'Data permintaan AI tidak valid.',
+        );
+      }
       if (status == 429) {
         throw const ApiException(
           statusCode: 429,
@@ -120,6 +156,13 @@ class AiApiService {
           statusCode: 503,
           code: 'AI_UNAVAILABLE',
           message: 'Nexora AI sedang tidak tersedia. Coba lagi sebentar.',
+        );
+      }
+      if (status != null && status >= 500) {
+        throw const ApiException(
+          statusCode: 502,
+          code: 'SERVER_ERROR',
+          message: 'Server Nexora mengalami masalah. Coba lagi sebentar.',
         );
       }
       if (error.type == DioExceptionType.connectionTimeout ||
