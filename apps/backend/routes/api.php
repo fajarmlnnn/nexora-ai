@@ -31,9 +31,12 @@ Route::prefix('v1')->group(function (): void {
         Route::apiResource('transactions', TransactionController::class);
     });
 
-    // Supabase Auth remains the Flutter identity provider. This route does not
-    // mint or require a second Laravel identity; it verifies the Supabase user
-    // access token before entering the server-side AI gateway.
-    Route::post('/ai/chat', [AiController::class, 'chat'])
-        ->middleware([AuthenticateSupabaseUser::class, 'throttle:ai']);
+    // Supabase Auth remains the Flutter identity provider. These routes verify
+    // the Supabase access token before entering the server-side AI gateway.
+    Route::middleware(AuthenticateSupabaseUser::class)->group(function (): void {
+        Route::get('/ai/health', [AiController::class, 'health'])
+            ->middleware('throttle:ai');
+        Route::post('/ai/chat', [AiController::class, 'chat'])
+            ->middleware('throttle:ai');
+    });
 });
