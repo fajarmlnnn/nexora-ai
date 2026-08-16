@@ -98,6 +98,50 @@ jobs:
             "$health_url"
           echo
 
+      - name: Smoke test authenticated AI provider when E2E credentials are available
+        env:
+          NEXORA_E2E_EMAIL: ${{ secrets.NEXORA_E2E_EMAIL }}
+          NEXORA_E2E_PASSWORD: ${{ secrets.NEXORA_E2E_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$NEXORA_E2E_EMAIL" ] || [ -z "$NEXORA_E2E_PASSWORD" ]; then
+            echo "::warning::Authenticated AI smoke test skipped because NEXORA_E2E_EMAIL/NEXORA_E2E_PASSWORD are not configured."
+            exit 0
+          fi
+
+          base="${NEXORA_API_BASE_URL%/}"
+          case "$base" in
+            */api/v1) api_root="$base" ;;
+            */api) api_root="$base/v1" ;;
+            *) api_root="$base/api/v1" ;;
+          esac
+
+          auth_url="${NEXORA_SUPABASE_URL%/}/auth/v1/token?grant_type=password"
+          echo "Signing in the dedicated E2E user to test the production AI provider path"
+          token_response="$(curl --fail --silent --show-error \
+            --connect-timeout 10 \
+            --max-time 20 \
+            -X POST "$auth_url" \
+            -H "apikey: $NEXORA_SUPABASE_PUBLISHABLE_KEY" \
+            -H "Content-Type: application/json" \
+            --data "$(jq -nc --arg email "$NEXORA_E2E_EMAIL" --arg password "$NEXORA_E2E_PASSWORD" '{email:$email,password:$password}')")"
+
+          access_token="$(printf '%s' "$token_response" | jq -er '.access_token // empty')"
+          if [ -z "$access_token" ]; then
+            echo "::error::Supabase E2E login did not return an access token"
+            exit 1
+          fi
+
+          ai_health_url="$api_root/ai/health"
+          echo "Checking authenticated production AI provider health"
+          curl --fail --silent --show-error \
+            --connect-timeout 10 \
+            --max-time 25 \
+            "$ai_health_url" \
+            -H "Authorization: Bearer $access_token" \
+            -H "Accept: application/json"
+          echo
+
       - name: Install dependencies
         run: flutter pub get
 
