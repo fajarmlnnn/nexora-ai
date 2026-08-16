@@ -1,17 +1,22 @@
 # Nexora API — Laravel production container
-FROM php:8.3-cli-alpine
+FROM php:8.4-cli-alpine
 
 WORKDIR /var/www/html
 
-# System dependencies + PHP extensions required by Laravel/Supabase Postgres.
+# Runtime libraries + build dependencies for Laravel/Supabase Postgres.
 RUN apk add --no-cache \
         bash \
         curl \
+        icu-libs \
+        libzip \
+        oniguruma \
+        libpq \
+        unzip \
+    && apk add --no-cache --virtual .build-deps \
         icu-dev \
         libzip-dev \
         oniguruma-dev \
         postgresql-dev \
-        unzip \
     && docker-php-ext-install -j$(nproc) \
         bcmath \
         intl \
@@ -19,7 +24,7 @@ RUN apk add --no-cache \
         pcntl \
         pdo_pgsql \
         zip \
-    && apk del --no-network icu-dev libzip-dev oniguruma-dev postgresql-dev
+    && apk del --no-network .build-deps
 
 # Install Composer from the official Composer image.
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -49,5 +54,5 @@ RUN mkdir -p storage/framework/cache \
 
 EXPOSE 10000
 
-# Render supplies $PORT. The shell form intentionally expands it at runtime.
+# DockHosting supplies $PORT. The shell form intentionally expands it at runtime.
 CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"]
