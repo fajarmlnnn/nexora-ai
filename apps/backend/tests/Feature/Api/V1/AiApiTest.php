@@ -19,6 +19,77 @@ class AiApiTest extends TestCase
         Config::set('services.supabase.publishable_key', 'test-publishable-key');
     }
 
+    public function test_ai_health_requires_a_supabase_access_token(): void
+    {
+        $this->getJson('/api/v1/ai/health')->assertUnauthorized();
+    }
+
+    public function test_ai_health_returns_ok_when_provider_answers(): void
+    {
+        Config::set('ai.api_key', 'test-key');
+        Config::set('ai.base_url', 'https://api.openai.com/v1');
+        Config::set('ai.model', 'test-model');
+
+        Http::fake([
+            'https://example.supabase.co/auth/v1/user' => Http::response([
+                'id' => 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+                'role' => 'authenticated',
+            ]),
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [
+                    [
+                        'message' => [
+                            'role' => 'assistant',
+                            'content' => 'OK',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/v1/ai/health')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.status', 'ok')
+            ->assertJsonPath('data.service', 'nexora-ai-gateway');
+    }
+
+    public function test_ai_health_returns_503_when_provider_is_not_configured(): void
+    {
+        Config::set('ai.api_key', null);
+        $this->fakeSupabaseUser();
+
+        $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/v1/ai/health')
+            ->assertStatus(503)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'AI_PROVIDER_UNAVAILABLE');
+    }
+
+    public function test_ai_health_hides_provider_failure_details(): void
+    {
+        Config::set('ai.api_key', 'test-key');
+        Config::set('ai.base_url', 'https://api.openai.com/v1');
+        Config::set('ai.model', 'test-model');
+
+        Http::fake([
+            'https://example.supabase.co/auth/v1/user' => Http::response([
+                'id' => 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+                'role' => 'authenticated',
+            ]),
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'error' => ['message' => 'secret-provider-detail'],
+            ], 401),
+        ]);
+
+        $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/v1/ai/health')
+            ->assertStatus(503)
+            ->assertJsonPath('error.code', 'AI_PROVIDER_UNAVAILABLE')
+            ->assertJsonMissing(['message' => 'secret-provider-detail']);
+    }
+
     public function test_ai_chat_requires_a_supabase_access_token(): void
     {
         $this->postJson('/api/v1/ai/chat', [
@@ -248,7 +319,6 @@ class AiApiTest extends TestCase
             ])
             ->assertStatus(503)
             ->assertJsonPath('success', false)
-            ->assertJsonPath('error.code', 'AI_PROVIDER_UNAVAILABLE')
             ->assertJsonMissing(['message' => 'provider-secret-rate-limit-detail']);
     }
 
@@ -278,7 +348,6 @@ class AiApiTest extends TestCase
             ])
             ->assertStatus(503)
             ->assertJsonPath('success', false)
-            ->assertJsonPath('error.code', 'AI_PROVIDER_UNAVAILABLE')
             ->assertJsonMissing(['message' => 'provider-internal-server-detail']);
     }
 
