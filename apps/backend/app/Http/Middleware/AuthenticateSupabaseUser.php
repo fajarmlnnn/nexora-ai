@@ -6,6 +6,8 @@ use Closure;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthenticateSupabaseUser
@@ -35,7 +37,11 @@ class AuthenticateSupabaseUser
                 ->connectTimeout(3)
                 ->timeout(5)
                 ->get($baseUrl.'/auth/v1/user');
-        } catch (ConnectionException) {
+        } catch (ConnectionException $e) {
+            Log::warning('Supabase authentication provider connection failed.', [
+                'exception' => $e::class,
+            ]);
+
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -43,6 +49,21 @@ class AuthenticateSupabaseUser
                     'message' => 'Authentication service is temporarily unavailable.',
                 ],
             ], 503);
+        } catch (\Throwable $e) {
+            $requestId = (string) Str::uuid();
+            Log::error('Unexpected Supabase authentication failure.', [
+                'request_id' => $requestId,
+                'exception' => $e::class,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'AUTH_INTERNAL_ERROR',
+                    'message' => 'Authentication service mengalami kesalahan internal.',
+                    'request_id' => $requestId,
+                ],
+            ], 500);
         }
 
         if (! $response->successful()) {
@@ -68,8 +89,6 @@ class AuthenticateSupabaseUser
             ], 401);
         }
 
-        // Keep Supabase Auth as the source of identity. Laravel does not create
-        // or persist a second application identity for this request.
         $request->attributes->set('supabase_user_id', $userId);
         $request->attributes->set('supabase_user', $user);
 
