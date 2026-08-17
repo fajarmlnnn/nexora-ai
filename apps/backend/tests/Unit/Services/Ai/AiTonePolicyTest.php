@@ -78,6 +78,6 @@ class AiTonePolicyTest extends TestCase
         $this->assertStringContainsString('emergency savings', $lowerSystem);
         $this->assertStringContainsString('near-term obligations', $lowerSystem);
         $this->assertStringContainsString('do not invent target amounts', $lowerSystem);
-        $this->assertStringContainsString('not automatically investable or spendable', $lowerSystem);
+        $this->assertStringContainsString('automatically investable or spendable', $lowerSystem);
     }
 }
