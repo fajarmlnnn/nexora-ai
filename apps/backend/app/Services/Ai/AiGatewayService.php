@@ -11,27 +11,25 @@ class AiGatewayService
     private const MAX_RESPONSE_CHARS = 8000;
 
     /**
-     * Verify that the configured AI provider can answer a minimal request.
-     * No prompt or provider response is returned to the caller.
+     * Verify that the configured AI provider is reachable and configured.
+     * Gemini exposes model retrieval through its OpenAI-compatible endpoint,
+     * which is a more reliable health probe than generating text with a
+     * thinking model and a small output budget.
      */
     public function healthCheck(): void
     {
         $this->validateConfiguration();
 
         try {
-            $response = Http::acceptJson()
+            $request = Http::acceptJson()
                 ->withToken((string) config('ai.api_key'))
                 ->connectTimeout(3)
                 ->timeout(10)
-                ->retry(2, 250, throw: false)
-                ->post($this->chatCompletionsUrl(), [
-                    'model' => config('ai.model'),
-                    'messages' => [
-                        ['role' => 'user', 'content' => 'Reply with OK only.'],
-                    ],
-                    'temperature' => 0,
-                    'max_tokens' => 8,
-                ]);
+                ->retry(2, 250, throw: false);
+
+            $response = strtolower((string) config('ai.provider')) === 'gemini'
+                ? $request->get($this->modelUrl())
+                : $request->post($this->chatCompletionsUrl(), $this->healthPayload());
         } catch (\Throwable $e) {
             Log::warning('AI provider health check failed.', [
                 'exception' => $e::class,
@@ -45,6 +43,16 @@ class AiGatewayService
                 'failure_class' => $this->failureClass($response->status()),
             ]);
             throw new AiProviderException('AI provider health check rejected.', 3000);
+        }
+
+        if (strtolower((string) config('ai.provider')) === 'gemini') {
+            $modelId = $response->json('id');
+            if (! is_string($modelId) || trim($modelId) === '') {
+                Log::warning('Gemini model probe returned no model id.');
+                throw new AiProviderException('AI provider health check returned invalid model metadata.', 3001);
+            }
+
+            return;
         }
 
         $content = $response->json('choices.0.message.content');
@@ -80,12 +88,7 @@ class AiGatewayService
                 ->connectTimeout(3)
                 ->timeout(max(5, min((int) config('ai.timeout', 30), 30)))
                 ->retry(2, 250, throw: false)
-                ->post($this->chatCompletionsUrl(), [
-                    'model' => config('ai.model'),
-                    'messages' => array_merge([$system], $messages),
-                    'temperature' => 0.2,
-                    'max_tokens' => max(128, min((int) config('ai.max_tokens', 700), 1000)),
-                ]);
+                ->post($this->chatCompletionsUrl(), $this->chatPayload(array_merge([$system], $messages)));
         } catch (\Throwable $e) {
             Log::warning('AI provider request failed.', [
                 'exception' => $e::class,
@@ -118,6 +121,46 @@ class AiGatewayService
         return $content;
     }
 
+    /** @return array<string, mixed> */
+    private function healthPayload(): array
+    {
+        $payload = [
+            'model' => config('ai.model'),
+            'messages' => [
+                ['role' => 'user', 'content' => 'Reply with OK only.'],
+            ],
+            'max_tokens' => 256,
+        ];
+
+        return $this->applyProviderOptions($payload);
+    }
+
+    /** @param array<int, array{role:string,content:string}> $messages */
+    private function chatPayload(array $messages): array
+    {
+        $payload = [
+            'model' => config('ai.model'),
+            'messages' => $messages,
+            'max_tokens' => max(256, min((int) config('ai.max_tokens', 700), 2000)),
+        ];
+
+        return $this->applyProviderOptions($payload);
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function applyProviderOptions(array $payload): array
+    {
+        if (strtolower((string) config('ai.provider')) === 'gemini') {
+            $payload['reasoning_effort'] = config('ai.reasoning_effort', 'low');
+
+            return $payload;
+        }
+
+        $payload['temperature'] = 0.2;
+
+        return $payload;
+    }
+
     private function validateConfiguration(): void
     {
         $apiKey = config('ai.api_key');
@@ -138,6 +181,11 @@ class AiGatewayService
     private function chatCompletionsUrl(): string
     {
         return rtrim((string) config('ai.base_url'), '/').'/chat/completions';
+    }
+
+    private function modelUrl(): string
+    {
+        return rtrim((string) config('ai.base_url'), '/').'/models/'.rawurlencode((string) config('ai.model'));
     }
 
     private function failureClass(int $status): string

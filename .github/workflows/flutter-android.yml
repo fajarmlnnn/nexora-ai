@@ -98,7 +98,8 @@ jobs:
             "$health_url"
           echo
 
-      - name: Smoke test authenticated AI provider when E2E credentials are available
+      - name: Smoke test authenticated AI provider after production deployment
+        if: github.event_name != 'pull_request'
         env:
           NEXORA_E2E_EMAIL: ${{ secrets.NEXORA_E2E_EMAIL }}
           NEXORA_E2E_PASSWORD: ${{ secrets.NEXORA_E2E_PASSWORD }}
