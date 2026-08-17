@@ -36,8 +36,9 @@ class AiApiTest extends TestCase
                 'id' => 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
                 'role' => 'authenticated',
             ]),
-            'https://api.openai.com/v1/chat/completions' => Http::response([
-                'choices' => [['message' => ['role' => 'assistant', 'content' => 'OK']]],
+            'https://api.openai.com/v1/models/test-model' => Http::response([
+                'id' => 'test-model',
+                'object' => 'model',
             ]),
         ]);
 
@@ -72,7 +73,7 @@ class AiApiTest extends TestCase
                 'id' => 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
                 'role' => 'authenticated',
             ]),
-            'https://api.openai.com/v1/chat/completions' => Http::response(['error' => ['message' => 'secret-provider-detail']], 401),
+            'https://api.openai.com/v1/models/test-model' => Http::response(['error' => ['message' => 'secret-provider-detail']], 401),
         ]);
 
         $this->withHeader('Authorization', 'Bearer valid-token')
