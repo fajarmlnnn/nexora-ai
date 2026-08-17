@@ -134,13 +134,28 @@ jobs:
 
           ai_health_url="$api_root/ai/health"
           echo "Checking authenticated production AI provider health"
-          curl --fail --silent --show-error \
+          response_file="$(mktemp)"
+          http_code="$(curl --silent --show-error \
             --connect-timeout 10 \
             --max-time 25 \
+            -o "$response_file" \
+            -w '%{http_code}' \
             "$ai_health_url" \
             -H "Authorization: Bearer $access_token" \
-            -H "Accept: application/json"
+            -H "Accept: application/json")"
+          echo "AI health HTTP status: $http_code"
+          echo "AI health response:"
+          cat "$response_file"
           echo
+          rm -f "$response_file"
+
+          case "$http_code" in
+            2??) ;;
+            *)
+              echo "::error::Authenticated AI health check failed with HTTP $http_code"
+              exit 1
+              ;;
+          esac
 
       - name: Install dependencies
         run: flutter pub get
