@@ -24,10 +24,12 @@ class AiController extends Controller
         try {
             $this->gateway->healthCheck();
         } catch (AiProviderException $e) {
+            $diagnosticCode = $this->diagnosticCode($e->getCode());
+
             Log::warning('AI health check reported provider unavailable.', [
                 'request_id' => $requestId,
                 'exception' => $e::class,
-                'code' => $e->getCode(),
+                'diagnostic_code' => $diagnosticCode,
             ]);
 
             return response()->json([
@@ -35,14 +37,11 @@ class AiController extends Controller
                 'error' => [
                     'code' => 'AI_PROVIDER_UNAVAILABLE',
                     'message' => 'AI provider is unavailable or misconfigured.',
+                    'diagnostic_code' => $diagnosticCode,
                     'request_id' => $requestId,
                 ],
             ], 503);
         } catch (Throwable $e) {
-            // A health probe must never turn a provider/runtime exception into a
-            // generic 500. Keep the public response stable while logging enough
-            // server-side context to diagnose production configuration/runtime
-            // failures without exposing credentials or provider response bodies.
             Log::error('Unexpected AI health check failure.', [
                 'request_id' => $requestId,
                 'exception' => $e::class,
@@ -54,6 +53,7 @@ class AiController extends Controller
                 'error' => [
                     'code' => 'AI_PROVIDER_UNAVAILABLE',
                     'message' => 'AI provider is unavailable or misconfigured.',
+                    'diagnostic_code' => 'internal_runtime_error',
                     'request_id' => $requestId,
                 ],
             ], 503);
@@ -82,6 +82,7 @@ class AiController extends Controller
             Log::warning('AI chat provider unavailable.', [
                 'request_id' => $requestId,
                 'exception' => $e::class,
+                'diagnostic_code' => $this->diagnosticCode($e->getCode()),
             ]);
 
             return response()->json([
@@ -118,5 +119,18 @@ class AiController extends Controller
             ],
             'request_id' => $requestId,
         ]);
+    }
+
+    private function diagnosticCode(int $code): string
+    {
+        return match ($code) {
+            1001 => 'configuration_missing',
+            1002 => 'configuration_invalid_url',
+            2000 => 'provider_connection_failed',
+            3000 => 'provider_rejected_request',
+            3001 => 'provider_empty_response',
+            3002 => 'provider_response_too_large',
+            default => 'provider_unavailable',
+        };
     }
 }
