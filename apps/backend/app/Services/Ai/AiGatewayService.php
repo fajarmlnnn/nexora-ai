@@ -3,6 +3,7 @@
 namespace App\Services\Ai;
 
 use App\Exceptions\AiProviderException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -15,8 +16,9 @@ class AiGatewayService
     {
         $this->validateConfiguration();
         try {
+            $provider = strtolower((string) config('ai.provider'));
             $request = Http::acceptJson()->withToken((string) config('ai.api_key'))->connectTimeout(3)->timeout(10)->retry(1, 150, throw: false);
-            $response = strtolower((string) config('ai.provider')) === 'gemini'
+            $response = $provider === 'gemini'
                 ? $request->get($this->modelUrl())
                 : $request->post($this->chatCompletionsUrl(), $this->healthPayload());
         } catch (\Throwable $e) {
@@ -27,7 +29,7 @@ class AiGatewayService
             Log::warning('AI provider health check rejected.', ['status' => $response->status(), 'failure_class' => $this->failureClass($response->status())]);
             throw new AiProviderException('AI provider health check rejected.', 3000);
         }
-        if (strtolower((string) config('ai.provider')) === 'gemini') {
+        if ($provider === 'gemini') {
             $modelId = $response->json('id');
             if (! is_string($modelId) || trim($modelId) === '') {
                 Log::warning('Gemini model probe returned no model id.');
@@ -78,23 +80,38 @@ class AiGatewayService
                 'Financial context: '.json_encode($this->sanitizeContext($financialContext), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]),
         ];
+        $conversation = array_merge([$system], $messages);
+
         try {
-            $payload = $this->chatPayload(array_merge([$system], $messages));
-            $response = $this->sendChatRequest($payload, (string) config('ai.model'));
+            $primaryProvider = strtolower((string) config('ai.provider'));
+            $primaryModel = trim((string) config('ai.model'));
+            $payload = $this->chatPayload($conversation, $primaryProvider, $primaryModel);
+            $response = $this->sendChatRequest(
+                $payload,
+                $primaryModel,
+                (string) config('ai.api_key'),
+                (string) config('ai.base_url'),
+            );
 
             if ($response->status() === 429) {
                 $fallbackModel = trim((string) config('ai.fallback_model', ''));
-                $primaryModel = trim((string) config('ai.model'));
+                $fallbackKey = trim((string) config('ai.fallback_api_key', ''));
+                $fallbackBaseUrl = trim((string) config('ai.fallback_base_url', ''));
+                $fallbackProvider = strtolower((string) config('ai.fallback_provider', 'gemini'));
 
-                if ($fallbackModel !== '' && $fallbackModel !== $primaryModel) {
-                    Log::notice('AI primary model rate limited; trying fallback model.', [
+                if ($fallbackModel !== '' && $fallbackKey !== '' && $fallbackBaseUrl !== '' && ($fallbackProvider !== $primaryProvider || $fallbackModel !== $primaryModel)) {
+                    Log::notice('AI primary model rate limited; trying fallback provider.', [
+                        'primary_provider' => $primaryProvider,
                         'primary_model' => $primaryModel,
+                        'fallback_provider' => $fallbackProvider,
                         'fallback_model' => $fallbackModel,
                     ]);
-                    $response = $this->sendChatRequest($payload, $fallbackModel);
+                    $fallbackPayload = $this->chatPayload($conversation, $fallbackProvider, $fallbackModel);
+                    $response = $this->sendChatRequest($fallbackPayload, $fallbackModel, $fallbackKey, $fallbackBaseUrl);
 
                     if ($response->status() === 429) {
-                        Log::warning('AI fallback model also rate limited.', [
+                        Log::warning('AI fallback provider also rate limited.', [
+                            'fallback_provider' => $fallbackProvider,
                             'fallback_model' => $fallbackModel,
                         ]);
                     }
@@ -128,12 +145,12 @@ class AiGatewayService
     }
 
     /** @param array<string, mixed> $payload */
-    private function sendChatRequest(array $payload, string $model): \Illuminate\Http\Client\Response
+    private function sendChatRequest(array $payload, string $model, string $apiKey, string $baseUrl): Response
     {
         $payload['model'] = $model;
-        return Http::acceptJson()->withToken((string) config('ai.api_key'))->connectTimeout(3)
+        return Http::acceptJson()->withToken($apiKey)->connectTimeout(3)
             ->timeout(max(5, min((int) config('ai.timeout', 18), 18)))->retry(1, 150, throw: false)
-            ->post($this->chatCompletionsUrl(), $payload);
+            ->post(rtrim($baseUrl, '/').'/chat/completions', $payload);
     }
 
     /** @param array<int, array{role:string,content:string}> $messages */
@@ -167,23 +184,23 @@ class AiGatewayService
             'model' => config('ai.model'),
             'messages' => [['role' => 'user', 'content' => 'Reply with OK only.']],
             'max_tokens' => 256,
-        ]);
+        ], (string) config('ai.provider'));
     }
 
     /** @param array<int, array{role:string,content:string}> $messages */
-    private function chatPayload(array $messages): array
+    private function chatPayload(array $messages, string $provider, string $model): array
     {
         return $this->applyProviderOptions([
-            'model' => config('ai.model'),
+            'model' => $model,
             'messages' => $messages,
             'max_tokens' => max(256, min((int) config('ai.max_tokens', 600), 1000)),
-        ]);
+        ], $provider);
     }
 
     /** @param array<string, mixed> $payload */
-    private function applyProviderOptions(array $payload): array
+    private function applyProviderOptions(array $payload, string $provider): array
     {
-        if (strtolower((string) config('ai.provider')) === 'gemini') {
+        if (strtolower($provider) === 'gemini') {
             $payload['reasoning_effort'] = config('ai.reasoning_effort', 'low');
             return $payload;
         }
