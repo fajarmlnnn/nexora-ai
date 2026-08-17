@@ -39,8 +39,10 @@ class AiTonePolicyTest extends TestCase
             'period_end' => '2026-08-31',
         ]);
 
+        // Plain chat intentionally keeps natural line spacing and removes
+        // Markdown/list markers without inventing extra paragraph breaks.
         $this->assertSame(
-            "Kondisi cashflow\n\nPemasukan: Rp5.000.000\nPengeluaran: Rp500.000\n\nCashflow kamu lagi positif.\n\nTetap cek pengeluaran yang belum tercatat.",
+            "Kondisi cashflow\n\nPemasukan: Rp5.000.000\nPengeluaran: Rp500.000\n\nCashflow kamu lagi positif.\nTetap cek pengeluaran yang belum tercatat.",
             $result,
         );
 
