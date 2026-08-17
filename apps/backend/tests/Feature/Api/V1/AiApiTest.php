@@ -17,6 +17,9 @@ class AiApiTest extends TestCase
 
         Config::set('services.supabase.url', 'https://example.supabase.co');
         Config::set('services.supabase.publishable_key', 'test-publishable-key');
+        // Keep the test limiter isolated and deterministic without touching
+        // the database used by RefreshDatabase.
+        Config::set('ai.rate_limit_store', 'array');
     }
 
     public function test_ai_health_requires_a_supabase_access_token(): void
