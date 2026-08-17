@@ -74,7 +74,7 @@ class _AIPageState extends ConsumerState<AIPage> {
 
     try {
       final answer = await _ai.chat(
-        messages: history.length > 8 ? history.sublist(history.length - 8) : history,
+        messages: history.length > 20 ? history.sublist(history.length - 20) : history,
         analytics: analytics,
       );
       if (!mounted) return;
@@ -259,6 +259,18 @@ class _AIPageState extends ConsumerState<AIPage> {
                     'Tanya cashflow, pengeluaran, target, atau keputusan finansialmu.',
                     style: AppTypography.bodySmall.copyWith(color: Colors.white70),
                   ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      'Gemini • Secure gateway',
+                      style: AppTypography.caption.copyWith(color: Colors.white),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -270,28 +282,46 @@ class _AIPageState extends ConsumerState<AIPage> {
 
   Widget _buildPromptSection() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
-      child: SizedBox(
-        height: 42,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: _prompts.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (context, index) {
-            final prompt = _prompts[index];
-            return _PromptChip(
-              prompt: prompt,
-              onTap: () => _ask(prompt.question),
-            );
-          },
-        ),
+      padding: const EdgeInsets.fromLTRB(16, 22, 0, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Row(
+              children: [
+                Text('Mulai dari sini', style: AppTypography.heading3),
+                const Spacer(),
+                Text('Geser →', style: AppTypography.caption),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 92,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(right: 16),
+              itemCount: _prompts.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                final prompt = _prompts[index];
+                return _PromptCard(
+                  prompt: prompt,
+                  enabled: !_isSending,
+                  onTap: () => _ask(prompt.question),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildConversationHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 10, 28, 14),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Row(
         children: [
           Text('Percakapan', style: AppTypography.heading3),
@@ -299,8 +329,9 @@ class _AIPageState extends ConsumerState<AIPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
-              borderRadius: BorderRadius.circular(20),
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: AppColors.border),
             ),
             child: Text('${_messages.length}', style: AppTypography.caption),
           ),
@@ -312,28 +343,65 @@ class _AIPageState extends ConsumerState<AIPage> {
   Widget _buildComposer() {
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                textInputAction: TextInputAction.send,
-                minLines: 1,
-                maxLines: 4,
-                onSubmitted: _ask,
-                decoration: const InputDecoration(
-                  hintText: 'Tanya soal keuanganmu...',
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          border: Border(top: BorderSide(color: AppColors.border.withValues(alpha: 0.7))),
+        ),
+        child: PremiumCard(
+          padding: const EdgeInsets.fromLTRB(14, 8, 7, 8),
+          borderRadius: AppRadius.radiusXL,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  enabled: !_isSending,
+                  minLines: 1,
+                  maxLines: 4,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (value) {
+                    if (!value.contains('\n')) _ask(value);
+                  },
+                  decoration: InputDecoration(
+                    hintText: _isSending ? 'Nexora sedang berpikir...' : 'Tanya soal keuanganmu...',
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 7),
+                    hintStyle: AppTypography.bodySmall,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 10),
-            IconButton.filled(
-              onPressed: _isSending ? null : () => _ask(_controller.text),
-              icon: const Icon(LucideIcons.arrowUp),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Material(
+                color: _isSending ? AppColors.cardMuted : AppColors.primary,
+                borderRadius: BorderRadius.circular(15),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(15),
+                  onTap: _isSending ? null : () => _ask(_controller.text),
+                  child: SizedBox(
+                    width: 42,
+                    height: 42,
+                    child: Center(
+                      child: _isSending
+                          ? const SizedBox(
+                              width: 17,
+                              height: 17,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(
+                              LucideIcons.arrowUp,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -348,25 +416,55 @@ class _ChatMessage {
 }
 
 class _Prompt {
-  const _Prompt(this.label, this.question, this.icon);
+  const _Prompt(this.title, this.question, this.icon);
 
-  final String label;
+  final String title;
   final String question;
   final IconData icon;
 }
 
-class _PromptChip extends StatelessWidget {
-  const _PromptChip({required this.prompt, required this.onTap});
+class _PromptCard extends StatelessWidget {
+  const _PromptCard({required this.prompt, required this.enabled, required this.onTap});
 
   final _Prompt prompt;
+  final bool enabled;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return ActionChip(
-      avatar: Icon(prompt.icon, size: 16),
-      label: Text(prompt.label),
-      onPressed: onTap,
+    return SizedBox(
+      width: 172,
+      child: Material(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(17),
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          borderRadius: BorderRadius.circular(17),
+          child: Container(
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(17),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(prompt.icon, size: 16, color: AppColors.primaryLight),
+                ),
+                const Spacer(),
+                Text(prompt.title, style: AppTypography.label),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -381,15 +479,50 @@ class _Bubble extends StatelessWidget {
   Widget build(BuildContext context) {
     return Align(
       alignment: fromUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        constraints: const BoxConstraints(maxWidth: 560),
-        decoration: BoxDecoration(
-          color: fromUser ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.circular(18),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (!fromUser) ...[
+              Container(
+                width: 28,
+                height: 28,
+                margin: const EdgeInsets.only(right: 8, bottom: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(LucideIcons.sparkles, size: 14, color: AppColors.primaryLight),
+              ),
+            ],
+            Flexible(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 330),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: fromUser ? AppGradients.button : null,
+                  color: fromUser ? null : AppColors.card,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(18),
+                    topRight: const Radius.circular(18),
+                    bottomLeft: Radius.circular(fromUser ? 18 : 5),
+                    bottomRight: Radius.circular(fromUser ? 5 : 18),
+                  ),
+                  border: fromUser ? null : Border.all(color: AppColors.border),
+                ),
+                child: Text(
+                  text,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: fromUser ? Colors.white : AppColors.textPrimary,
+                    height: 1.45,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-        child: Text(text, style: AppTypography.body),
       ),
     );
   }
@@ -400,18 +533,35 @@ class _TypingBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Align(
+    return Align(
       alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: EdgeInsets.only(bottom: 12),
-        child: Text('Nexora sedang mikir...'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(18),
+            topRight: Radius.circular(18),
+            bottomRight: Radius.circular(18),
+            bottomLeft: Radius.circular(5),
+          ),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.sparkles, size: 15, color: AppColors.primaryLight),
+            SizedBox(width: 8),
+            SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _ErrorBubble extends StatelessWidget {
-  const _ErrorBubble({required this.message, this.onRetry});
+  const _ErrorBubble({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback? onRetry;
@@ -419,19 +569,40 @@ class _ErrorBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.10),
+        color: AppColors.danger.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.35)),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.2)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(LucideIcons.circleAlert, color: AppColors.error),
-          const SizedBox(width: 10),
-          Expanded(child: Text(message)),
-          if (onRetry != null)
-            TextButton(onPressed: onRetry, child: const Text('Coba lagi')),
+          const Icon(LucideIcons.circleAlert, size: 19, color: AppColors.danger),
+          AppSpacing.hGapSM,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Nexora belum bisa menjawab', style: AppTypography.label),
+                const SizedBox(height: 3),
+                Text(message, style: AppTypography.caption),
+                if (onRetry != null) ...[
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: onRetry,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    icon: const Icon(LucideIcons.refreshCw, size: 15),
+                    label: const Text('Coba lagi'),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );
