@@ -54,7 +54,7 @@ RUN mkdir -p storage/framework/cache \
 
 EXPOSE 10000
 
-# Run database migrations before serving requests. The entrypoint is invoked
-# through sh so its executable bit is not required in the repository.
-ENTRYPOINT ["sh", "/var/www/html/docker-entrypoint.sh"]
+# Database schema changes are applied explicitly by Backend CI/deployment
+# tooling. Production startup must not run the full migration history against
+# an already-provisioned Supabase schema.
 CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"]
