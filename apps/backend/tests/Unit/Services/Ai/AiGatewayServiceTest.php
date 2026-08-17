@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class AiGatewayServiceTest extends TestCase
 {
-    public function test_gemini_health_probe_reserves_output_budget_for_visible_text(): void
+    public function test_gemini_health_probe_validates_model_metadata_without_generation(): void
     {
         Config::set('ai.provider', 'gemini');
         Config::set('ai.api_key', 'test-key');
@@ -18,26 +18,17 @@ class AiGatewayServiceTest extends TestCase
         Config::set('ai.reasoning_effort', 'low');
 
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' => Http::response([
-                'choices' => [[
-                    'message' => [
-                        'role' => 'assistant',
-                        'content' => 'OK',
-                    ],
-                ]],
+            'https://generativelanguage.googleapis.com/v1beta/openai/models/gemini-3.6-flash' => Http::response([
+                'id' => 'gemini-3.6-flash',
             ]),
         ]);
 
         app(AiGatewayService::class)->healthCheck();
 
         Http::assertSent(function ($request): bool {
-            $body = $request->data();
-
-            return $request->hasHeader('Authorization', 'Bearer test-key')
-                && $body['model'] === 'gemini-3.6-flash'
-                && $body['max_tokens'] === 64
-                && $body['reasoning_effort'] === 'low'
-                && ! array_key_exists('temperature', $body);
+            return $request->method() === 'GET'
+                && $request->url() === 'https://generativelanguage.googleapis.com/v1beta/openai/models/gemini-3.6-flash'
+                && $request->hasHeader('Authorization', 'Bearer test-key');
         });
     }
 
