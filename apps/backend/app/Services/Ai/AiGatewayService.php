@@ -75,7 +75,7 @@ class AiGatewayService
                 'You are Nexora AI, a financial coaching assistant for everyday users.',
                 'Speak in natural, casual Indonesian with a friendly Gen Z vibe. Sound human, warm, direct, and easy to understand.',
                 'Use everyday Indonesian and light conversational phrases when they genuinely fit. Do not overuse slang, emojis, or English.',
-                'Prioritize natural conversation. Avoid stiff phrases such as "berdasarkan data yang tersedia", "dapat disimpulkan bahwa", "dengan demikian", or "Anda" when simpler wording works.',
+                'Prioritize natural conversation. Avoid stiff phrases such as "berdasarkan data yang tersedia", "dapat disimpulkan bahwa", "dengan demikian", or "Anda" when simpler language works.',
                 'Do not use generic filler openings. Answer simple questions directly.',
                 'Keep normal answers short: usually 3-6 sentences. For a simple factual question, prefer 1-3 sentences. Only go longer when the user explicitly asks for detail.',
                 'For financial summaries, mention only the important numbers and what they mean. Do not repeat the same conclusion in multiple paragraphs.',
@@ -85,7 +85,7 @@ class AiGatewayService
                 'Treat financial context as observed records, not necessarily the complete financial picture. If a conclusion depends on incomplete records, say so naturally.',
                 'Separate cashflow from overall financial health. Positive cashflow alone is not proof that someone is financially secure.',
                 'Never imply unrecorded expenses exist. Say they may exist and invite the user to add them if relevant.',
-                'Do arithmetic from the supplied numbers before stating a result. Never estimate or invent a multiplier. For emergency savings based on monthly expenses, use a clear 3-6 month range: monthly expense × 3 and monthly expense × 6. Do not create fractional targets such as 3.6 months unless the user explicitly asks for that calculation.',
+                'Do arithmetic from the supplied numbers before stating a result. Never estimate or invent a multiplier. For emergency savings based on monthly expenses, use a clear 3-6 month range: monthly expense × 3 and monthly expense × 6. ALWAYS write the range as "3-6 bulan" or "3–6 bulan"; never write "3.6 bulan" because that means a different number.',
                 'When assessing finances: state the result, explain the key numbers, identify the largest recorded expense or useful pattern, then give one practical caveat or next action.',
                 'When the user confirms records are complete and cashflow is strongly positive, prioritize near-term obligations, emergency savings, planned goals, then optional investing or discretionary spending.',
                 'INVESTMENT SAFETY GATE: Never treat a cashflow surplus as automatically investable. If the conversation indicates the user does not have an emergency fund, or the user is unsure whether they have one, do NOT recommend investing the surplus yet. First recommend building an emergency fund from 3-6 months of essential monthly expenses. If monthly expense data is available, calculate the range explicitly and correctly. Only discuss investing as a later step after the emergency-fund priority is satisfied.',
@@ -198,6 +198,10 @@ class AiGatewayService
         $content = preg_replace('/^\s*(?:[-*+]\s+|•\s+)/m', '', $content) ?? $content;
         $content = preg_replace('/^\s*\d+[.)]\s+/m', '', $content) ?? $content;
         $content = preg_replace('/\n{3,}/', "\n\n", $content) ?? $content;
+        $content = preg_replace('/\b3\.6\s*bulan\b/i', '3-6 bulan', $content) ?? $content;
+        $content = preg_replace('/\b3[.,]?6\s*bulan\b/i', '3-6 bulan', $content) ?? $content;
+        $content = preg_replace('/Rp\s*1\.5\.3\s*juta/i', 'Rp1,5-3 juta', $content) ?? $content;
+        $content = preg_replace('/Rp\s*1\.500\.000\s*\.\s*Rp\s*3\.000\.000/i', 'Rp1,5-3 juta', $content) ?? $content;
         $content = preg_replace('/\b(investasi|pilihan investasi) yang (paling )?aman\b/i', '$1 dengan risiko relatif lebih rendah', $content) ?? $content;
         $content = preg_replace('/\bdeposito[^.\n]*bisa dicairkan kalau ada kebutuhan mendadak\b/i', 'deposito memiliki tenor dan pencairan sebelum jatuh tempo dapat memiliki ketentuan atau penalti', $content) ?? $content;
 
