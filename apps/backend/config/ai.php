@@ -7,6 +7,7 @@ return [
     'model' => env('AI_MODEL', 'gpt-4o-mini'),
     'timeout' => max(5, min((int) env('AI_TIMEOUT', 30), 30)),
     'max_tokens' => max(128, min((int) env('AI_MAX_TOKENS', 700), 1000)),
+    'reasoning_effort' => env('AI_REASONING_EFFORT', 'low'),
 
     // AI admission control must not depend on the application's default cache
     // store. Production can opt into a shared store (for example Redis) with
