@@ -72,72 +72,104 @@ class _PremiumBottomNav extends StatelessWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return SizedBox(
-      height: 84 + bottomInset,
+      height: 88 + bottomInset,
       child: Padding(
         padding: EdgeInsets.fromLTRB(14, 4, 14, bottomInset + 8),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(32),
           child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+            filter: ui.ImageFilter.blur(sigmaX: 24, sigmaY: 24),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: AppColors.card.withValues(alpha: .82),
                 borderRadius: BorderRadius.circular(32),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xE8151524),
+                    Color(0xEE111321),
+                    Color(0xE60D1220),
+                  ],
+                  stops: [0, .52, 1],
+                ),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: .09),
+                  color: Colors.white.withValues(alpha: .105),
+                  width: 1,
                 ),
                 boxShadow: [
-                  ...AppShadows.floating,
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: .10),
-                    blurRadius: 34,
-                    spreadRadius: -10,
-                    offset: const Offset(0, 12),
+                    color: Colors.black.withValues(alpha: .42),
+                    blurRadius: 28,
+                    spreadRadius: -8,
+                    offset: const Offset(0, 14),
+                  ),
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: .16),
+                    blurRadius: 32,
+                    spreadRadius: -12,
+                    offset: const Offset(0, 4),
+                  ),
+                  BoxShadow(
+                    color: const Color(0xFF4F8CFF).withValues(alpha: .075),
+                    blurRadius: 26,
+                    spreadRadius: -14,
+                    offset: const Offset(0, -2),
                   ),
                 ],
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final slotWidth = constraints.maxWidth / 5;
+                  final indicatorWidth = slotWidth - 16;
 
                   return Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      // One shared active surface. It physically slides between
-                      // destinations instead of creating a separate purple
-                      // circle behind every icon.
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 460),
-                        curve: Curves.easeInOutCubicEmphasized,
-                        left: slotWidth * _activeSlot + 5,
-                        top: 5,
-                        width: slotWidth - 10,
-                        height: 62,
-                        child: IgnorePointer(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(28),
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  AppColors.primary.withValues(alpha: .23),
-                                  AppColors.primary.withValues(alpha: .10),
+                      // Exactly one active surface exists at all times. Aligning
+                      // one widget avoids the old-position glow/trailing-bubble
+                      // artifact that can occur with a positioned animated child.
+                      AnimatedAlign(
+                        duration: const Duration(milliseconds: 420),
+                        curve: Curves.easeOutCubic,
+                        alignment: Alignment(
+                          -1 + (_activeSlot * .5),
+                          0,
+                        ),
+                        child: SizedBox(
+                          width: indicatorWidth,
+                          height: 56,
+                          child: IgnorePointer(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    AppColors.primaryLight.withValues(alpha: .34),
+                                    AppColors.primary.withValues(alpha: .22),
+                                    const Color(0xFF4F6CFF).withValues(alpha: .16),
+                                  ],
+                                  stops: const [0, .52, 1],
+                                ),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: .105),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: .24),
+                                    blurRadius: 24,
+                                    spreadRadius: -9,
+                                    offset: const Offset(0, 7),
+                                  ),
+                                  BoxShadow(
+                                    color: const Color(0xFF5B7CFF).withValues(alpha: .12),
+                                    blurRadius: 18,
+                                    spreadRadius: -8,
+                                    offset: const Offset(0, -2),
+                                  ),
                                 ],
                               ),
-                              border: Border.all(
-                                color: AppColors.primaryLight.withValues(
-                                  alpha: .18,
-                                ),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: .18),
-                                  blurRadius: 22,
-                                  spreadRadius: -7,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
                             ),
                           ),
                         ),
@@ -217,8 +249,8 @@ class _NavItem extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(28),
-            splashColor: AppColors.primary.withValues(alpha: .10),
-            highlightColor: Colors.white.withValues(alpha: .025),
+            splashColor: AppColors.primary.withValues(alpha: .08),
+            highlightColor: Colors.white.withValues(alpha: .018),
             onTap: () => onTap(index),
             child: SizedBox(
               height: 72,
@@ -226,11 +258,11 @@ class _NavItem extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   AnimatedScale(
-                    duration: const Duration(milliseconds: 360),
-                    curve: Curves.easeOutBack,
-                    scale: selected ? 1.06 : 1,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutCubic,
+                    scale: selected ? 1.05 : .98,
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 360),
+                      duration: const Duration(milliseconds: 300),
                       curve: Curves.easeOutCubic,
                       transform: Matrix4.translationValues(
                         0,
@@ -239,24 +271,25 @@ class _NavItem extends StatelessWidget {
                       ),
                       child: Icon(
                         icon,
-                        size: selected ? 24 : 22,
+                        size: selected ? 25 : 22,
                         color: selected
-                            ? AppColors.primaryLight
-                            : AppColors.textSecondary,
+                            ? Colors.white
+                            : AppColors.textSecondary.withValues(alpha: .88),
                       ),
                     ),
                   ),
                   const SizedBox(height: 3),
                   AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 320),
+                    duration: const Duration(milliseconds: 280),
                     curve: Curves.easeOutCubic,
                     style: AppTypography.caption.copyWith(
                       color: selected
-                          ? AppColors.primaryLight
-                          : AppColors.textSecondary,
+                          ? Colors.white
+                          : AppColors.textSecondary.withValues(alpha: .9),
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                       fontSize: 9.5,
                       height: 1.05,
+                      letterSpacing: .05,
                     ),
                     child: Text(
                       label,
@@ -308,9 +341,15 @@ class _CenterButton extends StatelessWidget {
                 boxShadow: [
                   ...AppShadows.button,
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: .28),
-                    blurRadius: 24,
-                    spreadRadius: -4,
+                    color: AppColors.primary.withValues(alpha: .32),
+                    blurRadius: 26,
+                    spreadRadius: -3,
+                  ),
+                  BoxShadow(
+                    color: const Color(0xFF5B7CFF).withValues(alpha: .12),
+                    blurRadius: 18,
+                    spreadRadius: -6,
+                    offset: const Offset(0, -3),
                   ),
                 ],
               ),
