@@ -40,7 +40,7 @@ class AiTonePolicyTest extends TestCase
         ]);
 
         $this->assertSame(
-            "Kondisi cashflow\n\nPemasukan: Rp5.000.000\nPengeluaran: Rp500.000\n\nCashflow kamu lagi positif.",
+            "Kondisi cashflow\n\nPemasukan: Rp5.000.000\nPengeluaran: Rp500.000\n\nCashflow kamu lagi positif.\n\nTetap cek pengeluaran yang belum tercatat.",
             $result,
         );
 
@@ -48,6 +48,7 @@ class AiTonePolicyTest extends TestCase
         $this->assertStringNotContainsString('*', $result);
         $this->assertStringNotContainsString('`', $result);
         $this->assertStringNotContainsString('---', $result);
+        $this->assertStringNotContainsString('•', $result);
 
         Http::assertSent(function ($request): bool {
             $messages = $request->data()['messages'];
