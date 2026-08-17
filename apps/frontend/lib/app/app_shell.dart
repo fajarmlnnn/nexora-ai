@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -23,7 +25,9 @@ class AppShell extends StatelessWidget {
         }
       },
       child: Scaffold(
-        extendBody: false,
+        // Let the page continue behind the floating navigation surface so the
+        // bar reads as a layer above the app instead of a fixed footer.
+        extendBody: true,
         body: navigationShell,
         bottomNavigationBar: _PremiumBottomNav(
           currentIndex: navigationShell.currentIndex,
@@ -67,55 +71,77 @@ class _PremiumBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    return Container(
-      height: 78 + bottomInset,
-      padding: EdgeInsets.only(
-        left: 8,
-        right: 8,
-        top: 8,
-        bottom: bottomInset + 6,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: .97),
-        border: Border(
-          top: BorderSide(color: AppColors.border.withValues(alpha: .55)),
+    return SizedBox(
+      height: 92 + bottomInset,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          14,
+          4,
+          14,
+          bottomInset + 10,
         ),
-        boxShadow: AppShadows.floating,
-      ),
-      child: Row(
-        children: [
-          _NavItem(
-            label: 'Home',
-            icon: LucideIcons.house,
-            index: 0,
-            currentIndex: currentIndex,
-            onTap: onTap,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(32),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppColors.card.withValues(alpha: .88),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: AppColors.border.withValues(alpha: .72),
+                ),
+                boxShadow: [
+                  ...AppShadows.floating,
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: .12),
+                    blurRadius: 28,
+                    spreadRadius: -8,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
+                child: Row(
+                  children: [
+                    _NavItem(
+                      label: 'Home',
+                      icon: LucideIcons.house,
+                      index: 0,
+                      currentIndex: currentIndex,
+                      onTap: onTap,
+                    ),
+                    _NavItem(
+                      label: 'Transaksi',
+                      icon: LucideIcons.arrowLeftRight,
+                      index: 1,
+                      currentIndex: currentIndex,
+                      onTap: onTap,
+                    ),
+                    Expanded(
+                      child: Center(child: _CenterButton(onTap: onAdd)),
+                    ),
+                    _NavItem(
+                      label: 'Wallet',
+                      icon: LucideIcons.walletMinimal,
+                      index: 2,
+                      currentIndex: currentIndex,
+                      onTap: onTap,
+                    ),
+                    _NavItem(
+                      label: 'Goals',
+                      icon: LucideIcons.target,
+                      index: 3,
+                      currentIndex: currentIndex,
+                      onTap: onTap,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-          _NavItem(
-            label: 'Transaksi',
-            icon: LucideIcons.arrowLeftRight,
-            index: 1,
-            currentIndex: currentIndex,
-            onTap: onTap,
-          ),
-          Expanded(
-            child: Center(child: _CenterButton(onTap: onAdd)),
-          ),
-          _NavItem(
-            label: 'Wallet',
-            icon: LucideIcons.walletMinimal,
-            index: 2,
-            currentIndex: currentIndex,
-            onTap: onTap,
-          ),
-          _NavItem(
-            label: 'Goals',
-            icon: LucideIcons.target,
-            index: 3,
-            currentIndex: currentIndex,
-            onTap: onTap,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -141,63 +167,76 @@ class _NavItem extends StatelessWidget {
     final selected = index == currentIndex;
 
     return Expanded(
-      child: InkWell(
-        borderRadius: AppRadius.radiusLG,
-        splashColor: AppColors.primary.withValues(alpha: .15),
-        highlightColor: Colors.transparent,
-        onTap: () => onTap(index),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 240),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 3),
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primary.withValues(alpha: .12)
-                : Colors.transparent,
-            borderRadius: AppRadius.radiusLG,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 240),
-                width: selected ? 18 : 4,
-                height: 3,
-                margin: const EdgeInsets.only(bottom: 4),
-                decoration: BoxDecoration(
-                  gradient: selected ? AppGradients.button : null,
-                  color: selected ? null : Colors.transparent,
-                  borderRadius: BorderRadius.circular(999),
-                ),
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(26),
+          splashColor: AppColors.primary.withValues(alpha: .12),
+          highlightColor: Colors.transparent,
+          onTap: () => onTap(index),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeOutCubic,
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppColors.primary.withValues(alpha: .16)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(
+                color: selected
+                    ? AppColors.primary.withValues(alpha: .18)
+                    : Colors.transparent,
               ),
-              AnimatedScale(
-                duration: const Duration(milliseconds: 220),
-                scale: selected ? 1.12 : 1,
-                child: Icon(
-                  icon,
-                  size: 22,
-                  color: selected
-                      ? AppColors.primaryLight
-                      : AppColors.textSecondary,
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: .14),
+                        blurRadius: 18,
+                        spreadRadius: -5,
+                      ),
+                    ]
+                  : const [],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedScale(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutBack,
+                  scale: selected ? 1.08 : 1,
+                  child: Icon(
+                    icon,
+                    size: 22,
+                    color: selected
+                        ? AppColors.primaryLight
+                        : AppColors.textSecondary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 3),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 220),
-                style: AppTypography.caption.copyWith(
-                  color: selected
-                      ? AppColors.primaryLight
-                      : AppColors.textSecondary,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: 9,
+                const SizedBox(height: 3),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  style: AppTypography.caption.copyWith(
+                    color: selected
+                        ? AppColors.primaryLight
+                        : AppColors.textSecondary,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: 9.5,
+                    height: 1.05,
+                  ),
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -212,24 +251,45 @@ class _CenterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Hero(
-          tag: 'nexora-add-action',
-          child: Container(
-            width: 58,
-            height: 58,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: AppGradients.button,
-              boxShadow: AppShadows.button,
+    return Semantics(
+      button: true,
+      label: 'Tambah transaksi',
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          splashColor: Colors.white.withValues(alpha: .16),
+          highlightColor: Colors.white.withValues(alpha: .06),
+          onTap: onTap,
+          child: Hero(
+            tag: 'nexora-add-action',
+            child: Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: AppGradients.button,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: .18),
+                  width: 1,
+                ),
+                boxShadow: [
+                  ...AppShadows.button,
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: .28),
+                    blurRadius: 24,
+                    spreadRadius: -4,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                LucideIcons.plus,
+                color: Colors.white,
+                size: 31,
+              ),
             ),
-            child: const Icon(LucideIcons.plus, color: Colors.white, size: 32),
           ),
         ),
       ),
