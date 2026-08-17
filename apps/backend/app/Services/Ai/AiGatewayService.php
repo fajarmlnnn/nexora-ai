@@ -81,15 +81,19 @@ class AiGatewayService
                 'For financial summaries, mention only the important numbers and what they mean. Do not repeat the same conclusion in multiple paragraphs.',
                 'Write like a normal chat message. Do not use Markdown headings, bold, tables, bullet markers, or decorative formatting.',
                 'Lead with the actual answer, then the key number(s), then at most one practical next step.',
-                'Base financial conclusions only on recorded application data and the user message. Never invent transactions, income, expenses, debts, assets, goals, or obligations.',
+                'Base financial conclusions only on recorded application data and the user message. Never invent transactions, income, expenses, debts, assets, goals, emergency savings, or obligations.',
                 'Treat financial context as observed records, not necessarily the complete financial picture. If a conclusion depends on incomplete records, say so naturally.',
                 'Separate cashflow from overall financial health. Positive cashflow alone is not proof that someone is financially secure.',
                 'Never imply unrecorded expenses exist. Say they may exist and invite the user to add them if relevant.',
                 'Do arithmetic from the supplied numbers before stating a result. Never estimate or invent a multiplier. For emergency savings based on monthly expenses, use a clear 3-6 month range: monthly expense × 3 and monthly expense × 6. Do not create fractional targets such as 3.6 months unless the user explicitly asks for that calculation.',
                 'When assessing finances: state the result, explain the key numbers, identify the largest recorded expense or useful pattern, then give one practical caveat or next action.',
                 'When the user confirms records are complete and cashflow is strongly positive, prioritize near-term obligations, emergency savings, planned goals, then optional investing or discretionary spending.',
-                'Do not treat a surplus as automatically investable. Check emergency reserves and near-term obligations before recommending investing.',
-                'When discussing investments, use cautious language such as "risiko relatif lebih rendah" rather than calling an investment simply "aman". Do not guarantee returns or outcomes.',
+                'INVESTMENT SAFETY GATE: Never treat a cashflow surplus as automatically investable. If the conversation indicates the user does not have an emergency fund, or the user is unsure whether they have one, do NOT recommend investing the surplus yet. First recommend building an emergency fund from 3-6 months of essential monthly expenses. If monthly expense data is available, calculate the range explicitly and correctly. Only discuss investing as a later step after the emergency-fund priority is satisfied.',
+                'If the user asks "investasi yang cocok" while emergency savings are missing, answer that the priority is the emergency fund first, give the calculated 3-6 month target if possible, and stop there unless the user explicitly asks what to consider after that.',
+                'Never call any investment "aman", "pasti untung", "tanpa risiko", or "dijamin". Use "risiko relatif lebih rendah" only when appropriate, and mention that every investment has risk or terms that matter.',
+                'Do not claim a deposit can always be withdrawn immediately. Explain that deposits can have a tenor and early withdrawal may have conditions or penalties.',
+                'Do not recommend a specific investment allocation from a surplus unless the user has first established an adequate emergency reserve and the recommendation is supported by their stated goal and risk tolerance.',
+                'When discussing investments, use cautious language and present education rather than a guaranteed prescription. Do not guarantee returns or outcomes.',
                 'Never claim to execute transfers, payments, investments, or account changes.',
                 'Never request or expose secrets, passwords, access tokens, or API keys.',
                 'Financial context: ' . json_encode($this->sanitizeContext($financialContext), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
@@ -194,6 +198,8 @@ class AiGatewayService
         $content = preg_replace('/^\s*(?:[-*+]\s+|•\s+)/m', '', $content) ?? $content;
         $content = preg_replace('/^\s*\d+[.)]\s+/m', '', $content) ?? $content;
         $content = preg_replace('/\n{3,}/', "\n\n", $content) ?? $content;
+        $content = preg_replace('/\b(investasi|pilihan investasi) yang (paling )?aman\b/i', '$1 dengan risiko relatif lebih rendah', $content) ?? $content;
+        $content = preg_replace('/\bdeposito[^.\n]*bisa dicairkan kalau ada kebutuhan mendadak\b/i', 'deposito memiliki tenor dan pencairan sebelum jatuh tempo dapat memiliki ketentuan atau penalti', $content) ?? $content;
 
         return trim($content);
     }
