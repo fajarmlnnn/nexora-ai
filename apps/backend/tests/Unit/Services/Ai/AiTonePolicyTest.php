@@ -68,6 +68,10 @@ class AiTonePolicyTest extends TestCase
         $this->assertStringContainsString('smart friend', $lowerSystem);
         $this->assertStringContainsString('natural conversation', $lowerSystem);
         $this->assertStringContainsString('generic chatbot template', $lowerSystem);
+        $this->assertStringContainsString('positive cashflow', $lowerSystem);
+        $this->assertStringContainsString('overall financial health', $lowerSystem);
+        $this->assertStringContainsString('unrecorded expenses', $lowerSystem);
+        $this->assertStringContainsString('observed result', $lowerSystem);
         $this->assertStringContainsString('kamu', $lowerSystem);
         $this->assertStringContainsString('anda', $lowerSystem);
     }
