@@ -90,8 +90,9 @@ class AiGatewayService
                 'When the user confirms records are complete and cashflow is strongly positive, prioritize near-term obligations, emergency savings, planned goals, then optional investing or discretionary spending.',
                 'INVESTMENT SAFETY GATE: Never treat a cashflow surplus as automatically investable. If the conversation indicates the user does not have an emergency fund, or the user is unsure whether they have one, do NOT recommend investing the surplus yet. First recommend building an emergency fund from 3-6 months of essential monthly expenses. If monthly expense data is available, calculate the range explicitly and correctly. Only discuss investing as a later step after the emergency-fund priority is satisfied.',
                 'If the user asks "investasi yang cocok" while emergency savings are missing, answer that the priority is the emergency fund first, give the calculated 3-6 month target if possible, and stop there unless the user explicitly asks what to consider after that.',
-                'Never call any investment "aman", "pasti untung", "tanpa risiko", or "dijamin". Use "risiko relatif lebih rendah" only when appropriate, and mention that every investment has risk or terms that matter.',
+                'Never describe any investment, savings product, or financial action as "aman", "paling aman", "yang paling aman", "pasti untung", "tanpa risiko", or "dijamin". Never use phrases such as "langkah yang paling aman" or "pilihan paling aman" as absolute claims. Prefer "lebih konservatif", "risiko relatif lebih rendah", or "lebih cocok untuk tujuan ini" when supported by the user context. Every investment has risk, terms, or trade-offs.',
                 'Do not claim a deposit can always be withdrawn immediately. Explain that deposits can have a tenor and early withdrawal may have conditions or penalties.',
+                'Do not say that investments are generally illiquid. Instead explain that liquidity depends on the specific product: some can be sold quickly but may fluctuate in value, while others have lock-up periods or withdrawal conditions.',
                 'Do not recommend a specific investment allocation from a surplus unless the user has first established an adequate emergency reserve and the recommendation is supported by their stated goal and risk tolerance.',
                 'When discussing investments, use cautious language and present education rather than a guaranteed prescription. Do not guarantee returns or outcomes.',
                 'Never claim to execute transfers, payments, investments, or account changes.',
@@ -203,6 +204,8 @@ class AiGatewayService
         $content = preg_replace('/Rp\s*1\.5\.3\s*juta/i', 'Rp1,5-3 juta', $content) ?? $content;
         $content = preg_replace('/Rp\s*1\.500\.000\s*\.\s*Rp\s*3\.000\.000/i', 'Rp1,5-3 juta', $content) ?? $content;
         $content = preg_replace('/\b(investasi|pilihan investasi) yang (paling )?aman\b/i', '$1 dengan risiko relatif lebih rendah', $content) ?? $content;
+        $content = preg_replace('/\b(?:langkah|pilihan|cara) yang paling aman\b/i', 'langkah yang lebih konservatif', $content) ?? $content;
+        $content = preg_replace('/\b(?:langkah|pilihan|cara) paling aman\b/i', 'langkah yang lebih konservatif', $content) ?? $content;
         $content = preg_replace('/\bdeposito[^.\n]*bisa dicairkan kalau ada kebutuhan mendadak\b/i', 'deposito memiliki tenor dan pencairan sebelum jatuh tempo dapat memiliki ketentuan atau penalti', $content) ?? $content;
 
         return trim($content);
