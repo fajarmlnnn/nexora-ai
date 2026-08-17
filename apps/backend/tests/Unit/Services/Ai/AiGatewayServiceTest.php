@@ -19,8 +19,13 @@ class AiGatewayServiceTest extends TestCase
         Config::set('ai.reasoning_effort', 'low');
 
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/openai/models/gemini-3.6-flash' => Http::response([
-                'id' => 'gemini-3.6-flash',
+            'https://generativelanguage.googleapis.com/v1beta/openai/models' => Http::response([
+                'data' => [
+                    [
+                        'id' => 'gemini-3.6-flash',
+                        'object' => 'model',
+                    ],
+                ],
             ]),
         ]);
 
@@ -28,7 +33,7 @@ class AiGatewayServiceTest extends TestCase
 
         Http::assertSent(function ($request): bool {
             return $request->method() === 'GET'
-                && $request->url() === 'https://generativelanguage.googleapis.com/v1beta/openai/models/gemini-3.6-flash'
+                && $request->url() === 'https://generativelanguage.googleapis.com/v1beta/openai/models'
                 && $request->hasHeader('Authorization', 'Bearer test-key');
         });
     }
