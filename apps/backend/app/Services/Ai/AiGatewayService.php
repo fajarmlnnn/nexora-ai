@@ -15,32 +15,40 @@ class AiGatewayService
     public function healthCheck(): void
     {
         $this->validateConfiguration();
+
         try {
             $provider = strtolower((string) config('ai.provider'));
-            $request = Http::acceptJson()->withToken((string) config('ai.api_key'))->connectTimeout(3)->timeout(10)->retry(1, 150, throw: false);
-            $response = $provider === 'gemini'
-                ? $request->get($this->modelUrl())
-                : $request->post($this->chatCompletionsUrl(), $this->healthPayload());
+            $request = Http::acceptJson()
+                ->withToken((string) config('ai.api_key'))
+                ->connectTimeout(3)
+                ->timeout(10)
+                ->retry(1, 150, throw: false);
+
+            // Health checks must verify provider/model availability without
+            // consuming a generation request. A chat-completion probe can be
+            // rejected or rate-limited even while the configured model is
+            // healthy, which makes CI falsely report the production provider
+            // as unavailable. Model metadata is enough to validate auth,
+            // base URL, and model selection for OpenAI-compatible providers.
+            $response = $request->get($this->modelUrl());
         } catch (\Throwable $e) {
             Log::warning('AI provider health check failed.', ['exception' => $e::class]);
             throw new AiProviderException('AI provider health check failed.', 2000, $e);
         }
+
         if ($response->failed()) {
-            Log::warning('AI provider health check rejected.', ['status' => $response->status(), 'failure_class' => $this->failureClass($response->status())]);
+            Log::warning('AI provider health check rejected.', [
+                'provider' => $provider,
+                'status' => $response->status(),
+                'failure_class' => $this->failureClass($response->status()),
+            ]);
             throw new AiProviderException('AI provider health check rejected.', 3000);
         }
-        if ($provider === 'gemini') {
-            $modelId = $response->json('id');
-            if (! is_string($modelId) || trim($modelId) === '') {
-                Log::warning('Gemini model probe returned no model id.');
-                throw new AiProviderException('AI provider health check returned invalid model metadata.', 3001);
-            }
-            return;
-        }
-        $content = $response->json('choices.0.message.content');
-        if (! is_string($content) || trim($content) === '') {
-            Log::warning('AI provider health check returned an empty response.');
-            throw new AiProviderException('AI provider health check returned an empty response.', 3001);
+
+        $modelId = $response->json('id');
+        if (! is_string($modelId) || trim($modelId) === '') {
+            Log::warning('AI provider model probe returned no model id.', ['provider' => $provider]);
+            throw new AiProviderException('AI provider health check returned invalid model metadata.', 3001);
         }
     }
 
@@ -177,16 +185,6 @@ class AiGatewayService
         return trim($content);
     }
 
-    /** @return array<string, mixed> */
-    private function healthPayload(): array
-    {
-        return $this->applyProviderOptions([
-            'model' => config('ai.model'),
-            'messages' => [['role' => 'user', 'content' => 'Reply with OK only.']],
-            'max_tokens' => 256,
-        ], (string) config('ai.provider'));
-    }
-
     /** @param array<int, array{role:string,content:string}> $messages */
     private function chatPayload(array $messages, string $provider, string $model): array
     {
@@ -219,11 +217,6 @@ class AiGatewayService
         if (! filter_var($baseUrl, FILTER_VALIDATE_URL) || ! str_starts_with($baseUrl, 'https://')) {
             throw new AiProviderException('AI provider URL is invalid.', 1002);
         }
-    }
-
-    private function chatCompletionsUrl(): string
-    {
-        return rtrim((string) config('ai.base_url'), '/').'/chat/completions';
     }
 
     private function modelUrl(): string
