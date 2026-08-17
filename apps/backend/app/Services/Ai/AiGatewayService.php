@@ -24,13 +24,10 @@ class AiGatewayService
                 ->timeout(10)
                 ->retry(1, 150, throw: false);
 
-            // Health checks must verify provider/model availability without
-            // consuming a generation request. A chat-completion probe can be
-            // rejected or rate-limited even while the configured model is
-            // healthy, which makes CI falsely report the production provider
-            // as unavailable. Model metadata is enough to validate auth,
-            // base URL, and model selection for OpenAI-compatible providers.
-            $response = $request->get($this->modelUrl());
+            // Use the provider's model-list endpoint instead of a synthetic
+            // completion. This is cheap, authenticates the key, and works with
+            // model IDs that contain slashes (for example openai/gpt-oss-20b).
+            $response = $request->get($this->modelsUrl());
         } catch (\Throwable $e) {
             Log::warning('AI provider health check failed.', ['exception' => $e::class]);
             throw new AiProviderException('AI provider health check failed.', 2000, $e);
@@ -45,9 +42,23 @@ class AiGatewayService
             throw new AiProviderException('AI provider health check rejected.', 3000);
         }
 
-        $modelId = $response->json('id');
-        if (! is_string($modelId) || trim($modelId) === '') {
-            Log::warning('AI provider model probe returned no model id.', ['provider' => $provider]);
+        $models = $response->json('data');
+        $configuredModel = trim((string) config('ai.model'));
+        $modelFound = false;
+
+        if (is_array($models)) {
+            foreach ($models as $model) {
+                if (is_array($model) && ($model['id'] ?? null) === $configuredModel) {
+                    $modelFound = true;
+                    break;
+                }
+            }
+        }
+
+        if (! $modelFound) {
+            Log::warning('AI provider model list does not contain configured model.', [
+                'provider' => $provider,
+            ]);
             throw new AiProviderException('AI provider health check returned invalid model metadata.', 3001);
         }
     }
@@ -219,9 +230,9 @@ class AiGatewayService
         }
     }
 
-    private function modelUrl(): string
+    private function modelsUrl(): string
     {
-        return rtrim((string) config('ai.base_url'), '/').'/models/'.rawurlencode((string) config('ai.model'));
+        return rtrim((string) config('ai.base_url'), '/').'/models';
     }
 
     private function failureClass(int $status): string
