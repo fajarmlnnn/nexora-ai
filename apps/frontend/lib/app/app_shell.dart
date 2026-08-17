@@ -72,13 +72,13 @@ class _PremiumBottomNav extends StatelessWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return SizedBox(
-      height: 88 + bottomInset,
+      height: 92 + bottomInset,
       child: Padding(
         padding: EdgeInsets.fromLTRB(14, 4, 14, bottomInset + 8),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(32),
           child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            filter: ui.ImageFilter.blur(sigmaX: 26, sigmaY: 26),
             child: DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(32),
@@ -86,87 +86,84 @@ class _PremiumBottomNav extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xE8151524),
-                    Color(0xEE111321),
-                    Color(0xE60D1220),
+                    Color(0xF21B1730),
+                    Color(0xF0121424),
+                    Color(0xEE10182A),
                   ],
-                  stops: [0, .52, 1],
+                  stops: [0, .48, 1],
                 ),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: .105),
+                  color: Colors.white.withValues(alpha: .14),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: .42),
-                    blurRadius: 28,
+                    color: Colors.black.withValues(alpha: .48),
+                    blurRadius: 30,
                     spreadRadius: -8,
                     offset: const Offset(0, 14),
                   ),
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: .16),
-                    blurRadius: 32,
-                    spreadRadius: -12,
-                    offset: const Offset(0, 4),
+                    color: AppColors.primary.withValues(alpha: .24),
+                    blurRadius: 34,
+                    spreadRadius: -13,
+                    offset: const Offset(0, 3),
                   ),
                   BoxShadow(
-                    color: const Color(0xFF4F8CFF).withValues(alpha: .075),
-                    blurRadius: 26,
+                    color: const Color(0xFF5B7CFF).withValues(alpha: .10),
+                    blurRadius: 28,
                     spreadRadius: -14,
-                    offset: const Offset(0, -2),
+                    offset: const Offset(0, -4),
                   ),
                 ],
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final slotWidth = constraints.maxWidth / 5;
-                  final indicatorWidth = slotWidth - 16;
+                  final indicatorWidth = slotWidth - 14;
 
                   return Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      // Exactly one active surface exists at all times. Aligning
-                      // one widget avoids the old-position glow/trailing-bubble
-                      // artifact that can occur with a positioned animated child.
+                      // One and only one active surface. The single animated
+                      // indicator moves between slots, so no old bubble/glow
+                      // can remain behind when switching tabs.
                       AnimatedAlign(
-                        duration: const Duration(milliseconds: 420),
+                        duration: const Duration(milliseconds: 430),
                         curve: Curves.easeOutCubic,
-                        alignment: Alignment(
-                          -1 + (_activeSlot * .5),
-                          0,
-                        ),
+                        alignment: Alignment(-1 + (_activeSlot * .5), 0),
                         child: SizedBox(
                           width: indicatorWidth,
-                          height: 56,
+                          height: 58,
                           child: IgnorePointer(
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(24),
-                                gradient: LinearGradient(
+                                borderRadius: BorderRadius.circular(25),
+                                gradient: const LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
-                                    AppColors.primaryLight.withValues(alpha: .34),
-                                    AppColors.primary.withValues(alpha: .22),
-                                    const Color(0xFF4F6CFF).withValues(alpha: .16),
+                                    Color(0x6B9A7BFF),
+                                    Color(0x5B7049FF),
+                                    Color(0x3A4669FF),
                                   ],
-                                  stops: const [0, .52, 1],
+                                  stops: [0, .5, 1],
                                 ),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: .105),
+                                  color: Colors.white.withValues(alpha: .16),
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: .24),
-                                    blurRadius: 24,
-                                    spreadRadius: -9,
-                                    offset: const Offset(0, 7),
+                                    color: Color(0x667C4DFF),
+                                    blurRadius: 25,
+                                    spreadRadius: -8,
+                                    offset: Offset(0, 7),
                                   ),
                                   BoxShadow(
-                                    color: const Color(0xFF5B7CFF).withValues(alpha: .12),
-                                    blurRadius: 18,
-                                    spreadRadius: -8,
-                                    offset: const Offset(0, -2),
+                                    color: Color(0x3D6E8CFF),
+                                    blurRadius: 20,
+                                    spreadRadius: -7,
+                                    offset: Offset(0, -3),
                                   ),
                                 ],
                               ),
@@ -249,18 +246,18 @@ class _NavItem extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(28),
-            splashColor: AppColors.primary.withValues(alpha: .08),
-            highlightColor: Colors.white.withValues(alpha: .018),
+            splashColor: AppColors.primary.withValues(alpha: .10),
+            highlightColor: Colors.white.withValues(alpha: .025),
             onTap: () => onTap(index),
             child: SizedBox(
-              height: 72,
+              height: 76,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   AnimatedScale(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeOutCubic,
-                    scale: selected ? 1.05 : .98,
+                    scale: selected ? 1.07 : .98,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeOutCubic,
@@ -274,7 +271,15 @@ class _NavItem extends StatelessWidget {
                         size: selected ? 25 : 22,
                         color: selected
                             ? Colors.white
-                            : AppColors.textSecondary.withValues(alpha: .88),
+                            : const Color(0xFFC5CBDA).withValues(alpha: .92),
+                        shadows: selected
+                            ? [
+                                Shadow(
+                                  color: AppColors.primaryLight.withValues(alpha: .55),
+                                  blurRadius: 10,
+                                ),
+                              ]
+                            : null,
                       ),
                     ),
                   ),
@@ -285,7 +290,7 @@ class _NavItem extends StatelessWidget {
                     style: AppTypography.caption.copyWith(
                       color: selected
                           ? Colors.white
-                          : AppColors.textSecondary.withValues(alpha: .9),
+                          : const Color(0xFFC5CBDA).withValues(alpha: .90),
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                       fontSize: 9.5,
                       height: 1.05,
@@ -329,27 +334,27 @@ class _CenterButton extends StatelessWidget {
           child: Hero(
             tag: 'nexora-add-action',
             child: Container(
-              width: 58,
-              height: 58,
+              width: 60,
+              height: 60,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: AppGradients.button,
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: .18),
+                  color: Colors.white.withValues(alpha: .22),
                   width: 1,
                 ),
                 boxShadow: [
                   ...AppShadows.button,
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: .32),
-                    blurRadius: 26,
+                    color: AppColors.primary.withValues(alpha: .42),
+                    blurRadius: 28,
                     spreadRadius: -3,
                   ),
                   BoxShadow(
-                    color: const Color(0xFF5B7CFF).withValues(alpha: .12),
-                    blurRadius: 18,
-                    spreadRadius: -6,
-                    offset: const Offset(0, -3),
+                    color: const Color(0xFF5B7CFF).withValues(alpha: .18),
+                    blurRadius: 20,
+                    spreadRadius: -5,
+                    offset: const Offset(0, -4),
                   ),
                 ],
               ),
