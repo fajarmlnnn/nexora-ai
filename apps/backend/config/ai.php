@@ -5,8 +5,8 @@ return [
     'base_url' => rtrim(env('AI_BASE_URL', 'https://api.openai.com/v1'), '/'),
     'api_key' => env('AI_API_KEY'),
     'model' => env('AI_MODEL', 'gpt-4o-mini'),
-    'timeout' => max(5, min((int) env('AI_TIMEOUT', 30), 30)),
-    'max_tokens' => max(128, min((int) env('AI_MAX_TOKENS', 700), 1000)),
+    'timeout' => max(5, min((int) env('AI_TIMEOUT', 18), 18)),
+    'max_tokens' => max(128, min((int) env('AI_MAX_TOKENS', 600), 800)),
     'reasoning_effort' => env('AI_REASONING_EFFORT', 'low'),
 
     // AI admission control must not depend on the application's default cache

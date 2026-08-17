@@ -101,8 +101,8 @@ class AiApiService {
           headers: {'Authorization': 'Bearer $accessToken'},
           contentType: Headers.jsonContentType,
           responseType: ResponseType.json,
-          sendTimeout: const Duration(seconds: 15),
-          receiveTimeout: const Duration(seconds: 35),
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 25),
         ),
       );
 

@@ -66,4 +66,44 @@ class AiGatewayServiceTest extends TestCase
                 && ! array_key_exists('temperature', $body);
         });
     }
+
+    public function test_chat_keeps_recent_conversation_context_only(): void
+    {
+        Config::set('ai.provider', 'gemini');
+        Config::set('ai.api_key', 'test-key');
+        Config::set('ai.base_url', 'https://generativelanguage.googleapis.com/v1beta/openai');
+        Config::set('ai.model', 'gemini-3.6-flash');
+        Config::set('ai.reasoning_effort', 'low');
+        Config::set('ai.max_tokens', 600);
+
+        Http::fake([
+            'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'role' => 'assistant',
+                        'content' => 'Oke, gue paham.',
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $messages = [];
+        for ($index = 1; $index <= 12; $index++) {
+            $messages[] = [
+                'role' => $index % 2 === 0 ? 'assistant' : 'user',
+                'content' => "Pesan $index",
+            ];
+        }
+
+        app(AiGatewayService::class)->chat($messages);
+
+        Http::assertSent(function ($request): bool {
+            $sentMessages = $request->data()['messages'];
+            $conversation = array_slice($sentMessages, 1);
+
+            return count($sentMessages) === 9
+                && $conversation[0]['content'] === 'Pesan 5'
+                && $conversation[7]['content'] === 'Pesan 12';
+        });
+    }
 }

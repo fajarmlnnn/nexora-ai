@@ -9,12 +9,13 @@ use Illuminate\Support\Facades\Log;
 class AiGatewayService
 {
     private const MAX_RESPONSE_CHARS = 8000;
+    private const MAX_CONTEXT_MESSAGES = 8;
 
     public function healthCheck(): void
     {
         $this->validateConfiguration();
         try {
-            $request = Http::acceptJson()->withToken((string) config('ai.api_key'))->connectTimeout(3)->timeout(10)->retry(2, 250, throw: false);
+            $request = Http::acceptJson()->withToken((string) config('ai.api_key'))->connectTimeout(3)->timeout(10)->retry(1, 150, throw: false);
             $response = strtolower((string) config('ai.provider')) === 'gemini'
                 ? $request->get($this->modelUrl())
                 : $request->post($this->chatCompletionsUrl(), $this->healthPayload());
@@ -45,6 +46,7 @@ class AiGatewayService
     public function chat(array $messages, array $financialContext = []): string
     {
         $this->validateConfiguration();
+        $messages = $this->trimConversation($messages);
         $system = [
             'role' => 'system',
             'content' => implode("\n", [
@@ -78,7 +80,7 @@ class AiGatewayService
         ];
         try {
             $response = Http::acceptJson()->withToken((string) config('ai.api_key'))->connectTimeout(3)
-                ->timeout(max(5, min((int) config('ai.timeout', 30), 30)))->retry(2, 250, throw: false)
+                ->timeout(max(5, min((int) config('ai.timeout', 18), 18)))->retry(1, 150, throw: false)
                 ->post($this->chatCompletionsUrl(), $this->chatPayload(array_merge([$system], $messages)));
         } catch (\Throwable $e) {
             Log::warning('AI provider request failed.', ['exception' => $e::class]);
@@ -102,6 +104,16 @@ class AiGatewayService
             throw new AiProviderException('AI provider returned an oversized response.', 3002);
         }
         return $content;
+    }
+
+    /** @param array<int, array{role:string,content:string}> $messages */
+    private function trimConversation(array $messages): array
+    {
+        if (count($messages) <= self::MAX_CONTEXT_MESSAGES) {
+            return $messages;
+        }
+
+        return array_values(array_slice($messages, -self::MAX_CONTEXT_MESSAGES));
     }
 
     private function normalizeChatText(string $content): string
@@ -134,7 +146,7 @@ class AiGatewayService
         return $this->applyProviderOptions([
             'model' => config('ai.model'),
             'messages' => $messages,
-            'max_tokens' => max(256, min((int) config('ai.max_tokens', 700), 2000)),
+            'max_tokens' => max(256, min((int) config('ai.max_tokens', 600), 1000)),
         ]);
     }
 
