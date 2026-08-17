@@ -25,8 +25,6 @@ class AppShell extends StatelessWidget {
         }
       },
       child: Scaffold(
-        // Let the page continue behind the floating navigation surface so the
-        // bar reads as a layer above the app instead of a fixed footer.
         extendBody: true,
         body: navigationShell,
         bottomNavigationBar: _PremiumBottomNav(
@@ -67,77 +65,121 @@ class _PremiumBottomNav extends StatelessWidget {
   final ValueChanged<int> onTap;
   final VoidCallback onAdd;
 
+  int get _activeSlot => currentIndex < 2 ? currentIndex : currentIndex + 1;
+
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return SizedBox(
-      height: 92 + bottomInset,
+      height: 84 + bottomInset,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          14,
-          4,
-          14,
-          bottomInset + 10,
-        ),
+        padding: EdgeInsets.fromLTRB(14, 4, 14, bottomInset + 8),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(32),
           child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            filter: ui.ImageFilter.blur(sigmaX: 22, sigmaY: 22),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: AppColors.card.withValues(alpha: .88),
+                color: AppColors.card.withValues(alpha: .82),
                 borderRadius: BorderRadius.circular(32),
                 border: Border.all(
-                  color: AppColors.border.withValues(alpha: .72),
+                  color: Colors.white.withValues(alpha: .09),
                 ),
                 boxShadow: [
                   ...AppShadows.floating,
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: .12),
-                    blurRadius: 28,
-                    spreadRadius: -8,
-                    offset: const Offset(0, 10),
+                    color: AppColors.primary.withValues(alpha: .10),
+                    blurRadius: 34,
+                    spreadRadius: -10,
+                    offset: const Offset(0, 12),
                   ),
                 ],
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
-                child: Row(
-                  children: [
-                    _NavItem(
-                      label: 'Home',
-                      icon: LucideIcons.house,
-                      index: 0,
-                      currentIndex: currentIndex,
-                      onTap: onTap,
-                    ),
-                    _NavItem(
-                      label: 'Transaksi',
-                      icon: LucideIcons.arrowLeftRight,
-                      index: 1,
-                      currentIndex: currentIndex,
-                      onTap: onTap,
-                    ),
-                    Expanded(
-                      child: Center(child: _CenterButton(onTap: onAdd)),
-                    ),
-                    _NavItem(
-                      label: 'Wallet',
-                      icon: LucideIcons.walletMinimal,
-                      index: 2,
-                      currentIndex: currentIndex,
-                      onTap: onTap,
-                    ),
-                    _NavItem(
-                      label: 'Goals',
-                      icon: LucideIcons.target,
-                      index: 3,
-                      currentIndex: currentIndex,
-                      onTap: onTap,
-                    ),
-                  ],
-                ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final slotWidth = constraints.maxWidth / 5;
+
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // One shared active surface. It physically slides between
+                      // destinations instead of creating a separate purple
+                      // circle behind every icon.
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 460),
+                        curve: Curves.easeInOutCubicEmphasized,
+                        left: slotWidth * _activeSlot + 5,
+                        top: 5,
+                        width: slotWidth - 10,
+                        height: 62,
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(28),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  AppColors.primary.withValues(alpha: .23),
+                                  AppColors.primary.withValues(alpha: .10),
+                                ],
+                              ),
+                              border: Border.all(
+                                color: AppColors.primaryLight.withValues(
+                                  alpha: .18,
+                                ),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: .18),
+                                  blurRadius: 22,
+                                  spreadRadius: -7,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          _NavItem(
+                            label: 'Home',
+                            icon: LucideIcons.house,
+                            index: 0,
+                            currentIndex: currentIndex,
+                            onTap: onTap,
+                          ),
+                          _NavItem(
+                            label: 'Transaksi',
+                            icon: LucideIcons.arrowLeftRight,
+                            index: 1,
+                            currentIndex: currentIndex,
+                            onTap: onTap,
+                          ),
+                          Expanded(
+                            child: Center(child: _CenterButton(onTap: onAdd)),
+                          ),
+                          _NavItem(
+                            label: 'Wallet',
+                            icon: LucideIcons.walletMinimal,
+                            index: 2,
+                            currentIndex: currentIndex,
+                            onTap: onTap,
+                          ),
+                          _NavItem(
+                            label: 'Goals',
+                            icon: LucideIcons.target,
+                            index: 3,
+                            currentIndex: currentIndex,
+                            onTap: onTap,
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -171,71 +213,59 @@ class _NavItem extends StatelessWidget {
         button: true,
         selected: selected,
         label: label,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(26),
-          splashColor: AppColors.primary.withValues(alpha: .12),
-          highlightColor: Colors.transparent,
-          onTap: () => onTap(index),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 260),
-            curve: Curves.easeOutCubic,
-            margin: const EdgeInsets.symmetric(horizontal: 2),
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-            decoration: BoxDecoration(
-              color: selected
-                  ? AppColors.primary.withValues(alpha: .16)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(26),
-              border: Border.all(
-                color: selected
-                    ? AppColors.primary.withValues(alpha: .18)
-                    : Colors.transparent,
-              ),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: .14),
-                        blurRadius: 18,
-                        spreadRadius: -5,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(28),
+            splashColor: AppColors.primary.withValues(alpha: .10),
+            highlightColor: Colors.white.withValues(alpha: .025),
+            onTap: () => onTap(index),
+            child: SizedBox(
+              height: 72,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedScale(
+                    duration: const Duration(milliseconds: 360),
+                    curve: Curves.easeOutBack,
+                    scale: selected ? 1.06 : 1,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 360),
+                      curve: Curves.easeOutCubic,
+                      transform: Matrix4.translationValues(
+                        0,
+                        selected ? -1.5 : 0,
+                        0,
                       ),
-                    ]
-                  : const [],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedScale(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutBack,
-                  scale: selected ? 1.08 : 1,
-                  child: Icon(
-                    icon,
-                    size: 22,
-                    color: selected
-                        ? AppColors.primaryLight
-                        : AppColors.textSecondary,
+                      child: Icon(
+                        icon,
+                        size: selected ? 24 : 22,
+                        color: selected
+                            ? AppColors.primaryLight
+                            : AppColors.textSecondary,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 3),
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  style: AppTypography.caption.copyWith(
-                    color: selected
-                        ? AppColors.primaryLight
-                        : AppColors.textSecondary,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 9.5,
-                    height: 1.05,
+                  const SizedBox(height: 3),
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 320),
+                    curve: Curves.easeOutCubic,
+                    style: AppTypography.caption.copyWith(
+                      color: selected
+                          ? AppColors.primaryLight
+                          : AppColors.textSecondary,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 9.5,
+                      height: 1.05,
+                    ),
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
