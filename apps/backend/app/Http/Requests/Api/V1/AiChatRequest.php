@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class AiChatRequest extends FormRequest
 {
-    private const MAX_TOTAL_MESSAGE_CHARS = 12000;
+    private const MAX_TOTAL_MESSAGE_CHARS = 6000;
 
     public function authorize(): bool
     {
@@ -20,7 +20,7 @@ class AiChatRequest extends FormRequest
                 'required',
                 'array',
                 'min:1',
-                'max:20',
+                'max:12',
                 function (string $attribute, mixed $value, \Closure $fail): void {
                     $totalCharacters = 0;
 
