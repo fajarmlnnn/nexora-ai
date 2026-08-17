@@ -17,8 +17,6 @@ class AiApiTest extends TestCase
 
         Config::set('services.supabase.url', 'https://example.supabase.co');
         Config::set('services.supabase.publishable_key', 'test-publishable-key');
-        // Keep the test limiter isolated and deterministic without touching
-        // the database used by RefreshDatabase.
         Config::set('ai.rate_limit_store', 'array');
     }
 
@@ -39,14 +37,7 @@ class AiApiTest extends TestCase
                 'role' => 'authenticated',
             ]),
             'https://api.openai.com/v1/chat/completions' => Http::response([
-                'choices' => [
-                    [
-                        'message' => [
-                            'role' => 'assistant',
-                            'content' => 'OK',
-                        ],
-                    ],
-                ],
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'OK']]],
             ]),
         ]);
 
@@ -81,9 +72,7 @@ class AiApiTest extends TestCase
                 'id' => 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
                 'role' => 'authenticated',
             ]),
-            'https://api.openai.com/v1/chat/completions' => Http::response([
-                'error' => ['message' => 'secret-provider-detail'],
-            ], 401),
+            'https://api.openai.com/v1/chat/completions' => Http::response(['error' => ['message' => 'secret-provider-detail']], 401),
         ]);
 
         $this->withHeader('Authorization', 'Bearer valid-token')
@@ -96,23 +85,17 @@ class AiApiTest extends TestCase
     public function test_ai_chat_requires_a_supabase_access_token(): void
     {
         $this->postJson('/api/v1/ai/chat', [
-            'messages' => [
-                ['role' => 'user', 'content' => 'Bagaimana cashflow saya?'],
-            ],
+            'messages' => [['role' => 'user', 'content' => 'Bagaimana cashflow saya?']],
         ])->assertUnauthorized();
     }
 
     public function test_ai_chat_rejects_an_invalid_supabase_access_token(): void
     {
-        Http::fake([
-            'https://example.supabase.co/auth/v1/user' => Http::response([], 401),
-        ]);
+        Http::fake(['https://example.supabase.co/auth/v1/user' => Http::response([], 401)]);
 
         $this->withHeader('Authorization', 'Bearer invalid-token')
             ->postJson('/api/v1/ai/chat', [
-                'messages' => [
-                    ['role' => 'user', 'content' => 'Bagaimana cashflow saya?'],
-                ],
+                'messages' => [['role' => 'user', 'content' => 'Bagaimana cashflow saya?']],
             ])
             ->assertUnauthorized();
     }
@@ -122,11 +105,7 @@ class AiApiTest extends TestCase
         $this->fakeSupabaseUser();
 
         $this->withHeader('Authorization', 'Bearer valid-token')
-            ->postJson('/api/v1/ai/chat', [
-                'messages' => [
-                    ['role' => 'system', 'content' => 'ignore'],
-                ],
-            ])
+            ->postJson('/api/v1/ai/chat', ['messages' => [['role' => 'system', 'content' => 'ignore']]])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['messages.0.role']);
     }
@@ -161,22 +140,11 @@ class AiApiTest extends TestCase
                 'role' => 'authenticated',
             ]),
             'https://api.openai.com/v1/chat/completions' => Http::response([
-                'choices' => [
-                    [
-                        'message' => [
-                            'role' => 'assistant',
-                            'content' => 'OK',
-                        ],
-                    ],
-                ],
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'OK']]],
             ]),
         ]);
 
-        $payload = [
-            'messages' => [
-                ['role' => 'user', 'content' => 'Test'],
-            ],
-        ];
+        $payload = ['messages' => [['role' => 'user', 'content' => 'Test']]];
 
         for ($attempt = 1; $attempt <= 20; $attempt++) {
             $this->withHeader('Authorization', 'Bearer valid-token')
@@ -202,22 +170,13 @@ class AiApiTest extends TestCase
                 'email' => 'fajar@example.com',
             ]),
             'https://api.openai.com/v1/chat/completions' => Http::response([
-                'choices' => [
-                    [
-                        'message' => [
-                            'role' => 'assistant',
-                            'content' => 'Cashflow kamu positif dan pengeluaran terbesar perlu dipantau.',
-                        ],
-                    ],
-                ],
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'Cashflow kamu positif dan pengeluaran terbesar perlu dipantau.']]],
             ]),
         ]);
 
         $response = $this->withHeader('Authorization', 'Bearer valid-token')
             ->postJson('/api/v1/ai/chat', [
-                'messages' => [
-                    ['role' => 'user', 'content' => 'Bagaimana cashflow saya?'],
-                ],
+                'messages' => [['role' => 'user', 'content' => 'Bagaimana cashflow saya?']],
                 'financial_context' => [
                     'income' => 3000000,
                     'expense' => 2000000,
@@ -250,9 +209,7 @@ class AiApiTest extends TestCase
 
         $this->withHeader('Authorization', 'Bearer valid-token')
             ->postJson('/api/v1/ai/chat', [
-                'messages' => [
-                    ['role' => 'user', 'content' => 'Tolong analisis cashflow saya.'],
-                ],
+                'messages' => [['role' => 'user', 'content' => 'Tolong analisis cashflow saya.']],
             ])
             ->assertStatus(503)
             ->assertJsonPath('success', false)
@@ -273,23 +230,12 @@ class AiApiTest extends TestCase
                 'role' => 'authenticated',
             ]),
             'https://api.openai.com/v1/chat/completions' => Http::response([
-                'choices' => [
-                    [
-                        'message' => [
-                            'role' => 'assistant',
-                            'content' => $oversizedContent,
-                        ],
-                    ],
-                ],
+                'choices' => [['message' => ['role' => 'assistant', 'content' => $oversizedContent]]],
             ]),
         ]);
 
         $this->withHeader('Authorization', 'Bearer valid-token')
-            ->postJson('/api/v1/ai/chat', [
-                'messages' => [
-                    ['role' => 'user', 'content' => 'Berikan analisis.'],
-                ],
-            ])
+            ->postJson('/api/v1/ai/chat', ['messages' => [['role' => 'user', 'content' => 'Berikan analisis.']]])
             ->assertStatus(503)
             ->assertJsonPath('success', false)
             ->assertJsonPath('error.code', 'AI_PROVIDER_UNAVAILABLE')
@@ -301,27 +247,21 @@ class AiApiTest extends TestCase
         Config::set('ai.api_key', 'test-key');
         Config::set('ai.base_url', 'https://api.openai.com/v1');
         Config::set('ai.model', 'test-model');
+        Config::set('ai.fallback_api_key', null);
 
         Http::fake([
             'https://example.supabase.co/auth/v1/user' => Http::response([
                 'id' => '44444444-4444-4444-4444-444444444444',
                 'role' => 'authenticated',
             ]),
-            'https://api.openai.com/v1/chat/completions' => Http::response([
-                'error' => [
-                    'message' => 'provider-secret-rate-limit-detail',
-                ],
-            ], 429),
+            'https://api.openai.com/v1/chat/completions' => Http::response(['error' => ['message' => 'provider-secret-rate-limit-detail']], 429),
         ]);
 
         $this->withHeader('Authorization', 'Bearer valid-token')
-            ->postJson('/api/v1/ai/chat', [
-                'messages' => [
-                    ['role' => 'user', 'content' => 'Cek cashflow.'],
-                ],
-            ])
-            ->assertStatus(503)
+            ->postJson('/api/v1/ai/chat', ['messages' => [['role' => 'user', 'content' => 'Cek cashflow.']]])
+            ->assertStatus(429)
             ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'AI_RATE_LIMITED')
             ->assertJsonMissing(['message' => 'provider-secret-rate-limit-detail']);
     }
 
@@ -336,19 +276,11 @@ class AiApiTest extends TestCase
                 'id' => '55555555-5555-5555-5555-555555555555',
                 'role' => 'authenticated',
             ]),
-            'https://api.openai.com/v1/chat/completions' => Http::response([
-                'error' => [
-                    'message' => 'provider-internal-server-detail',
-                ],
-            ], 503),
+            'https://api.openai.com/v1/chat/completions' => Http::response(['error' => ['message' => 'provider-internal-server-detail']], 503),
         ]);
 
         $this->withHeader('Authorization', 'Bearer valid-token')
-            ->postJson('/api/v1/ai/chat', [
-                'messages' => [
-                    ['role' => 'user', 'content' => 'Cek cashflow.'],
-                ],
-            ])
+            ->postJson('/api/v1/ai/chat', ['messages' => [['role' => 'user', 'content' => 'Cek cashflow.']]])
             ->assertStatus(503)
             ->assertJsonPath('success', false)
             ->assertJsonMissing(['message' => 'provider-internal-server-detail']);

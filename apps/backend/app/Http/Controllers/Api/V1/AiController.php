@@ -79,20 +79,25 @@ class AiController extends Controller
                 $request->validated('financial_context', []),
             );
         } catch (AiProviderException $e) {
+            $diagnosticCode = $this->diagnosticCode($e->getCode());
+            $status = $e->getCode() === 3004 ? 429 : 503;
+
             Log::warning('AI chat provider unavailable.', [
                 'request_id' => $requestId,
                 'exception' => $e::class,
-                'diagnostic_code' => $this->diagnosticCode($e->getCode()),
+                'diagnostic_code' => $diagnosticCode,
             ]);
 
             return response()->json([
                 'success' => false,
                 'error' => [
-                    'code' => 'AI_PROVIDER_UNAVAILABLE',
-                    'message' => 'AI service is temporarily unavailable.',
+                    'code' => $e->getCode() === 3004 ? 'AI_RATE_LIMITED' : 'AI_PROVIDER_UNAVAILABLE',
+                    'message' => $e->getCode() === 3004
+                        ? 'AI sedang ramai. Coba lagi sebentar.'
+                        : 'AI service is temporarily unavailable.',
                     'request_id' => $requestId,
                 ],
-            ], 503);
+            ], $status);
         } catch (Throwable $e) {
             Log::error('Unexpected AI chat failure.', [
                 'request_id' => $requestId,
@@ -130,6 +135,7 @@ class AiController extends Controller
             3000 => 'provider_rejected_request',
             3001 => 'provider_empty_response',
             3002 => 'provider_response_too_large',
+            3004 => 'provider_rate_limited',
             default => 'provider_unavailable',
         };
     }

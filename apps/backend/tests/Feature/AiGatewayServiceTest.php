@@ -48,10 +48,11 @@ class AiGatewayServiceTest extends TestCase
         });
     }
 
-    public function test_provider_failures_are_wrapped_without_exposing_provider_response(): void
+    public function test_provider_rate_limit_is_wrapped_without_exposing_provider_response(): void
     {
         config()->set('ai.api_key', 'test-secret');
         config()->set('ai.base_url', 'https://ai.test/v1');
+        config()->set('ai.fallback_api_key', null);
 
         Http::fake([
             'https://ai.test/*' => Http::response([
@@ -60,17 +61,19 @@ class AiGatewayServiceTest extends TestCase
         ]);
 
         $this->expectException(AiProviderException::class);
-        $this->expectExceptionMessage('AI provider rejected the request.');
+        $this->expectExceptionMessage('AI provider rate limit reached.');
+        $this->expectExceptionCode(3004);
 
         app(AiGatewayService::class)->chat([
             ['role' => 'user', 'content' => 'test'],
         ]);
     }
 
-    public function test_provider_failure_logging_contains_only_safe_metadata(): void
+    public function test_provider_rate_limit_logging_contains_only_safe_metadata(): void
     {
         config()->set('ai.api_key', 'super-secret-api-key');
         config()->set('ai.base_url', 'https://ai.test/v1');
+        config()->set('ai.fallback_api_key', null);
 
         Http::fake([
             'https://ai.test/*' => Http::response([
@@ -98,7 +101,8 @@ class AiGatewayServiceTest extends TestCase
             ]);
             $this->fail('Expected AiProviderException was not thrown.');
         } catch (AiProviderException $e) {
-            $this->assertSame('AI provider rejected the request.', $e->getMessage());
+            $this->assertSame('AI provider rate limit reached.', $e->getMessage());
+            $this->assertSame(3004, $e->getCode());
         }
     }
 
@@ -106,6 +110,7 @@ class AiGatewayServiceTest extends TestCase
     {
         config()->set('ai.api_key', 'test-secret');
         config()->set('ai.base_url', 'https://ai.test/v1');
+        config()->set('ai.fallback_api_key', null);
 
         Http::fake([
             'https://ai.test/*' => Http::response([
