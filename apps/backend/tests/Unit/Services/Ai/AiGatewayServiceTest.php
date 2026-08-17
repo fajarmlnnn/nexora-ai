@@ -33,18 +33,20 @@ class AiGatewayServiceTest extends TestCase
         });
     }
 
-    public function test_gemini_chat_uses_reasoning_effort_instead_of_temperature(): void
+    public function test_groq_chat_uses_temperature_and_primary_model(): void
     {
-        Config::set('ai.provider', 'gemini');
-        Config::set('ai.api_key', 'test-key');
-        Config::set('ai.base_url', 'https://generativelanguage.googleapis.com/v1beta/openai');
-        Config::set('ai.model', 'gemini-3.6-flash');
-        Config::set('ai.reasoning_effort', 'low');
-        Config::set('ai.max_tokens', 700);
+        Config::set('ai.provider', 'groq');
+        Config::set('ai.api_key', 'groq-key');
+        Config::set('ai.base_url', 'https://api.groq.com/openai/v1');
+        Config::set('ai.model', 'llama-3.1-8b-instant');
+        Config::set('ai.fallback_provider', 'gemini');
+        Config::set('ai.fallback_api_key', 'gemini-key');
+        Config::set('ai.fallback_base_url', 'https://generativelanguage.googleapis.com/v1beta/openai');
         Config::set('ai.fallback_model', 'gemini-2.5-flash');
+        Config::set('ai.max_tokens', 600);
 
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' => Http::response([
+            'https://api.groq.com/openai/v1/chat/completions' => Http::response([
                 'choices' => [[
                     'message' => [
                         'role' => 'assistant',
@@ -59,37 +61,39 @@ class AiGatewayServiceTest extends TestCase
         ]);
 
         $this->assertSame('Cashflow kamu positif.', $content);
-
         Http::assertSent(function ($request): bool {
             $body = $request->data();
 
-            return $body['reasoning_effort'] === 'low'
-                && $body['max_tokens'] === 700
-                && $body['model'] === 'gemini-3.6-flash'
-                && ! array_key_exists('temperature', $body);
+            return $request->url() === 'https://api.groq.com/openai/v1/chat/completions'
+                && $request->hasHeader('Authorization', 'Bearer groq-key')
+                && $body['model'] === 'llama-3.1-8b-instant'
+                && $body['max_tokens'] === 600
+                && $body['temperature'] === 0.2
+                && ! array_key_exists('reasoning_effort', $body);
         });
     }
 
-    public function test_rate_limited_primary_model_falls_back_once(): void
+    public function test_groq_rate_limit_falls_back_once_to_gemini(): void
     {
-        Config::set('ai.provider', 'gemini');
-        Config::set('ai.api_key', 'test-key');
-        Config::set('ai.base_url', 'https://generativelanguage.googleapis.com/v1beta/openai');
-        Config::set('ai.model', 'gemini-3.6-flash');
+        Config::set('ai.provider', 'groq');
+        Config::set('ai.api_key', 'groq-key');
+        Config::set('ai.base_url', 'https://api.groq.com/openai/v1');
+        Config::set('ai.model', 'llama-3.1-8b-instant');
+        Config::set('ai.fallback_provider', 'gemini');
+        Config::set('ai.fallback_api_key', 'gemini-key');
+        Config::set('ai.fallback_base_url', 'https://generativelanguage.googleapis.com/v1beta/openai');
         Config::set('ai.fallback_model', 'gemini-2.5-flash');
-        Config::set('ai.reasoning_effort', 'low');
 
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' => Http::sequence()
-                ->pushStatus(429)
-                ->push([
-                    'choices' => [[
-                        'message' => [
-                            'role' => 'assistant',
-                            'content' => 'Oke, gue bantu dari data yang ada.',
-                        ],
-                    ]],
-                ]),
+            'https://api.groq.com/openai/v1/chat/completions' => Http::response([], 429),
+            'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'role' => 'assistant',
+                        'content' => 'Oke, gue bantu dari data yang ada.',
+                    ],
+                ]],
+            ]),
         ]);
 
         $content = app(AiGatewayService::class)->chat([
@@ -97,26 +101,35 @@ class AiGatewayServiceTest extends TestCase
         ]);
 
         $this->assertSame('Oke, gue bantu dari data yang ada.', $content);
-
         Http::assertSentCount(2);
         Http::assertSent(function ($request): bool {
-            return $request->data()['model'] === 'gemini-3.6-flash';
+            return $request->url() === 'https://api.groq.com/openai/v1/chat/completions'
+                && $request->data()['model'] === 'llama-3.1-8b-instant';
         });
         Http::assertSent(function ($request): bool {
-            return $request->data()['model'] === 'gemini-2.5-flash';
+            $body = $request->data();
+
+            return $request->url() === 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
+                && $request->hasHeader('Authorization', 'Bearer gemini-key')
+                && $body['model'] === 'gemini-2.5-flash'
+                && $body['reasoning_effort'] === 'low'
+                && ! array_key_exists('temperature', $body);
         });
     }
 
-    public function test_rate_limited_primary_and_fallback_returns_specific_exception(): void
+    public function test_groq_and_gemini_rate_limits_return_specific_exception(): void
     {
-        Config::set('ai.provider', 'gemini');
-        Config::set('ai.api_key', 'test-key');
-        Config::set('ai.base_url', 'https://generativelanguage.googleapis.com/v1beta/openai');
-        Config::set('ai.model', 'gemini-3.6-flash');
+        Config::set('ai.provider', 'groq');
+        Config::set('ai.api_key', 'groq-key');
+        Config::set('ai.base_url', 'https://api.groq.com/openai/v1');
+        Config::set('ai.model', 'llama-3.1-8b-instant');
+        Config::set('ai.fallback_provider', 'gemini');
+        Config::set('ai.fallback_api_key', 'gemini-key');
+        Config::set('ai.fallback_base_url', 'https://generativelanguage.googleapis.com/v1beta/openai');
         Config::set('ai.fallback_model', 'gemini-2.5-flash');
-        Config::set('ai.reasoning_effort', 'low');
 
         Http::fake([
+            'https://api.groq.com/openai/v1/chat/completions' => Http::response([], 429),
             'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' => Http::response([], 429),
         ]);
 
@@ -132,15 +145,14 @@ class AiGatewayServiceTest extends TestCase
 
     public function test_chat_keeps_recent_conversation_context_only(): void
     {
-        Config::set('ai.provider', 'gemini');
+        Config::set('ai.provider', 'groq');
         Config::set('ai.api_key', 'test-key');
-        Config::set('ai.base_url', 'https://generativelanguage.googleapis.com/v1beta/openai');
-        Config::set('ai.model', 'gemini-3.6-flash');
-        Config::set('ai.reasoning_effort', 'low');
+        Config::set('ai.base_url', 'https://api.groq.com/openai/v1');
+        Config::set('ai.model', 'llama-3.1-8b-instant');
         Config::set('ai.max_tokens', 600);
 
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' => Http::response([
+            'https://api.groq.com/openai/v1/chat/completions' => Http::response([
                 'choices' => [[
                     'message' => [
                         'role' => 'assistant',
