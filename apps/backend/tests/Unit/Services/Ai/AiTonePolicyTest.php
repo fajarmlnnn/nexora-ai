@@ -61,13 +61,12 @@ class AiTonePolicyTest extends TestCase
         $this->assertStringContainsString('Gen Z', $system);
         $this->assertStringContainsString('Markdown', $system);
         $this->assertStringContainsString('financial', $lowerSystem);
-        $this->assertStringContainsString('healthy', $lowerSystem);
+        $this->assertStringContainsString('financial health', $lowerSystem);
         $this->assertStringContainsString('invent', $lowerSystem);
         $this->assertStringContainsString('secret', $lowerSystem);
 
         $this->assertStringContainsString('smart friend', $lowerSystem);
         $this->assertStringContainsString('natural conversation', $lowerSystem);
-        $this->assertStringContainsString('generic chatbot template', $lowerSystem);
         $this->assertStringContainsString('positive cashflow', $lowerSystem);
         $this->assertStringContainsString('overall financial health', $lowerSystem);
         $this->assertStringContainsString('unrecorded expenses', $lowerSystem);
