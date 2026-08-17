@@ -2,9 +2,6 @@
 
 namespace App\Providers;
 
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,14 +19,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        RateLimiter::for('ai', function (Request $request): Limit {
-            $userId = $request->attributes->get('supabase_user_id');
-
-            if (is_string($userId) && $userId !== '') {
-                return Limit::perMinute(20)->by('supabase:'.$userId);
-            }
-
-            return Limit::perMinute(5)->by('ai:unauthenticated:'.$request->ip());
-        });
+        // AI rate limiting is implemented by AiRateLimit with an isolated,
+        // configurable cache store. Do not bind it to the application's
+        // default database-backed limiter.
     }
 }
