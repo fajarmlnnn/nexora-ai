@@ -144,14 +144,14 @@ class AiController extends Controller
         // are a range of 3 to 6 months, not 3.6 months.
         $answer = preg_replace('/\b3\.6\s*bulan\b/i', '3-6 bulan', $answer) ?? $answer;
         $answer = preg_replace('/\b3[.,]6\s*bulan\b/i', '3-6 bulan', $answer) ?? $answer;
-        $answer = preg_replace('/Rp\s*1\.5\.3\s*juta/i', 'Rp1,5-3 juta', $answer) ?? $answer;
-        $answer = preg_replace('/Rp\s*1\.500\.000\s*\.\s*Rp\s*3\.000\.000/i', 'Rp1,5-3 juta', $answer) ?? $answer;
+        $answer = preg_replace('/Rp\s*1\.5\.3\s*juta/i', 'Rp1.500.000-Rp3.000.000', $answer) ?? $answer;
+        $answer = preg_replace('/Rp\s*1\.500\.000\s*\.\s*Rp\s*3\.000\.000/i', 'Rp1.500.000-Rp3.000.000', $answer) ?? $answer;
 
         $expense = $this->numericContextValue($context['expense'] ?? null);
         if ($expense !== null && $expense > 0) {
             $minEmergency = $expense * 3;
             $maxEmergency = $expense * 6;
-            $range = $this->formatRupiahCompact($minEmergency) . '-' . $this->formatRupiahCompact($maxEmergency);
+            $range = $this->formatRupiah($minEmergency) . '-' . $this->formatRupiah($maxEmergency);
 
             // If the answer discusses emergency savings but contains a
             // malformed/incorrect numeric range, replace only the range.
@@ -162,23 +162,111 @@ class AiController extends Controller
             ) ?? $answer;
         }
 
-        // A 90% cashflow surplus is not proof that 90% was actually saved.
-        // Keep the mathematically valid percentage but make the distinction
-        // explicit when the model uses "simpanan" as a synonym for surplus.
+        // A cashflow surplus is not proof that the same amount was actually
+        // saved. If the model calls the surplus a savings rate, rewrite the
+        // complete claim instead of leaving a misleading sentence behind.
         $income = $this->numericContextValue($context['income'] ?? null);
         $net = $this->numericContextValue($context['net_cashflow'] ?? null);
         if ($income !== null && $income > 0 && $net !== null) {
             $expectedRate = round(($net / $income) * 100, 1);
             if ($expectedRate >= 0 && $expectedRate <= 100) {
+                $percentage = $this->formatPercentage($expectedRate);
                 $answer = preg_replace(
-                    '/(simpanan(?:mu| Anda| kamu)?\s+)(?:mencapai|sebesar|adalah)\s+\d+(?:[.,]\d+)?\s*%/iu',
-                    '$1surplus kas tercatat sekitar ' . $this->formatPercentage($expectedRate),
+                    '/(?:Dengan\s+)?(?:rasio\s+tabungan|rasio\s+simpanan|tabungan(?:mu| kamu| Anda)?\s+(?:sebesar|mencapai)|simpanan(?:mu| kamu| Anda)?\s+(?:sebesar|mencapai))\s+\d+(?:[.,]\d+)?\s*%[^.\n]*\.?/iu',
+                    'Surplus kas tercatat sekitar ' . $percentage . ' dari pendapatan.',
+                    $answer,
+                ) ?? $answer;
+
+                $answer = preg_replace(
+                    '/\b(?:kamu|Anda)\s+sudah\s+menabung\s+[^.\n]*\b(?:pendapatan|penghasilan)\b[^.\n]*\.?/iu',
+                    '',
                     $answer,
                 ) ?? $answer;
             }
         }
 
+        // Normalize Indonesian Rupiah everywhere in the generated answer.
+        // Examples: "5 000 000 IDR" -> "Rp5.000.000" and
+        // "1500000 rupiah" -> "Rp1.500.000".
+        $answer = $this->normalizeRupiahFormatting($answer);
+
+        // Remove exact duplicate sentences/paragraphs produced by the model.
+        // This is intentionally deterministic so the UI never receives the
+        // same sentence twice merely because the provider repeated itself.
+        $answer = $this->deduplicateAnswer($answer);
+
         return trim($answer);
+    }
+
+    private function normalizeRupiahFormatting(string $answer): string
+    {
+        $pattern = '/(?<![\d.,])(?:Rp\s*)?((?:\d{1,3}(?:[ .]\d{3})+)|(?:\d{4,}))(?:\s*(?:IDR|rupiah))\b/iu';
+
+        return preg_replace_callback($pattern, function (array $match): string {
+            $digits = preg_replace('/\D/', '', $match[1]) ?? '';
+            if ($digits === '') {
+                return $match[0];
+            }
+
+            return 'Rp' . number_format((float) $digits, 0, ',', '.');
+        }, $answer) ?? $answer;
+    }
+
+    private function deduplicateAnswer(string $answer): string
+    {
+        $paragraphs = preg_split('/\n{2,}/', trim($answer)) ?: [];
+        $seenParagraphs = [];
+        $uniqueParagraphs = [];
+
+        foreach ($paragraphs as $paragraph) {
+            $paragraph = trim($paragraph);
+            if ($paragraph === '') {
+                continue;
+            }
+
+            $key = $this->normalizedComparisonKey($paragraph);
+            if ($key !== '' && isset($seenParagraphs[$key])) {
+                continue;
+            }
+
+            if ($key !== '') {
+                $seenParagraphs[$key] = true;
+            }
+
+            $sentences = preg_split('/(?<=[.!?])\s+/u', $paragraph) ?: [$paragraph];
+            $seenSentences = [];
+            $uniqueSentences = [];
+
+            foreach ($sentences as $sentence) {
+                $sentence = trim($sentence);
+                if ($sentence === '') {
+                    continue;
+                }
+
+                $sentenceKey = $this->normalizedComparisonKey($sentence);
+                if ($sentenceKey !== '' && isset($seenSentences[$sentenceKey])) {
+                    continue;
+                }
+
+                if ($sentenceKey !== '') {
+                    $seenSentences[$sentenceKey] = true;
+                }
+                $uniqueSentences[] = $sentence;
+            }
+
+            if ($uniqueSentences !== []) {
+                $uniqueParagraphs[] = implode(' ', $uniqueSentences);
+            }
+        }
+
+        return implode("\n\n", $uniqueParagraphs);
+    }
+
+    private function normalizedComparisonKey(string $value): string
+    {
+        $value = mb_strtolower(trim($value));
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+        return $value;
     }
 
     private function numericContextValue(mixed $value): ?float
@@ -194,16 +282,8 @@ class AiController extends Controller
         return null;
     }
 
-    private function formatRupiahCompact(float $value): string
+    private function formatRupiah(float $value): string
     {
-        if (fmod($value, 1000000.0) === 0.0) {
-            return 'Rp' . number_format($value / 1000000, 0, ',', '.') . ' juta';
-        }
-
-        if (fmod($value, 1000.0) === 0.0) {
-            return 'Rp' . number_format($value / 1000, 0, ',', '.') . ' ribu';
-        }
-
         return 'Rp' . number_format($value, 0, ',', '.');
     }
 
