@@ -40,7 +40,7 @@ class AiGatewayServiceTest extends TestCase
             $context = $payload['messages'][0]['content'];
 
             return $request->header('Authorization')[0] === 'Bearer test-secret'
-                && $payload['max_tokens'] === 2000
+                && $payload['max_tokens'] === 600
                 && $payload['temperature'] === 0.2
                 && str_contains($context, '1000000')
                 && str_contains($context, '2026-08-01')
