@@ -15,6 +15,7 @@ class AiGatewayServiceTest extends TestCase
         config()->set('ai.api_key', 'test-secret');
         config()->set('ai.base_url', 'https://ai.test/v1');
         config()->set('ai.model', 'test-model');
+        config()->set('ai.provider', 'openai');
         config()->set('ai.max_tokens', 5000);
 
         Http::fake([
@@ -39,7 +40,8 @@ class AiGatewayServiceTest extends TestCase
             $context = $payload['messages'][0]['content'];
 
             return $request->header('Authorization')[0] === 'Bearer test-secret'
-                && $payload['max_tokens'] === 1000
+                && $payload['max_tokens'] === 2000
+                && $payload['temperature'] === 0.2
                 && str_contains($context, '1000000')
                 && str_contains($context, '2026-08-01')
                 && ! str_contains($context, 'must-not-leak');
