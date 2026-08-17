@@ -79,9 +79,27 @@ class AiGatewayService
             ]),
         ];
         try {
-            $response = Http::acceptJson()->withToken((string) config('ai.api_key'))->connectTimeout(3)
-                ->timeout(max(5, min((int) config('ai.timeout', 18), 18)))->retry(1, 150, throw: false)
-                ->post($this->chatCompletionsUrl(), $this->chatPayload(array_merge([$system], $messages)));
+            $payload = $this->chatPayload(array_merge([$system], $messages));
+            $response = $this->sendChatRequest($payload, (string) config('ai.model'));
+
+            if ($response->status() === 429) {
+                $fallbackModel = trim((string) config('ai.fallback_model', ''));
+                $primaryModel = trim((string) config('ai.model'));
+
+                if ($fallbackModel !== '' && $fallbackModel !== $primaryModel) {
+                    Log::notice('AI primary model rate limited; trying fallback model.', [
+                        'primary_model' => $primaryModel,
+                        'fallback_model' => $fallbackModel,
+                    ]);
+                    $response = $this->sendChatRequest($payload, $fallbackModel);
+
+                    if ($response->status() === 429) {
+                        Log::warning('AI fallback model also rate limited.', [
+                            'fallback_model' => $fallbackModel,
+                        ]);
+                    }
+                }
+            }
         } catch (\Throwable $e) {
             Log::warning('AI provider request failed.', ['exception' => $e::class]);
             throw new AiProviderException('AI provider request failed.', 2000, $e);
@@ -89,6 +107,9 @@ class AiGatewayService
         if ($response->failed()) {
             $status = $response->status();
             Log::warning('AI provider rejected request.', ['status' => $status, 'failure_class' => $this->failureClass($status)]);
+            if ($status === 429) {
+                throw new AiProviderException('AI provider rate limit reached.', 3004);
+            }
             throw new AiProviderException('AI provider rejected the request.', 3000);
         }
         $content = $response->json('choices.0.message.content');
@@ -104,6 +125,15 @@ class AiGatewayService
             throw new AiProviderException('AI provider returned an oversized response.', 3002);
         }
         return $content;
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function sendChatRequest(array $payload, string $model): \Illuminate\Http\Client\Response
+    {
+        $payload['model'] = $model;
+        return Http::acceptJson()->withToken((string) config('ai.api_key'))->connectTimeout(3)
+            ->timeout(max(5, min((int) config('ai.timeout', 18), 18)))->retry(1, 150, throw: false)
+            ->post($this->chatCompletionsUrl(), $payload);
     }
 
     /** @param array<int, array{role:string,content:string}> $messages */

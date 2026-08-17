@@ -5,6 +5,7 @@ return [
     'base_url' => rtrim(env('AI_BASE_URL', 'https://api.openai.com/v1'), '/'),
     'api_key' => env('AI_API_KEY'),
     'model' => env('AI_MODEL', 'gpt-4o-mini'),
+    'fallback_model' => env('AI_FALLBACK_MODEL', 'gemini-2.5-flash'),
     'timeout' => max(5, min((int) env('AI_TIMEOUT', 18), 18)),
     'max_tokens' => max(128, min((int) env('AI_MAX_TOKENS', 600), 800)),
     'reasoning_effort' => env('AI_REASONING_EFFORT', 'low'),

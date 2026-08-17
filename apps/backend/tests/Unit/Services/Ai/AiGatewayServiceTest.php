@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services\Ai;
 
+use App\Exceptions\AiProviderException;
 use App\Services\Ai\AiGatewayService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
@@ -40,6 +41,7 @@ class AiGatewayServiceTest extends TestCase
         Config::set('ai.model', 'gemini-3.6-flash');
         Config::set('ai.reasoning_effort', 'low');
         Config::set('ai.max_tokens', 700);
+        Config::set('ai.fallback_model', 'gemini-2.5-flash');
 
         Http::fake([
             'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' => Http::response([
@@ -63,8 +65,69 @@ class AiGatewayServiceTest extends TestCase
 
             return $body['reasoning_effort'] === 'low'
                 && $body['max_tokens'] === 700
+                && $body['model'] === 'gemini-3.6-flash'
                 && ! array_key_exists('temperature', $body);
         });
+    }
+
+    public function test_rate_limited_primary_model_falls_back_once(): void
+    {
+        Config::set('ai.provider', 'gemini');
+        Config::set('ai.api_key', 'test-key');
+        Config::set('ai.base_url', 'https://generativelanguage.googleapis.com/v1beta/openai');
+        Config::set('ai.model', 'gemini-3.6-flash');
+        Config::set('ai.fallback_model', 'gemini-2.5-flash');
+        Config::set('ai.reasoning_effort', 'low');
+
+        Http::fake([
+            'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' => Http::sequence()
+                ->pushStatus(429)
+                ->push([
+                    'choices' => [[
+                        'message' => [
+                            'role' => 'assistant',
+                            'content' => 'Oke, gue bantu dari data yang ada.',
+                        ],
+                    ]],
+                ]),
+        ]);
+
+        $content = app(AiGatewayService::class)->chat([
+            ['role' => 'user', 'content' => 'Gimana cashflow gue?'],
+        ]);
+
+        $this->assertSame('Oke, gue bantu dari data yang ada.', $content);
+
+        Http::assertSentCount(2);
+        Http::assertSent(function ($request): bool {
+            return $request->data()['model'] === 'gemini-3.6-flash';
+        });
+        Http::assertSent(function ($request): bool {
+            return $request->data()['model'] === 'gemini-2.5-flash';
+        });
+    }
+
+    public function test_rate_limited_primary_and_fallback_returns_specific_exception(): void
+    {
+        Config::set('ai.provider', 'gemini');
+        Config::set('ai.api_key', 'test-key');
+        Config::set('ai.base_url', 'https://generativelanguage.googleapis.com/v1beta/openai');
+        Config::set('ai.model', 'gemini-3.6-flash');
+        Config::set('ai.fallback_model', 'gemini-2.5-flash');
+        Config::set('ai.reasoning_effort', 'low');
+
+        Http::fake([
+            'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' => Http::response([], 429),
+        ]);
+
+        $this->expectException(AiProviderException::class);
+        $this->expectExceptionCode(3004);
+
+        app(AiGatewayService::class)->chat([
+            ['role' => 'user', 'content' => 'Coba lagi.'],
+        ]);
+
+        Http::assertSentCount(2);
     }
 
     public function test_chat_keeps_recent_conversation_context_only(): void
