@@ -33,7 +33,20 @@ jobs:
         run: composer validate --strict
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ github.token }}"}}'
+        run: |
+          for attempt in 1 2 3 4; do
+            echo "Composer install attempt ${attempt}/4"
+            if composer install --no-interaction --prefer-dist --no-progress --no-scripts; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 4 ]; then
+              sleep $((attempt * 20))
+            fi
+          done
+          echo "Composer install failed after 4 attempts"
+          exit 1
 
       - name: Prepare environment
         run: |
@@ -53,6 +66,9 @@ jobs:
             > .env
           php artisan key:generate --force
           touch database/database.sqlite
+
+      - name: Run Composer scripts
+        run: composer run-script post-autoload-dump --no-interaction
 
       - name: Run migrations
         run: php artisan migrate --force
