@@ -22,13 +22,13 @@ class AiTonePolicyTest extends TestCase
                 'choices' => [[
                     'message' => [
                         'role' => 'assistant',
-                        'content' => 'Cashflow kamu lagi positif.',
+                        'content' => "### Kondisi cashflow\n\n**Pemasukan:** Rp5.000.000\n**Pengeluaran:** Rp500.000\n\n---\n\n*Cashflow kamu lagi positif.*\n\n- Tetap cek pengeluaran yang belum tercatat.",
                     ],
                 ]],
             ]),
         ]);
 
-        app(AiGatewayService::class)->chat([
+        $result = app(AiGatewayService::class)->chat([
             ['role' => 'user', 'content' => 'Bagaimana kondisi cashflow saya?'],
         ], [
             'income' => 5000000,
@@ -39,6 +39,15 @@ class AiTonePolicyTest extends TestCase
             'period_end' => '2026-08-31',
         ]);
 
+        $this->assertSame(
+            "Kondisi cashflow\n\nPemasukan: Rp5.000.000\nPengeluaran: Rp500.000\n\nCashflow kamu lagi positif.\n\n• Tetap cek pengeluaran yang belum tercatat.",
+            $result,
+        );
+
+        $this->assertStringNotContainsString('#', $result);
+        $this->assertStringNotContainsString('*', $result);
+        $this->assertStringNotContainsString('`', $result);
+
         Http::assertSent(function ($request): bool {
             $messages = $request->data()['messages'];
             $system = $messages[0]['content'];
@@ -46,9 +55,12 @@ class AiTonePolicyTest extends TestCase
             return str_contains($system, 'natural, casual Indonesian')
                 && str_contains($system, 'Gen Z')
                 && str_contains($system, 'Do not overuse slang')
-                && str_contains($system, 'Based on recorded data')
-                && str_contains($system, 'Do not call a financial situation healthy')
-                && str_contains($system, 'Do not invent missing transactions');
+                && str_contains($system, 'Base financial conclusions only on the recorded application data')
+                && str_contains($system, 'Do not call a financial situation "healthy"')
+                && str_contains($system, 'Do not invent missing transactions')
+                && str_contains($system, 'Do not use Markdown formatting')
+                && str_contains($system, 'Do not use # headings')
+                && str_contains($system, 'asterisks for bold or italic text');
         });
     }
 }
