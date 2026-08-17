@@ -38,9 +38,13 @@ class _AIPageState extends ConsumerState<AIPage> {
     _Prompt('Prioritas', 'Kasih saya prioritas keuangan bulan ini', LucideIcons.listChecks),
   ];
 
+  static const _duplicateWindow = Duration(seconds: 3);
+
   bool _isSending = false;
   String? _error;
   String? _lastFailedQuestion;
+  String? _lastSubmittedQuestion;
+  DateTime? _lastSubmittedAt;
 
   @override
   void dispose() {
@@ -49,10 +53,31 @@ class _AIPageState extends ConsumerState<AIPage> {
     super.dispose();
   }
 
+  String _normalizeQuestion(String value) {
+    return value.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+  }
+
+  bool _isDuplicateSubmission(String text) {
+    final normalized = _normalizeQuestion(text);
+    if (normalized.isEmpty) return true;
+
+    if (_isSending && _lastSubmittedQuestion == normalized) return true;
+
+    final submittedAt = _lastSubmittedAt;
+    if (_lastSubmittedQuestion == normalized && submittedAt != null) {
+      if (DateTime.now().difference(submittedAt) < _duplicateWindow) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   Future<void> _ask(String question) async {
     final text = question.trim();
-    if (text.isEmpty || _isSending) return;
+    if (text.isEmpty || _isSending || _isDuplicateSubmission(text)) return;
 
+    final normalized = _normalizeQuestion(text);
     final analytics = ref.read(financialAnalyticsProvider);
     final history = [
       for (final message in _messages)
@@ -62,6 +87,11 @@ class _AIPageState extends ConsumerState<AIPage> {
         ),
       AiChatMessage(role: 'user', content: text),
     ];
+
+    // Lock the question before the first await. This makes duplicate taps,
+    // keyboard-submit + button-submit, and very fast repeated taps harmless.
+    _lastSubmittedQuestion = normalized;
+    _lastSubmittedAt = DateTime.now();
 
     setState(() {
       _messages.add(_ChatMessage(text: text, fromUser: true));
@@ -114,13 +144,15 @@ class _AIPageState extends ConsumerState<AIPage> {
         );
       _error = null;
       _lastFailedQuestion = null;
+      _lastSubmittedQuestion = null;
+      _lastSubmittedAt = null;
     });
     _scrollToBottom();
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) return;
+      if (!mounted || !_scrollController.hasClients) return;
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 260),
@@ -267,7 +299,7 @@ class _AIPageState extends ConsumerState<AIPage> {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      'Gemini • Secure gateway',
+                      'Nexora AI • Secure gateway',
                       style: AppTypography.caption.copyWith(color: Colors.white),
                     ),
                   ),
