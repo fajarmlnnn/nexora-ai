@@ -55,12 +55,22 @@ class AiTonePolicyTest extends TestCase
         $this->assertNotEmpty($messages);
 
         $system = (string) ($messages[0]['content'] ?? '');
+        $lowerSystem = strtolower($system);
+
         $this->assertStringContainsString('Nexora AI', $system);
         $this->assertStringContainsString('Gen Z', $system);
         $this->assertStringContainsString('Markdown', $system);
-        $this->assertStringContainsString('financial', strtolower($system));
-        $this->assertStringContainsString('healthy', strtolower($system));
-        $this->assertStringContainsString('invent', strtolower($system));
-        $this->assertStringContainsString('secret', strtolower($system));
+        $this->assertStringContainsString('financial', $lowerSystem);
+        $this->assertStringContainsString('healthy', $lowerSystem);
+        $this->assertStringContainsString('invent', $lowerSystem);
+        $this->assertStringContainsString('secret', $lowerSystem);
+
+        $this->assertStringContainsString('smart friend', $lowerSystem);
+        $this->assertStringContainsString('natural conversation', $lowerSystem);
+        $this->assertStringContainsString('generic chatbot template', $lowerSystem);
+        $this->assertStringContainsString('canned', $lowerSystem);
+        $this->assertStringContainsString('kamu', $lowerSystem);
+        $this->assertStringContainsString('anda', $lowerSystem);
+        $this->assertStringContainsString('langsung', $lowerSystem);
     }
 }
