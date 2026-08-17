@@ -74,9 +74,10 @@ class AiGatewayService
             'role' => 'system',
             'content' => implode("\n", [
                 'You are Nexora AI, a financial coaching assistant for everyday users.',
-                'Speak in natural, casual Indonesian with a friendly Gen Z vibe. Sound human, warm, direct, and easy to understand — not like a bank brochure or a formal financial report.',
+                'Speak in natural, casual Indonesian with a friendly Gen Z vibe. Sound human, warm, direct, and easy to understand — like a helpful chat, not like a bank brochure or a formal financial report.',
                 'Use everyday Indonesian and light conversational phrases when they fit (for example: "oke", "nah", "kalau", "yang penting"). Do not overuse slang, abbreviations, emojis, or English. Never force slang into serious or sensitive financial guidance.',
-                'Keep answers concise and useful. Lead with the actual answer, then explain the key numbers and give practical next steps. Use short paragraphs or bullets when helpful.',
+                'Write like a normal chat message. Do not use Markdown formatting. Do not use # headings, asterisks for bold or italic text, horizontal rules, backticks, tables, or decorative formatting. Do not wrap labels such as Pemasukan or Pengeluaran in symbols. Use plain text, short paragraphs, and simple numbered steps only when needed.',
+                'Keep answers concise and useful. Lead with the actual answer, then explain the key numbers and give practical next steps.',
                 'Base financial conclusions only on the recorded application data and the user message. Never invent missing transactions, income, expenses, debts, assets, goals, or obligations.',
                 'Treat financial context as observed records, not a complete picture of the user\'s finances. Clearly say "berdasarkan transaksi yang tercatat" when the conclusion depends on incomplete records.',
                 'Do not call a financial situation "healthy", "safe", or "aman" as an absolute fact merely because the recorded cashflow is positive. Qualify the conclusion and mention that unrecorded obligations can change the result.',
@@ -118,13 +119,45 @@ class AiGatewayService
             throw new AiProviderException('AI provider returned an empty response.', 3001);
         }
 
-        $content = trim($content);
+        $content = $this->normalizeChatText($content);
+        if ($content === '') {
+            throw new AiProviderException('AI provider returned an empty response.', 3001);
+        }
+
         if (mb_strlen($content) > self::MAX_RESPONSE_CHARS) {
             Log::warning('AI provider response exceeded gateway limit.', [
                 'response_chars' => mb_strlen($content),
             ]);
             throw new AiProviderException('AI provider returned an oversized response.', 3002);
         }
+
+        return $content;
+    }
+
+    /**
+     * Normalize provider output into the plain-text chat style used by Nexora.
+     * This is intentionally conservative: remove presentation-only Markdown
+     * without changing the user's financial numbers or the AI's wording.
+     */
+    private function normalizeChatText(string $content): string
+    {
+        $content = str_replace(["\r\n", "\r"], "\n", trim($content));
+
+        // Remove Markdown headings while keeping their visible text.
+        $content = preg_replace('/^\s{0,3}#{1,6}\s+/m', '', $content) ?? $content;
+
+        // Remove Markdown horizontal rules and emphasis markers.
+        $content = preg_replace('/^\s*(?:\*{3,}|-{3,}|_{3,})\s*$/m', '', $content) ?? $content;
+        $content = preg_replace('/\*{1,3}([^*\n]+)\*{1,3}/', '$1', $content) ?? $content;
+        $content = preg_replace('/_{1,3}([^_\n]+)_{1,3}/', '$1', $content) ?? $content;
+        $content = preg_replace('/`([^`\n]+)`/', '$1', $content) ?? $content;
+
+        // Convert Markdown bullets to plain chat bullets. Never leave '*' or '#'.
+        $content = preg_replace('/^\s*[-*+]\s+/m', '• ', $content) ?? $content;
+
+        // Collapse excessive blank lines while preserving normal chat spacing.
+        $content = preg_replace("/\n{3,}/", "\n\n", $content) ?? $content;
+        $content = trim($content);
 
         return $content;
     }
