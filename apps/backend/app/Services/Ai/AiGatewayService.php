@@ -11,20 +11,25 @@ class AiGatewayService
     private const MAX_RESPONSE_CHARS = 8000;
 
     /**
-     * Verify that the configured AI provider can answer a minimal request.
-     * No prompt or provider response is returned to the caller.
+     * Verify that the configured AI provider is reachable and configured.
+     * Gemini exposes model retrieval through its OpenAI-compatible endpoint,
+     * which is a more reliable health probe than generating text with a
+     * thinking model and a small output budget.
      */
     public function healthCheck(): void
     {
         $this->validateConfiguration();
 
         try {
-            $response = Http::acceptJson()
+            $request = Http::acceptJson()
                 ->withToken((string) config('ai.api_key'))
                 ->connectTimeout(3)
                 ->timeout(10)
-                ->retry(2, 250, throw: false)
-                ->post($this->chatCompletionsUrl(), $this->healthPayload());
+                ->retry(2, 250, throw: false);
+
+            $response = strtolower((string) config('ai.provider')) === 'gemini'
+                ? $request->get($this->modelUrl())
+                : $request->post($this->chatCompletionsUrl(), $this->healthPayload());
         } catch (\Throwable $e) {
             Log::warning('AI provider health check failed.', [
                 'exception' => $e::class,
@@ -38,6 +43,16 @@ class AiGatewayService
                 'failure_class' => $this->failureClass($response->status()),
             ]);
             throw new AiProviderException('AI provider health check rejected.', 3000);
+        }
+
+        if (strtolower((string) config('ai.provider')) === 'gemini') {
+            $modelId = $response->json('id');
+            if (! is_string($modelId) || trim($modelId) === '') {
+                Log::warning('Gemini model probe returned no model id.');
+                throw new AiProviderException('AI provider health check returned invalid model metadata.', 3001);
+            }
+
+            return;
         }
 
         $content = $response->json('choices.0.message.content');
@@ -114,9 +129,7 @@ class AiGatewayService
             'messages' => [
                 ['role' => 'user', 'content' => 'Reply with OK only.'],
             ],
-            // Gemini 3.x is a thinking model. A tiny output budget can be
-            // consumed by reasoning before any visible text is emitted.
-            'max_tokens' => 64,
+            'max_tokens' => 256,
         ];
 
         return $this->applyProviderOptions($payload);
@@ -128,7 +141,7 @@ class AiGatewayService
         $payload = [
             'model' => config('ai.model'),
             'messages' => $messages,
-            'max_tokens' => max(128, min((int) config('ai.max_tokens', 700), 1000)),
+            'max_tokens' => max(256, min((int) config('ai.max_tokens', 700), 2000)),
         ];
 
         return $this->applyProviderOptions($payload);
@@ -138,15 +151,11 @@ class AiGatewayService
     private function applyProviderOptions(array $payload): array
     {
         if (strtolower((string) config('ai.provider')) === 'gemini') {
-            // Google documents reasoning_effort for Gemini through the
-            // OpenAI-compatible endpoint. Keep it low for predictable latency
-            // and to reserve output budget for the actual assistant response.
             $payload['reasoning_effort'] = config('ai.reasoning_effort', 'low');
 
             return $payload;
         }
 
-        // Preserve the existing OpenAI-compatible behavior for other providers.
         $payload['temperature'] = 0.2;
 
         return $payload;
@@ -172,6 +181,11 @@ class AiGatewayService
     private function chatCompletionsUrl(): string
     {
         return rtrim((string) config('ai.base_url'), '/').'/chat/completions';
+    }
+
+    private function modelUrl(): string
+    {
+        return rtrim((string) config('ai.base_url'), '/').'/models/'.rawurlencode((string) config('ai.model'));
     }
 
     private function failureClass(int $status): string
