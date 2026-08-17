@@ -54,6 +54,7 @@ void main() {
     expect(snapshot.transactionCount, 2);
     expect(snapshot.topExpenseCategory?.key, TransactionCategory.food);
     expect(snapshot.topExpenseCategory?.value, 2_000_000);
+    expect(snapshot.endInclusive, DateTime(2026, 8, 31));
   });
 
   test('excludes transactions outside the requested half-open range', () {

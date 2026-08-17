@@ -28,6 +28,10 @@ class FinancialAnalyticsSnapshot {
   double get savingsRate => income <= 0 ? 0 : netCashflow / income;
   double get transferNet => transferIn - transferOut;
 
+  /// The last calendar date included in this half-open analytics range.
+  /// For a monthly range [2026-08-01, 2026-09-01), this is 2026-08-31.
+  DateTime get endInclusive => end.subtract(const Duration(days: 1));
+
   MapEntry<TransactionCategory, double>? get topExpenseCategory {
     if (expenseByCategory.isEmpty) return null;
     return expenseByCategory.entries.reduce(

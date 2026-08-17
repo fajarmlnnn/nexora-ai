@@ -92,7 +92,9 @@ class AiApiService {
             if (analytics.topExpenseCategory != null)
               'top_expense_value': analytics.topExpenseCategory!.value,
             'period_start': analytics.start.toIso8601String().split('T').first,
-            'period_end': analytics.end.toIso8601String().split('T').first,
+            // Analytics uses [start, end), but users need an inclusive
+            // calendar date in the AI's natural-language summary.
+            'period_end': analytics.endInclusive.toIso8601String().split('T').first,
           },
         },
         options: Options(
