@@ -36,7 +36,7 @@ class AiGatewayService
             Log::warning('AI provider health check failed.', [
                 'exception' => $e::class,
             ]);
-            throw new AiProviderException('AI provider health check failed.', 0, $e);
+            throw new AiProviderException('AI provider health check failed.', 2000, $e);
         }
 
         if ($response->failed()) {
@@ -44,13 +44,13 @@ class AiGatewayService
                 'status' => $response->status(),
                 'failure_class' => $this->failureClass($response->status()),
             ]);
-            throw new AiProviderException('AI provider health check rejected.');
+            throw new AiProviderException('AI provider health check rejected.', 3000);
         }
 
         $content = $response->json('choices.0.message.content');
         if (! is_string($content) || trim($content) === '') {
             Log::warning('AI provider health check returned an empty response.');
-            throw new AiProviderException('AI provider health check returned an empty response.');
+            throw new AiProviderException('AI provider health check returned an empty response.', 3001);
         }
     }
 
@@ -90,7 +90,7 @@ class AiGatewayService
             Log::warning('AI provider request failed.', [
                 'exception' => $e::class,
             ]);
-            throw new AiProviderException('AI provider request failed.', 0, $e);
+            throw new AiProviderException('AI provider request failed.', 2000, $e);
         }
 
         if ($response->failed()) {
@@ -99,12 +99,12 @@ class AiGatewayService
                 'status' => $status,
                 'failure_class' => $this->failureClass($status),
             ]);
-            throw new AiProviderException('AI provider rejected the request.');
+            throw new AiProviderException('AI provider rejected the request.', 3000);
         }
 
         $content = $response->json('choices.0.message.content');
         if (! is_string($content) || trim($content) === '') {
-            throw new AiProviderException('AI provider returned an empty response.');
+            throw new AiProviderException('AI provider returned an empty response.', 3001);
         }
 
         $content = trim($content);
@@ -112,7 +112,7 @@ class AiGatewayService
             Log::warning('AI provider response exceeded gateway limit.', [
                 'response_chars' => mb_strlen($content),
             ]);
-            throw new AiProviderException('AI provider returned an oversized response.');
+            throw new AiProviderException('AI provider returned an oversized response.', 3002);
         }
 
         return $content;
@@ -127,11 +127,11 @@ class AiGatewayService
         if (! is_string($apiKey) || trim($apiKey) === '' ||
             ! is_string($baseUrl) || trim($baseUrl) === '' ||
             ! is_string($model) || trim($model) === '') {
-            throw new AiProviderException('AI provider is not configured.');
+            throw new AiProviderException('AI provider is not configured.', 1001);
         }
 
         if (! filter_var($baseUrl, FILTER_VALIDATE_URL) || ! str_starts_with($baseUrl, 'https://')) {
-            throw new AiProviderException('AI provider URL is invalid.');
+            throw new AiProviderException('AI provider URL is invalid.', 1002);
         }
     }
 
