@@ -24,14 +24,7 @@ class AiGatewayService
                 ->connectTimeout(3)
                 ->timeout(10)
                 ->retry(2, 250, throw: false)
-                ->post($this->chatCompletionsUrl(), [
-                    'model' => config('ai.model'),
-                    'messages' => [
-                        ['role' => 'user', 'content' => 'Reply with OK only.'],
-                    ],
-                    'temperature' => 0,
-                    'max_tokens' => 8,
-                ]);
+                ->post($this->chatCompletionsUrl(), $this->healthPayload());
         } catch (\Throwable $e) {
             Log::warning('AI provider health check failed.', [
                 'exception' => $e::class,
@@ -80,12 +73,7 @@ class AiGatewayService
                 ->connectTimeout(3)
                 ->timeout(max(5, min((int) config('ai.timeout', 30), 30)))
                 ->retry(2, 250, throw: false)
-                ->post($this->chatCompletionsUrl(), [
-                    'model' => config('ai.model'),
-                    'messages' => array_merge([$system], $messages),
-                    'temperature' => 0.2,
-                    'max_tokens' => max(128, min((int) config('ai.max_tokens', 700), 1000)),
-                ]);
+                ->post($this->chatCompletionsUrl(), $this->chatPayload(array_merge([$system], $messages)));
         } catch (\Throwable $e) {
             Log::warning('AI provider request failed.', [
                 'exception' => $e::class,
@@ -116,6 +104,52 @@ class AiGatewayService
         }
 
         return $content;
+    }
+
+    /** @return array<string, mixed> */
+    private function healthPayload(): array
+    {
+        $payload = [
+            'model' => config('ai.model'),
+            'messages' => [
+                ['role' => 'user', 'content' => 'Reply with OK only.'],
+            ],
+            // Gemini 3.x is a thinking model. A tiny output budget can be
+            // consumed by reasoning before any visible text is emitted.
+            'max_tokens' => 64,
+        ];
+
+        return $this->applyProviderOptions($payload);
+    }
+
+    /** @param array<int, array{role:string,content:string}> $messages */
+    private function chatPayload(array $messages): array
+    {
+        $payload = [
+            'model' => config('ai.model'),
+            'messages' => $messages,
+            'max_tokens' => max(128, min((int) config('ai.max_tokens', 700), 1000)),
+        ];
+
+        return $this->applyProviderOptions($payload);
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function applyProviderOptions(array $payload): array
+    {
+        if (strtolower((string) config('ai.provider')) === 'gemini') {
+            // Google documents reasoning_effort for Gemini through the
+            // OpenAI-compatible endpoint. Keep it low for predictable latency
+            // and to reserve output budget for the actual assistant response.
+            $payload['reasoning_effort'] = config('ai.reasoning_effort', 'low');
+
+            return $payload;
+        }
+
+        // Preserve the existing OpenAI-compatible behavior for other providers.
+        $payload['temperature'] = 0.2;
+
+        return $payload;
     }
 
     private function validateConfiguration(): void
