@@ -72,105 +72,127 @@ class _PremiumBottomNav extends StatelessWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return SizedBox(
-      height: 92 + bottomInset,
+      height: 94 + bottomInset,
       child: Padding(
         padding: EdgeInsets.fromLTRB(14, 4, 14, bottomInset + 8),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(32),
+          borderRadius: BorderRadius.circular(34),
           child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 26, sigmaY: 26),
+            filter: ui.ImageFilter.blur(sigmaX: 28, sigmaY: 28),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(32),
+                borderRadius: BorderRadius.circular(34),
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xF21B1730),
-                    Color(0xF0121424),
-                    Color(0xEE10182A),
+                    Color(0xE92B2445),
+                    Color(0xE51D1A33),
+                    Color(0xE3161C2D),
                   ],
                   stops: [0, .48, 1],
                 ),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: .14),
+                  color: Colors.white.withValues(alpha: .15),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: .48),
-                    blurRadius: 30,
+                    color: Colors.black.withValues(alpha: .52),
+                    blurRadius: 32,
                     spreadRadius: -8,
                     offset: const Offset(0, 14),
                   ),
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: .24),
-                    blurRadius: 34,
-                    spreadRadius: -13,
+                    color: const Color(0xFF9B6CFF).withValues(alpha: .22),
+                    blurRadius: 38,
+                    spreadRadius: -12,
                     offset: const Offset(0, 3),
                   ),
                   BoxShadow(
-                    color: const Color(0xFF5B7CFF).withValues(alpha: .10),
-                    blurRadius: 28,
+                    color: const Color(0xFF5B8CFF).withValues(alpha: .11),
+                    blurRadius: 34,
                     spreadRadius: -14,
-                    offset: const Offset(0, -4),
+                    offset: const Offset(0, -5),
                   ),
                 ],
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final slotWidth = constraints.maxWidth / 5;
-                  final indicatorWidth = slotWidth - 14;
+                  final indicatorWidth = slotWidth - 10;
+                  final indicatorLeft = slotWidth * _activeSlot + 5;
 
                   return Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      // One and only one active surface. The single animated
-                      // indicator moves between slots, so no old bubble/glow
-                      // can remain behind when switching tabs.
-                      AnimatedAlign(
-                        duration: const Duration(milliseconds: 430),
-                        curve: Curves.easeOutCubic,
-                        alignment: Alignment(-1 + (_activeSlot * .5), 0),
-                        child: SizedBox(
-                          width: indicatorWidth,
-                          height: 58,
-                          child: IgnorePointer(
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(25),
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Color(0x6B9A7BFF),
-                                    Color(0x5B7049FF),
-                                    Color(0x3A4669FF),
-                                  ],
-                                  stops: [0, .5, 1],
-                                ),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: .16),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Color(0x667C4DFF),
-                                    blurRadius: 25,
-                                    spreadRadius: -8,
-                                    offset: Offset(0, 7),
-                                  ),
-                                  BoxShadow(
-                                    color: Color(0x3D6E8CFF),
-                                    blurRadius: 20,
-                                    spreadRadius: -7,
-                                    offset: Offset(0, -3),
-                                  ),
+                      // Soft glass highlight across the top edge.
+                      Positioned(
+                        left: 22,
+                        right: 22,
+                        top: 1,
+                        height: 1.5,
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.white.withValues(alpha: .14),
+                                  const Color(0xFFB58AFF).withValues(alpha: .10),
+                                  Colors.transparent,
                                 ],
                               ),
                             ),
                           ),
                         ),
                       ),
+
+                      // ONE active glass surface. It physically moves between
+                      // slots, so there is never an old bubble left behind.
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 430),
+                        curve: Curves.easeOutCubic,
+                        left: indicatorLeft,
+                        top: 7,
+                        width: indicatorWidth,
+                        height: 60,
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(28),
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Color(0x759E7CFF),
+                                  Color(0x4E7551E9),
+                                  Color(0x315C78E8),
+                                ],
+                                stops: [0, .52, 1],
+                              ),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: .17),
+                              ),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x4D9B6CFF),
+                                  blurRadius: 24,
+                                  spreadRadius: -8,
+                                  offset: Offset(0, 7),
+                                ),
+                                BoxShadow(
+                                  color: Color(0x265B8CFF),
+                                  blurRadius: 22,
+                                  spreadRadius: -8,
+                                  offset: Offset(0, -3),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
                       Row(
                         children: [
                           _NavItem(
@@ -246,7 +268,7 @@ class _NavItem extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(28),
-            splashColor: AppColors.primary.withValues(alpha: .10),
+            splashColor: const Color(0xFFB58AFF).withValues(alpha: .10),
             highlightColor: Colors.white.withValues(alpha: .025),
             onTap: () => onTap(index),
             child: SizedBox(
@@ -257,30 +279,21 @@ class _NavItem extends StatelessWidget {
                   AnimatedScale(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeOutCubic,
-                    scale: selected ? 1.07 : .98,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOutCubic,
-                      transform: Matrix4.translationValues(
-                        0,
-                        selected ? -1.5 : 0,
-                        0,
-                      ),
-                      child: Icon(
-                        icon,
-                        size: selected ? 25 : 22,
-                        color: selected
-                            ? Colors.white
-                            : const Color(0xFFC5CBDA).withValues(alpha: .92),
-                        shadows: selected
-                            ? [
-                                Shadow(
-                                  color: AppColors.primaryLight.withValues(alpha: .55),
-                                  blurRadius: 10,
-                                ),
-                              ]
-                            : null,
-                      ),
+                    scale: selected ? 1.08 : 1,
+                    child: Icon(
+                      icon,
+                      size: selected ? 25 : 23,
+                      color: selected
+                          ? const Color(0xFFF2EBFF)
+                          : const Color(0xFFD0CDDC),
+                      shadows: selected
+                          ? const [
+                              Shadow(
+                                color: Color(0x779B6CFF),
+                                blurRadius: 10,
+                              ),
+                            ]
+                          : null,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -289,10 +302,10 @@ class _NavItem extends StatelessWidget {
                     curve: Curves.easeOutCubic,
                     style: AppTypography.caption.copyWith(
                       color: selected
-                          ? Colors.white
-                          : const Color(0xFFC5CBDA).withValues(alpha: .90),
+                          ? const Color(0xFFF1E9FF)
+                          : const Color(0xFFC3C0CE),
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      fontSize: 9.5,
+                      fontSize: 10,
                       height: 1.05,
                       letterSpacing: .05,
                     ),
@@ -312,57 +325,84 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-class _CenterButton extends StatelessWidget {
+class _CenterButton extends StatefulWidget {
   const _CenterButton({required this.onTap});
 
   final VoidCallback onTap;
+
+  @override
+  State<_CenterButton> createState() => _CenterButtonState();
+}
+
+class _CenterButtonState extends State<_CenterButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 160),
+    lowerBound: .92,
+    upperBound: 1,
+    value: 1,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    await _controller.reverse();
+    await _controller.forward();
+    if (mounted) widget.onTap();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
       label: 'Tambah transaksi',
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          splashColor: Colors.white.withValues(alpha: .16),
-          highlightColor: Colors.white.withValues(alpha: .06),
-          onTap: onTap,
-          child: Hero(
-            tag: 'nexora-add-action',
-            child: Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppGradients.button,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: .22),
-                  width: 1,
-                ),
-                boxShadow: [
-                  ...AppShadows.button,
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: .42),
-                    blurRadius: 28,
-                    spreadRadius: -3,
-                  ),
-                  BoxShadow(
-                    color: const Color(0xFF5B7CFF).withValues(alpha: .18),
-                    blurRadius: 20,
-                    spreadRadius: -5,
-                    offset: const Offset(0, -4),
-                  ),
+      child: ScaleTransition(
+        scale: _controller,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _handleTap,
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFC08BFF),
+                  Color(0xFF9561FF),
+                  Color(0xFF6739DE),
                 ],
               ),
-              child: const Icon(
-                LucideIcons.plus,
-                color: Colors.white,
-                size: 31,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: .22),
+                width: 1,
               ),
+              boxShadow: [
+                ...AppShadows.button,
+                BoxShadow(
+                  color: const Color(0xFFA46BFF).withValues(alpha: .62),
+                  blurRadius: 25,
+                  spreadRadius: 1,
+                ),
+                BoxShadow(
+                  color: const Color(0xFF5B7CFF).withValues(alpha: .18),
+                  blurRadius: 30,
+                  spreadRadius: -4,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              LucideIcons.plus,
+              color: Colors.white,
+              size: 32,
             ),
           ),
         ),
