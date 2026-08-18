@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_typography.dart';
@@ -28,7 +27,6 @@ class DashboardBottomNav extends StatelessWidget {
             child: Container(
               height: 74,
               decoration: BoxDecoration(
-                // Match the Nexora AI Insight visual language.
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -44,8 +42,6 @@ class DashboardBottomNav extends StatelessWidget {
                 ),
                 boxShadow: [
                   ...AppShadows.floating,
-                  // Slightly brighter than the AI Insight card so the nav
-                  // remains visually distinct without becoming neon-heavy.
                   BoxShadow(
                     color: AppColors.primary.withValues(alpha: .24),
                     blurRadius: 30,
@@ -143,8 +139,6 @@ class _NavItem extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          // Keep the selected state integrated with the glass instead of
-          // creating a heavy purple bubble.
           color: selected
               ? AppColors.primary.withValues(alpha: .16)
               : Colors.transparent,
