@@ -102,10 +102,12 @@ class AiGatewayService
         ];
 
         $conversation = array_merge([$system], $messages);
+        $primaryProvider = strtolower((string) config('ai.provider'));
+        $primaryModel = trim((string) config('ai.model'));
+        $response = null;
+        $primaryException = null;
 
         try {
-            $primaryProvider = strtolower((string) config('ai.provider'));
-            $primaryModel = trim((string) config('ai.model'));
             $payload = $this->chatPayload($conversation, $primaryProvider, $primaryModel);
             $response = $this->sendChatRequest(
                 $payload,
@@ -113,27 +115,60 @@ class AiGatewayService
                 (string) config('ai.api_key'),
                 (string) config('ai.base_url'),
             );
+        } catch (\Throwable $e) {
+            $primaryException = $e;
+            Log::warning('AI primary provider request failed; fallback will be attempted.', [
+                'provider' => $primaryProvider,
+                'model' => $primaryModel,
+                'exception' => $e::class,
+            ]);
+        }
 
-            if ($response->status() === 429) {
-                $fallbackModel = trim((string) config('ai.fallback_model', ''));
-                $fallbackKey = trim((string) config('ai.fallback_api_key', ''));
-                $fallbackBaseUrl = trim((string) config('ai.fallback_base_url', ''));
-                $fallbackProvider = strtolower((string) config('ai.fallback_provider', 'gemini'));
+        if ($this->shouldUseFallback($response)) {
+            $fallbackModel = trim((string) config('ai.fallback_model', ''));
+            $fallbackKey = trim((string) config('ai.fallback_api_key', ''));
+            $fallbackBaseUrl = trim((string) config('ai.fallback_base_url', ''));
+            $fallbackProvider = strtolower((string) config('ai.fallback_provider', 'gemini'));
 
-                if ($fallbackModel !== '' && $fallbackKey !== '' && $fallbackBaseUrl !== '' && ($fallbackProvider !== $primaryProvider || $fallbackModel !== $primaryModel)) {
-                    Log::notice('AI primary model rate limited; trying fallback provider.', [
+            if ($fallbackModel !== '' && $fallbackKey !== '' && $fallbackBaseUrl !== '' && ($fallbackProvider !== $primaryProvider || $fallbackModel !== $primaryModel)) {
+                try {
+                    Log::notice('AI primary provider unavailable; trying fallback provider.', [
                         'primary_provider' => $primaryProvider,
                         'primary_model' => $primaryModel,
                         'fallback_provider' => $fallbackProvider,
                         'fallback_model' => $fallbackModel,
+                        'primary_status' => $response?->status(),
                     ]);
+
                     $fallbackPayload = $this->chatPayload($conversation, $fallbackProvider, $fallbackModel);
-                    $response = $this->sendChatRequest($fallbackPayload, $fallbackModel, $fallbackKey, $fallbackBaseUrl);
+                    $response = $this->sendChatRequest(
+                        $fallbackPayload,
+                        $fallbackModel,
+                        $fallbackKey,
+                        $fallbackBaseUrl,
+                    );
+
+                    if ($response->failed()) {
+                        Log::warning('AI fallback provider rejected request.', [
+                            'fallback_provider' => $fallbackProvider,
+                            'fallback_model' => $fallbackModel,
+                            'status' => $response->status(),
+                            'failure_class' => $this->failureClass($response->status()),
+                        ]);
+                    }
+                } catch (\Throwable $fallbackException) {
+                    Log::warning('AI fallback provider request failed.', [
+                        'fallback_provider' => $fallbackProvider,
+                        'fallback_model' => $fallbackModel,
+                        'exception' => $fallbackException::class,
+                    ]);
+                    $response = null;
                 }
             }
-        } catch (\Throwable $e) {
-            Log::warning('AI provider request failed.', ['exception' => $e::class]);
-            throw new AiProviderException('AI provider request failed.', 2000, $e);
+        }
+
+        if ($response === null) {
+            throw new AiProviderException('AI provider request failed.', 2000, $primaryException);
         }
 
         if ($response->failed()) {
@@ -163,6 +198,18 @@ class AiGatewayService
         }
 
         return $content;
+    }
+
+    /** @param Response|null $response */
+    private function shouldUseFallback(?Response $response): bool
+    {
+        if ($response === null) {
+            return true;
+        }
+
+        $status = $response->status();
+
+        return $status === 408 || $status === 429 || $status >= 500;
     }
 
     /** @param array<string, mixed> $payload */
