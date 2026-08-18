@@ -118,53 +118,57 @@ class AiApiService {
       return content.trim();
     } on DioException catch (error) {
       final status = error.response?.statusCode;
+      final gatewayError = _gatewayError(error.response?.data);
+      final serverCode = gatewayError?['code'] as String?;
+      final serverMessage = gatewayError?['message'] as String?;
+
       if (status == 401) {
-        throw const ApiException(
+        throw ApiException(
           statusCode: 401,
-          code: 'UNAUTHENTICATED',
-          message: 'Sesi login perlu diperbarui.',
+          code: serverCode ?? 'UNAUTHENTICATED',
+          message: serverMessage ?? 'Sesi login perlu diperbarui.',
         );
       }
       if (status == 403) {
-        throw const ApiException(
+        throw ApiException(
           statusCode: 403,
-          code: 'FORBIDDEN',
-          message: 'Akses ke server Nexora ditolak.',
+          code: serverCode ?? 'FORBIDDEN',
+          message: serverMessage ?? 'Akses ke server Nexora ditolak.',
         );
       }
       if (status == 404) {
-        throw const ApiException(
+        throw ApiException(
           statusCode: 404,
-          code: 'API_ENDPOINT_NOT_FOUND',
-          message: 'Endpoint server Nexora tidak ditemukan. Periksa konfigurasi API.',
+          code: serverCode ?? 'API_ENDPOINT_NOT_FOUND',
+          message: serverMessage ?? 'Endpoint server Nexora tidak ditemukan. Periksa konfigurasi API.',
         );
       }
       if (status == 422) {
-        throw const ApiException(
+        throw ApiException(
           statusCode: 422,
-          code: 'INVALID_REQUEST',
-          message: 'Data permintaan AI tidak valid.',
+          code: serverCode ?? 'INVALID_REQUEST',
+          message: serverMessage ?? 'Data permintaan AI tidak valid.',
         );
       }
       if (status == 429) {
-        throw const ApiException(
+        throw ApiException(
           statusCode: 429,
-          code: 'RATE_LIMITED',
-          message: 'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.',
+          code: serverCode ?? 'RATE_LIMITED',
+          message: serverMessage ?? 'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.',
         );
       }
       if (status == 503) {
-        throw const ApiException(
+        throw ApiException(
           statusCode: 503,
-          code: 'AI_UNAVAILABLE',
-          message: 'Nexora AI sedang tidak tersedia. Coba lagi sebentar.',
+          code: serverCode ?? 'AI_UNAVAILABLE',
+          message: serverMessage ?? 'Nexora AI sedang tidak tersedia. Coba lagi sebentar.',
         );
       }
       if (status != null && status >= 500) {
-        throw const ApiException(
-          statusCode: 502,
-          code: 'SERVER_ERROR',
-          message: 'Server Nexora mengalami masalah. Coba lagi sebentar.',
+        throw ApiException(
+          statusCode: status,
+          code: serverCode ?? 'SERVER_ERROR',
+          message: serverMessage ?? 'Server Nexora mengalami masalah. Coba lagi sebentar.',
         );
       }
       if (error.type == DioExceptionType.connectionTimeout ||
@@ -182,6 +186,13 @@ class AiApiService {
         message: 'Tidak bisa terhubung ke server Nexora.',
       );
     }
+  }
+
+  Map<String, dynamic>? _gatewayError(dynamic payload) {
+    if (payload is! Map) return null;
+    final error = payload['error'];
+    if (error is! Map) return null;
+    return Map<String, dynamic>.from(error);
   }
 }
 
