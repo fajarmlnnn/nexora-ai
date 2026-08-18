@@ -72,73 +72,73 @@ class _PremiumBottomNav extends StatelessWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return SizedBox(
-      height: 84 + bottomInset,
+      height: 78 + bottomInset,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(18, 2, 18, bottomInset + 7),
+        padding: EdgeInsets.fromLTRB(18, 1, 18, bottomInset + 7),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(28),
           child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+            filter: ui.ImageFilter.blur(sigmaX: 26, sigmaY: 26),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(28),
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xF0342B50),
-                    Color(0xF025223F),
-                    Color(0xF01D293E),
+                    Color(0xF2080910),
+                    Color(0xF217102C),
+                    Color(0xF232155F),
                   ],
-                  stops: [0, .46, 1],
+                  stops: [0, .48, 1],
                 ),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: .20),
+                  color: Colors.white.withValues(alpha: .16),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: .48),
                     blurRadius: 28,
-                    spreadRadius: -9,
+                    spreadRadius: -10,
                     offset: const Offset(0, 12),
                   ),
                   BoxShadow(
-                    color: const Color(0xFFB579FF).withValues(alpha: .28),
+                    color: const Color(0xFF8F5CFF).withValues(alpha: .24),
                     blurRadius: 34,
-                    spreadRadius: -13,
-                    offset: const Offset(0, 2),
+                    spreadRadius: -12,
+                    offset: const Offset(0, 4),
                   ),
                   BoxShadow(
-                    color: const Color(0xFF6EA8FF).withValues(alpha: .18),
-                    blurRadius: 30,
+                    color: const Color(0xFF5B8CFF).withValues(alpha: .10),
+                    blurRadius: 28,
                     spreadRadius: -13,
-                    offset: const Offset(0, -4),
+                    offset: const Offset(0, -5),
                   ),
                 ],
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final slotWidth = constraints.maxWidth / 5;
-                  final indicatorWidth = slotWidth - 12;
-                  final indicatorLeft = slotWidth * _activeSlot + 6;
+                  final indicatorWidth = slotWidth - 14;
+                  final indicatorLeft = slotWidth * _activeSlot + 7;
 
                   return Stack(
-                    clipBehavior: Clip.none,
+                    clipBehavior: Clip.hardEdge,
                     children: [
                       Positioned(
-                        left: 20,
-                        right: 20,
-                        top: 1,
-                        height: 1.5,
+                        left: 22,
+                        right: 22,
+                        top: 0,
+                        height: 1,
                         child: IgnorePointer(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
                                   Colors.transparent,
-                                  Colors.white.withValues(alpha: .24),
-                                  const Color(0xFFBDA0FF).withValues(alpha: .22),
+                                  Colors.white.withValues(alpha: .16),
+                                  const Color(0xFFB98AFF).withValues(alpha: .20),
                                   Colors.transparent,
                                 ],
                               ),
@@ -147,41 +147,41 @@ class _PremiumBottomNav extends StatelessWidget {
                         ),
                       ),
                       AnimatedPositioned(
-                        duration: const Duration(milliseconds: 430),
+                        duration: const Duration(milliseconds: 300),
                         curve: Curves.easeOutCubic,
                         left: indicatorLeft,
-                        top: 8,
+                        top: 7,
                         width: indicatorWidth,
-                        height: 50,
+                        height: 48,
                         child: IgnorePointer(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(23),
+                              borderRadius: BorderRadius.circular(22),
                               gradient: const LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  Color(0x9EAB8AFF),
-                                  Color(0x7A7656E9),
-                                  Color(0x5C5E79D9),
+                                  Color(0xA04A2B72),
+                                  Color(0x7F6D3CB8),
+                                  Color(0x4E32155F),
                                 ],
-                                stops: [0, .50, 1],
+                                stops: [0, .48, 1],
                               ),
                               border: Border.all(
-                                color: Colors.white.withValues(alpha: .22),
+                                color: const Color(0xFFD6BCFF).withValues(alpha: .22),
                               ),
-                              boxShadow: const [
+                              boxShadow: [
                                 BoxShadow(
-                                  color: Color(0x669B6CFF),
-                                  blurRadius: 22,
-                                  spreadRadius: -7,
-                                  offset: Offset(0, 6),
+                                  color: const Color(0xFF9B6CFF).withValues(alpha: .38),
+                                  blurRadius: 20,
+                                  spreadRadius: -6,
+                                  offset: const Offset(0, 5),
                                 ),
                                 BoxShadow(
-                                  color: Color(0x405B8CFF),
-                                  blurRadius: 20,
+                                  color: const Color(0xFFB27CFF).withValues(alpha: .18),
+                                  blurRadius: 18,
                                   spreadRadius: -7,
-                                  offset: Offset(0, -3),
+                                  offset: const Offset(0, -3),
                                 ),
                               ],
                             ),
@@ -262,43 +262,32 @@ class _NavItem extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(24),
-            splashColor: const Color(0xFFB58AFF).withValues(alpha: .12),
-            highlightColor: Colors.white.withValues(alpha: .035),
+            borderRadius: BorderRadius.circular(22),
+            splashColor: const Color(0xFFB58AFF).withValues(alpha: .10),
+            highlightColor: Colors.white.withValues(alpha: .025),
             onTap: () => onTap(index),
             child: SizedBox(
-              height: 68,
+              height: 64,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   AnimatedScale(
-                    duration: const Duration(milliseconds: 300),
+                    duration: const Duration(milliseconds: 240),
                     curve: Curves.easeOutCubic,
-                    scale: selected ? 1.05 : 1,
-                    child: Icon(
-                      icon,
-                      size: selected ? 24 : 22,
-                      color: selected
-                          ? const Color(0xFFFFFFFF)
-                          : const Color(0xFFE1DEEB),
-                      shadows: selected
-                          ? const [
-                              Shadow(
-                                color: Color(0x889B6CFF),
-                                blurRadius: 11,
-                              ),
-                            ]
-                          : null,
+                    scale: selected ? 1.04 : 1,
+                    child: AnimatedIconColor(
+                      icon: icon,
+                      selected: selected,
                     ),
                   ),
                   const SizedBox(height: 2),
                   AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 280),
+                    duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOutCubic,
                     style: AppTypography.caption.copyWith(
                       color: selected
                           ? Colors.white
-                          : const Color(0xFFD9D6E5),
+                          : const Color(0xFFD2CCDF),
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                       fontSize: 9.5,
                       height: 1.05,
@@ -320,6 +309,44 @@ class _NavItem extends StatelessWidget {
   }
 }
 
+class AnimatedIconColor extends StatelessWidget {
+  const AnimatedIconColor({
+    required this.icon,
+    required this.selected,
+    super.key,
+  });
+
+  final IconData icon;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<Color?>(
+      tween: ColorTween(
+        begin: selected ? const Color(0xFFD5B7FF) : const Color(0xFFD2CCDF),
+        end: selected ? const Color(0xFFF7F0FF) : const Color(0xFFD2CCDF),
+      ),
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      builder: (context, color, child) {
+        return Icon(
+          icon,
+          size: selected ? 23 : 21,
+          color: color,
+          shadows: selected
+              ? const [
+                  Shadow(
+                    color: Color(0xB38F5CFF),
+                    blurRadius: 10,
+                  ),
+                ]
+              : null,
+        );
+      },
+    );
+  }
+}
+
 class _CenterButton extends StatefulWidget {
   const _CenterButton({required this.onTap});
 
@@ -333,8 +360,8 @@ class _CenterButtonState extends State<_CenterButton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 160),
-    lowerBound: .92,
+    duration: const Duration(milliseconds: 150),
+    lowerBound: .93,
     upperBound: 1,
     value: 1,
   );
@@ -347,6 +374,7 @@ class _CenterButtonState extends State<_CenterButton>
 
   Future<void> _handleTap() async {
     await _controller.reverse();
+    if (!mounted) return;
     await _controller.forward();
     if (mounted) widget.onTap();
   }
@@ -362,34 +390,34 @@ class _CenterButtonState extends State<_CenterButton>
           behavior: HitTestBehavior.opaque,
           onTap: _handleTap,
           child: Container(
-            width: 58,
-            height: 58,
+            width: 54,
+            height: 54,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFFC99BFF),
-                  Color(0xFF9D6BFF),
-                  Color(0xFF7042E8),
+                  Color(0xFFD1A8FF),
+                  Color(0xFFA66BFF),
+                  Color(0xFF743DE6),
                 ],
               ),
               border: Border.all(
-                color: Colors.white.withValues(alpha: .26),
+                color: Colors.white.withValues(alpha: .28),
                 width: 1,
               ),
               boxShadow: [
                 ...AppShadows.button,
                 BoxShadow(
-                  color: const Color(0xFFA46BFF).withValues(alpha: .66),
-                  blurRadius: 23,
+                  color: const Color(0xFF9B6CFF).withValues(alpha: .70),
+                  blurRadius: 22,
                   spreadRadius: 1,
                 ),
                 BoxShadow(
-                  color: const Color(0xFF5B8CFF).withValues(alpha: .24),
-                  blurRadius: 28,
-                  spreadRadius: -4,
+                  color: const Color(0xFF6F3FE8).withValues(alpha: .26),
+                  blurRadius: 32,
+                  spreadRadius: -5,
                   offset: const Offset(0, -4),
                 ),
               ],
@@ -397,7 +425,7 @@ class _CenterButtonState extends State<_CenterButton>
             child: const Icon(
               LucideIcons.plus,
               color: Colors.white,
-              size: 30,
+              size: 28,
             ),
           ),
         ),
