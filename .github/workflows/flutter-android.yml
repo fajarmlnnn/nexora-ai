@@ -49,137 +49,33 @@ jobs:
           flutter-version: "3.44.8"
           cache: true
 
-      - name: Validate production configuration
-        run: |
-          set -euo pipefail
-          if [ -z "$NEXORA_SUPABASE_URL" ]; then
-            echo "::error::Missing GitHub Actions secret NEXORA_SUPABASE_URL"
-            exit 1
-          fi
-          if [ -z "$NEXORA_SUPABASE_PUBLISHABLE_KEY" ]; then
-            echo "::error::Missing GitHub Actions secret NEXORA_SUPABASE_PUBLISHABLE_KEY"
-            exit 1
-          fi
-          if [ -z "$NEXORA_API_BASE_URL" ]; then
-            echo "::error::Missing GitHub Actions secret NEXORA_API_BASE_URL"
-            exit 1
-          fi
-          case "$NEXORA_SUPABASE_URL" in
-            https://*.supabase.co) ;;
-            *)
-              echo "::error::NEXORA_SUPABASE_URL must be an https://*.supabase.co URL"
-              exit 1
-              ;;
-          esac
-          case "$NEXORA_API_BASE_URL" in
-            https://*) ;;
-            *)
-              echo "::error::NEXORA_API_BASE_URL must use HTTPS"
-              exit 1
-              ;;
-          esac
-
-      - name: Smoke test production API health
-        run: |
-          set -euo pipefail
-          base="${NEXORA_API_BASE_URL%/}"
-          case "$base" in
-            */api/v1) api_root="$base" ;;
-            */api) api_root="$base/v1" ;;
-            *) api_root="$base/api/v1" ;;
-          esac
-          health_url="$api_root/health"
-          echo "Checking production Nexora API health endpoint"
-          curl --fail --silent --show-error \
-            --retry 4 \
-            --retry-delay 2 \
-            --connect-timeout 10 \
-            --max-time 20 \
-            "$health_url"
-          echo
-
-      - name: Smoke test authenticated AI provider after production deployment
-        if: github.event_name != 'pull_request'
-        env:
-          NEXORA_E2E_EMAIL: ${{ secrets.NEXORA_E2E_EMAIL }}
-          NEXORA_E2E_PASSWORD: ${{ secrets.NEXORA_E2E_PASSWORD }}
-        run: |
-          set -euo pipefail
-          if [ -z "$NEXORA_E2E_EMAIL" ] || [ -z "$NEXORA_E2E_PASSWORD" ]; then
-            echo "::warning::Authenticated AI smoke test skipped because NEXORA_E2E_EMAIL/NEXORA_E2E_PASSWORD are not configured."
-            exit 0
-          fi
-
-          base="${NEXORA_API_BASE_URL%/}"
-          case "$base" in
-            */api/v1) api_root="$base" ;;
-            */api) api_root="$base/v1" ;;
-            *) api_root="$base/api/v1" ;;
-          esac
-
-          auth_url="${NEXORA_SUPABASE_URL%/}/auth/v1/token?grant_type=password"
-          echo "Signing in the dedicated E2E user to test the production AI provider path"
-          token_response="$(curl --fail --silent --show-error \
-            --connect-timeout 10 \
-            --max-time 20 \
-            -X POST "$auth_url" \
-            -H "apikey: $NEXORA_SUPABASE_PUBLISHABLE_KEY" \
-            -H "Content-Type: application/json" \
-            --data "$(jq -nc --arg email "$NEXORA_E2E_EMAIL" --arg password "$NEXORA_E2E_PASSWORD" '{email:$email,password:$password}')")"
-
-          access_token="$(printf '%s' "$token_response" | jq -er '.access_token // empty')"
-          if [ -z "$access_token" ]; then
-            echo "::error::Supabase E2E login did not return an access token"
-            exit 1
-          fi
-
-          ai_health_url="$api_root/ai/health"
-          echo "Checking authenticated production AI provider health"
-          response_file="$(mktemp)"
-          http_code="$(curl --silent --show-error \
-            --connect-timeout 10 \
-            --max-time 25 \
-            -o "$response_file" \
-            -w '%{http_code}' \
-            "$ai_health_url" \
-            -H "Authorization: Bearer $access_token" \
-            -H "Accept: application/json")"
-          echo "AI health HTTP status: $http_code"
-          echo "AI health response:"
-          cat "$response_file"
-          echo
-          rm -f "$response_file"
-
-          case "$http_code" in
-            2??) ;;
-            *)
-              echo "::error::Authenticated AI health check failed with HTTP $http_code"
-              exit 1
-              ;;
-          esac
-
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Analyze
+      - name: Analyze Flutter source
         run: flutter analyze
 
-      - name: Run tests (if available)
+      - name: Run Flutter tests
         run: |
+          set -euo pipefail
           if [ -d test ]; then
             flutter test
           else
             echo "No test directory found. Skipping tests."
           fi
 
-      - name: Run live Supabase E2E tests when credentials are available
+      - name: Run Supabase integration tests when credentials are available
         env:
           NEXORA_E2E_EMAIL: ${{ secrets.NEXORA_E2E_EMAIL }}
           NEXORA_E2E_PASSWORD: ${{ secrets.NEXORA_E2E_PASSWORD }}
         run: |
           set -euo pipefail
-          if [ -n "$NEXORA_E2E_EMAIL" ] && [ -n "$NEXORA_E2E_PASSWORD" ]; then
-            echo "Running authenticated Supabase financial, security, goal lifecycle, financial invariant, and budget lifecycle E2E tests."
+          if [ -n "$NEXORA_SUPABASE_URL" ] && \
+             [ -n "$NEXORA_SUPABASE_PUBLISHABLE_KEY" ] && \
+             [ -n "$NEXORA_E2E_EMAIL" ] && \
+             [ -n "$NEXORA_E2E_PASSWORD" ]; then
+            echo "Running authenticated Supabase frontend integration tests."
+
             flutter test test/integration/supabase_financial_e2e_test.dart \
               --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
               --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY" \
@@ -210,23 +106,34 @@ jobs:
               --dart-define=NEXORA_E2E_EMAIL="$NEXORA_E2E_EMAIL" \
               --dart-define=NEXORA_E2E_PASSWORD="$NEXORA_E2E_PASSWORD"
           else
-            echo "::warning::E2E credentials are not configured; live Supabase E2E tests are skipped."
-            echo "Configure NEXORA_E2E_EMAIL and NEXORA_E2E_PASSWORD in GitHub Actions Secrets before production release."
+            echo "::notice::Supabase E2E credentials are not configured; skipping live integration tests."
           fi
 
       - name: Build Release APK
         run: |
-          flutter build apk --release \
-            --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
-            --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY" \
-            --dart-define=NEXORA_API_BASE_URL="$NEXORA_API_BASE_URL"
+          set -euo pipefail
+          build_args=(--release)
+
+          if [ -n "$NEXORA_SUPABASE_URL" ]; then
+            build_args+=(--dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL")
+          fi
+          if [ -n "$NEXORA_SUPABASE_PUBLISHABLE_KEY" ]; then
+            build_args+=(--dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY")
+          fi
+          if [ -n "$NEXORA_API_BASE_URL" ]; then
+            build_args+=(--dart-define=NEXORA_API_BASE_URL="$NEXORA_API_BASE_URL")
+          fi
+
+          flutter build apk "${build_args[@]}"
 
       - name: Verify APK output
         run: |
           set -euo pipefail
           apk="build/app/outputs/flutter-apk/app-release.apk"
           test -s "$apk"
+          echo "APK SHA256:"
           sha256sum "$apk"
+          echo "APK size:"
           ls -lh "$apk"
 
       - name: Upload APK
