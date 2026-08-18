@@ -24,14 +24,40 @@ class DashboardBottomNav extends StatelessWidget {
         child: ClipRRect(
           borderRadius: AppRadius.radiusXXL,
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               height: 74,
               decoration: BoxDecoration(
-                color: const Color(0xCC161B24),
+                // Match the Nexora AI Insight visual language.
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF080910),
+                    Color(0xFF17102C),
+                    Color(0xFF32155F),
+                  ],
+                ),
                 borderRadius: AppRadius.radiusXXL,
-                border: Border.all(color: Colors.white.withValues(alpha: .06)),
-                boxShadow: AppShadows.floating,
+                border: Border.all(
+                  color: AppColors.primaryLight.withValues(alpha: .15),
+                ),
+                boxShadow: [
+                  ...AppShadows.floating,
+                  // Slightly brighter than the AI Insight card so the nav
+                  // remains visually distinct without becoming neon-heavy.
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: .24),
+                    blurRadius: 30,
+                    spreadRadius: -6,
+                    offset: const Offset(0, 2),
+                  ),
+                  BoxShadow(
+                    color: AppColors.primaryLight.withValues(alpha: .12),
+                    blurRadius: 22,
+                    spreadRadius: -8,
+                  ),
+                ],
               ),
               child: Stack(
                 clipBehavior: Clip.none,
@@ -42,39 +68,35 @@ class DashboardBottomNav extends StatelessWidget {
                       Expanded(
                         child: _NavItem(
                           icon: LucideIcons.house,
-                          label: "Home",
+                          label: 'Home',
                           index: 0,
                           currentIndex: currentIndex,
                           onTap: onTap,
                         ),
                       ),
-
                       Expanded(
                         child: _NavItem(
                           icon: LucideIcons.arrowLeftRight,
-                          label: "Wallet",
+                          label: 'Wallet',
                           index: 1,
                           currentIndex: currentIndex,
                           onTap: onTap,
                         ),
                       ),
-
                       const SizedBox(width: 72),
-
                       Expanded(
                         child: _NavItem(
                           icon: LucideIcons.sparkles,
-                          label: "AI",
+                          label: 'AI',
                           index: 2,
                           currentIndex: currentIndex,
                           onTap: onTap,
                         ),
                       ),
-
                       Expanded(
                         child: _NavItem(
                           icon: LucideIcons.userRound,
-                          label: "Profile",
+                          label: 'Profile',
                           index: 3,
                           currentIndex: currentIndex,
                           onTap: onTap,
@@ -82,7 +104,6 @@ class DashboardBottomNav extends StatelessWidget {
                       ),
                     ],
                   ),
-
                   const Positioned(top: -22, child: _CenterButton()),
                 ],
               ),
@@ -122,10 +143,26 @@ class _NavItem extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
+          // Keep the selected state integrated with the glass instead of
+          // creating a heavy purple bubble.
           color: selected
-              ? AppColors.primary.withValues(alpha: .14)
+              ? AppColors.primary.withValues(alpha: .16)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(18),
+          border: selected
+              ? Border.all(
+                  color: AppColors.primaryLight.withValues(alpha: .14),
+                )
+              : null,
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primaryLight.withValues(alpha: .16),
+                    blurRadius: 18,
+                    spreadRadius: -5,
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -137,10 +174,11 @@ class _NavItem extends StatelessWidget {
               child: Icon(
                 icon,
                 size: 22,
-                color: selected ? AppColors.primaryLight : AppColors.textMuted,
+                color: selected
+                    ? AppColors.primaryLight
+                    : AppColors.textSecondary,
               ),
             ),
-
             AnimatedSize(
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOut,
@@ -177,30 +215,40 @@ class _CenterButtonState extends State<_CenterButton> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) {
-        setState(() => pressed = true);
-      },
-      onTapUp: (_) {
-        setState(() => pressed = false);
-      },
-      onTapCancel: () {
-        setState(() => pressed = false);
-      },
+      onTapDown: (_) => setState(() => pressed = true),
+      onTapUp: (_) => setState(() => pressed = false),
+      onTapCancel: () => setState(() => pressed = false),
       child: AnimatedScale(
         duration: const Duration(milliseconds: 120),
         scale: pressed ? .94 : 1,
         child: Container(
-          width: 64,
-          height: 64,
+          width: 62,
+          height: 62,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: AppGradients.button,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFB794FF),
+                Color(0xFF8B5CF6),
+                Color(0xFF6D3DE0),
+              ],
+            ),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: .16),
+            ),
             boxShadow: [
               ...AppShadows.button,
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: .28),
-                blurRadius: 26,
+                color: AppColors.primaryLight.withValues(alpha: .48),
+                blurRadius: 30,
                 spreadRadius: 3,
+              ),
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: .30),
+                blurRadius: 44,
+                spreadRadius: 2,
               ),
             ],
           ),
