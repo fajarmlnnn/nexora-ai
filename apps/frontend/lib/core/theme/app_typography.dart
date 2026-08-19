@@ -139,4 +139,12 @@ abstract final class AppTypography {
   // Compact UI aliases used by feature-specific surfaces.
   static const TextStyle title = labelLarge;
   static const TextStyle label = labelLarge;
+  static const TextStyle overline = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 9,
+    fontWeight: FontWeight.w600,
+    letterSpacing: .35,
+    height: 1.2,
+    color: AppColors.textMuted,
+  );
 }
