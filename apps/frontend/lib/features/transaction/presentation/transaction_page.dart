@@ -306,7 +306,7 @@ class _Tab extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
   @override
-  Widget build(BuildContext context) => Expanded(child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: onTap, child: Center(child: AnimatedDefaultTextStyle(duration: const Duration(milliseconds: 180), style: AppTypography.caption.copyWith(color: selected ? Colors.white : AppColors.textSecondary, fontWeight: selected ? FontWeight.w700 : FontWeight.w600), child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis))));
+  Widget build(BuildContext context) => Expanded(child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: onTap, child: Center(child: AnimatedDefaultTextStyle(duration: const Duration(milliseconds: 180), style: AppTypography.caption.copyWith(color: selected ? Colors.white : AppColors.textSecondary, fontWeight: selected ? FontWeight.w700 : FontWeight.w600), child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis)))));
 }
 
 class _SummaryCard extends StatelessWidget {
@@ -444,7 +444,7 @@ class _NoResults extends StatelessWidget {
   const _NoResults({required this.query});
   final String query;
   @override
-  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.only(top: 70), child: Column(children: [Container(width: 58, height: 58, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .12), shape: BoxShape.circle), child: const Icon(LucideIcons.searchX, color: AppColors.primaryLight, size: 25)), const SizedBox(height: 12), Text('Transaksi tidak ditemukan', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)), const SizedBox(height: 4), Text(query.isEmpty ? 'Belum ada transaksi pada filter ini.' : 'Coba gunakan kata kunci lain.', textAlign: TextAlign.center, style: AppTypography.caption)]));
+  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.only(top: 70), child: Column(children: [Container(width: 58, height: 58, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .12), shape: BoxShape.circle), child: const Icon(LucideIcons.searchX, color: AppColors.primaryLight, size: 25)), const SizedBox(height: 12), Text('Transaksi tidak ditemukan', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)), const SizedBox(height: 4), Text(query.isEmpty ? 'Belum ada transaksi pada filter ini.' : 'Coba gunakan kata kunci lain.', textAlign: TextAlign.center, style: AppTypography.caption)])));
 }
 
 class _SheetOption extends StatelessWidget {
