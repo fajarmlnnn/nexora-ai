@@ -15,7 +15,7 @@ class ContextAIInsight extends StatelessWidget {
     this.title = 'Nexora AI',
     this.actionLabel = 'Lihat saran',
     this.onAction,
-    this.compact = false,
+    this.compact = true,
   });
 
   final String message;
