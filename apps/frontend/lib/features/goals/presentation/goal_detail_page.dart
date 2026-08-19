@@ -22,51 +22,65 @@ class GoalDetailPage extends ConsumerWidget {
     final goals = ref.watch(financialGoalsProvider);
     final matches = goals.where((goal) => goal.id == goalId);
     final goal = matches.isEmpty ? null : matches.first;
-    if (goal == null) return PremiumScaffold(child: Center(child: Text('Goal tidak ditemukan', style: AppTypography.heading3)));
+    if (goal == null) {
+      return PremiumScaffold(
+        child: Center(child: Text('Goal tidak ditemukan', style: AppTypography.heading3)),
+      );
+    }
 
     final wallet = ref.watch(primaryWalletProvider);
-    final available = wallet == null ? 0.0 : (wallet.balance - wallet.minimumBalance).clamp(0.0, double.infinity);
+    final available = wallet == null
+        ? 0.0
+        : (wallet.balance - wallet.minimumBalance).clamp(0.0, double.infinity).toDouble();
     final completed = goal.isCompleted;
     final monthly = goal.suggestedMonthlyContribution;
-    final suggested = completed ? (goal.target * .25).clamp(100000.0, double.infinity) : monthly;
+    final suggested = completed
+        ? (goal.target * .25).clamp(100000.0, double.infinity).toDouble()
+        : monthly;
 
     return PremiumScaffold(
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: AppSpacing.screen.copyWith(bottom: AppSpacing.bottomNav(context) + 28),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _Header(goal: goal, onMenu: () => _showMenu(context, ref, goal)),
-          const SizedBox(height: 12),
-          _HeroProgress(goal: goal, completed: completed),
-          const SizedBox(height: 12),
-          Row(children: [
-            Expanded(child: _StatCard('Tersimpan', rupiah(goal.saved), 'Dari target', LucideIcons.walletCards, AppColors.primaryLight)),
-            const SizedBox(width: 8),
-            Expanded(child: _StatCard('Sisa target', rupiah(goal.remaining), '${(goal.progress * 100).round()}% tercapai', LucideIcons.flag, AppColors.primaryLight)),
-            const SizedBox(width: 8),
-            Expanded(child: _StatCard('/ bulan', rupiah(monthly), 'Rekomendasi AI', LucideIcons.calendarDays, AppColors.primaryLight)),
-          ]),
-          const SizedBox(height: 12),
-          _ProgressChart(goal: goal),
-          const SizedBox(height: 12),
-          _AIInsight(goal: goal, completed: completed, monthly: monthly, available: available, walletName: wallet?.name, onContribute: () => _contribute(context, ref, goal, suggested, available)),
-          const SizedBox(height: 12),
-          _ContributionHistory(goalId: goal.id),
-          const SizedBox(height: 12),
-          _StatusCard(goal: goal),
-          const SizedBox(height: 14),
-          Row(children: [
-            Expanded(child: OutlinedButton.icon(onPressed: () => _showMenu(context, ref, goal, openEdit: true), icon: const Icon(LucideIcons.squarePen, size: 18), label: const Text('Edit Goal'), style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52), shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusLG)))),
-            const SizedBox(width: 10),
-            Expanded(child: FilledButton.icon(onPressed: () => _contribute(context, ref, goal, suggested, available), icon: const Icon(LucideIcons.plus, size: 19), label: Text(completed ? 'Naikkan Target' : 'Tambah Dana'), style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52), backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusLG)))),
-          ]),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _Header(goal: goal, onMenu: () => _showMenu(context, ref, goal)),
+            const SizedBox(height: 12),
+            _HeroProgress(goal: goal, completed: completed),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(child: _StatCard('Tersimpan', rupiah(goal.saved), 'Dari target', LucideIcons.walletCards, AppColors.primaryLight)),
+              const SizedBox(width: 8),
+              Expanded(child: _StatCard('Sisa target', rupiah(goal.remaining), '${(goal.progress * 100).round()}% tercapai', LucideIcons.flag, AppColors.primaryLight)),
+              const SizedBox(width: 8),
+              Expanded(child: _StatCard('/ bulan', rupiah(monthly), 'Rekomendasi AI', LucideIcons.calendarDays, AppColors.primaryLight)),
+            ]),
+            const SizedBox(height: 12),
+            _ProgressChart(goal: goal),
+            const SizedBox(height: 12),
+            _AIInsight(goal: goal, completed: completed, monthly: monthly, available: available, walletName: wallet?.name, onContribute: () => _contribute(context, ref, goal, suggested, available)),
+            const SizedBox(height: 12),
+            _ContributionHistory(goalId: goal.id),
+            const SizedBox(height: 12),
+            _StatusCard(goal: goal),
+            const SizedBox(height: 14),
+            Row(children: [
+              Expanded(child: OutlinedButton.icon(onPressed: () => _showMenu(context, ref, goal, openEdit: true), icon: const Icon(LucideIcons.squarePen, size: 18), label: const Text('Edit Goal'), style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52), shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusLG)))),
+              const SizedBox(width: 10),
+              Expanded(child: FilledButton.icon(onPressed: () => _contribute(context, ref, goal, suggested, available), icon: const Icon(LucideIcons.plus, size: 19), label: Text(completed ? 'Naikkan Target' : 'Tambah Dana'), style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52), backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusLG)))),
+            ]),
+          ],
+        ),
       ),
     );
   }
 
   Future<void> _showMenu(BuildContext context, WidgetRef ref, FinancialGoalSnapshot goal, {bool openEdit = false}) async {
-    if (openEdit) { await _rename(context, ref, goal); return; }
+    if (openEdit) {
+      await _rename(context, ref, goal);
+      return;
+    }
     final action = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -85,10 +99,22 @@ class GoalDetailPage extends ConsumerWidget {
       )),
     );
     if (!context.mounted || action == null) return;
-    if (action == 'rename') await _rename(context, ref, goal);
-    if (action == 'increase') await _increase(context, ref, goal);
-    if (action == 'pause') await _pause(context, ref, goal);
-    if (action == 'delete') await _delete(context, ref, goal);
+
+    if (action == 'rename') {
+      await _rename(context, ref, goal);
+      if (!context.mounted) return;
+    }
+    if (action == 'increase') {
+      await _increase(context, ref, goal);
+      if (!context.mounted) return;
+    }
+    if (action == 'pause') {
+      await _pause(context, ref, goal);
+      if (!context.mounted) return;
+    }
+    if (action == 'delete') {
+      await _delete(context, ref, goal);
+    }
   }
 
   Future<void> _rename(BuildContext context, WidgetRef ref, FinancialGoalSnapshot goal) async {
@@ -129,14 +155,26 @@ class GoalDetailPage extends ConsumerWidget {
       actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus'))],
     ));
     if (confirmed != true) return;
-    try { await ref.read(financialGoalsProvider.notifier).removeGoal(goal.id); if (context.mounted) Navigator.pop(context); }
-    catch (error) { if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menghapus goal: $error'))); }
+    try {
+      await ref.read(financialGoalsProvider.notifier).removeGoal(goal.id);
+      if (context.mounted) Navigator.pop(context);
+    } catch (error) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menghapus goal: $error')));
+    }
   }
 
   Future<void> _contribute(BuildContext context, WidgetRef ref, FinancialGoalSnapshot goal, double suggested, double available) async {
-    if (goal.isCompleted) { await _increase(context, ref, goal); return; }
-    if (available <= 0) { if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saldo yang aman untuk disetor saat ini Rp 0.'))); return; }
-    final initial = suggested > 0 ? suggested.clamp(0.0, goal.remaining) : available.clamp(0.0, goal.remaining);
+    if (goal.isCompleted) {
+      await _increase(context, ref, goal);
+      return;
+    }
+    if (available <= 0) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saldo yang aman untuk disetor saat ini Rp 0.')));
+      return;
+    }
+    final initial = suggested > 0
+        ? suggested.clamp(0.0, goal.remaining).toDouble()
+        : available.clamp(0.0, goal.remaining).toDouble();
     final controller = TextEditingController(text: initial.round().toString());
     final amount = await showDialog<double>(context: context, builder: (_) => AlertDialog(
       title: const Text('Tambah dana ke goal'),
@@ -145,9 +183,16 @@ class GoalDetailPage extends ConsumerWidget {
     ));
     controller.dispose();
     if (amount == null || amount <= 0) return;
-    if (amount > available) { if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Maksimal aman ${rupiah(available)}.'))); return; }
-    try { await ref.read(financialGoalsProvider.notifier).contribute(goal.id, amount); if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dana berhasil ditambahkan.'))); }
-    catch (error) { if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('Bad state: ', '')))); }
+    if (amount > available) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Maksimal aman ${rupiah(available)}.')));
+      return;
+    }
+    try {
+      await ref.read(financialGoalsProvider.notifier).contribute(goal.id, amount);
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dana berhasil ditambahkan.')));
+    } catch (error) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('Bad state: ', ''))));
+    }
   }
 }
 
@@ -227,7 +272,10 @@ class _GoalChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final grid = Paint()..color = AppColors.border.withValues(alpha: .24)..strokeWidth = 1;
-    for (var i = 0; i < 4; i++) { final y = 16 + i * (size.height - 42) / 3; canvas.drawLine(28, y, size.width - 8, y, grid); }
+    for (var i = 0; i < 4; i++) {
+      final y = 16 + i * (size.height - 42) / 3;
+      canvas.drawLine(Offset(28, y), Offset(size.width - 8, y), grid);
+    }
     const points = 6;
     final ideal = Path(); final actual = Path();
     for (var i = 0; i < points; i++) {
@@ -239,9 +287,23 @@ class _GoalChartPainter extends CustomPainter {
     }
     _dashed(canvas, ideal, Paint()..color = AppColors.textMuted.withValues(alpha: .55)..strokeWidth = 1.5..style = PaintingStyle.stroke);
     canvas.drawPath(actual, Paint()..color = AppColors.primaryLight..strokeWidth = 2.5..style = PaintingStyle.stroke);
-    for (var i = 0; i < points; i++) { final x = 30 + i * (size.width - 44) / (points - 1); final ratio = progress * (i + 1) / points; final y = size.height - 22 - (size.height - 48) * ratio; canvas.drawCircle(Offset(x, y), i == points - 1 ? 5 : 3, Paint()..color = AppColors.primaryLight); }
+    for (var i = 0; i < points; i++) {
+      final x = 30 + i * (size.width - 44) / (points - 1);
+      final ratio = progress * (i + 1) / points;
+      final y = size.height - 22 - (size.height - 48) * ratio;
+      canvas.drawCircle(Offset(x, y), i == points - 1 ? 5.0 : 3.0, Paint()..color = AppColors.primaryLight);
+    }
   }
-  void _dashed(Canvas canvas, Path path, Paint paint) { for (final metric in path.computeMetrics()) { var d = 0.0; while (d < metric.length) { canvas.drawPath(metric.extractPath(d, (d + 5).clamp(0, metric.length)), paint); d += 9; } } }
+  void _dashed(Canvas canvas, Path path, Paint paint) {
+    for (final metric in path.computeMetrics()) {
+      var d = 0.0;
+      while (d < metric.length) {
+        final end = (d + 5.0).clamp(0.0, metric.length).toDouble();
+        canvas.drawPath(metric.extractPath(d, end), paint);
+        d += 9.0;
+      }
+    }
+  }
   @override bool shouldRepaint(covariant _GoalChartPainter old) => old.progress != progress;
 }
 
@@ -288,7 +350,8 @@ class _StatusCard extends StatelessWidget {
 
 class _Pill extends StatelessWidget {
   const _Pill(this.text, {this.success = false}); final String text; final bool success;
-  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6), decoration: BoxDecoration(color: (success ? AppColors.success : AppColors.primary).withValues(alpha: .10), borderRadius: BorderRadius.circular(99)), child: Text(text, style: AppTypography.overline.copyWith(color: success ? AppColors.success : AppColors.primaryLight, fontWeight: FontWeight.w800)));
+  @override
+  Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6), decoration: BoxDecoration(color: (success ? AppColors.success : AppColors.primary).withValues(alpha: .10), borderRadius: BorderRadius.circular(99)), child: Text(text, style: AppTypography.overline.copyWith(color: success ? AppColors.success : AppColors.primaryLight, fontWeight: FontWeight.w800)));
 }
 
 String _date(DateTime value) => '${value.day.toString().padLeft(2, '0')} ${_month(value.month)} ${value.year}';
