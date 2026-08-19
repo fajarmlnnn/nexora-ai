@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/supabase/supabase_client.dart';
@@ -23,24 +24,18 @@ class GoalDetailPage extends ConsumerWidget {
     final matches = goals.where((goal) => goal.id == goalId);
     final goal = matches.isEmpty ? null : matches.first;
     if (goal == null) {
-      return PremiumScaffold(
-        child: Center(child: Text('Goal tidak ditemukan', style: AppTypography.heading3)),
-      );
+      return PremiumScaffold(child: Center(child: Text('Goal tidak ditemukan', style: AppTypography.heading3)));
     }
 
     final wallet = ref.watch(primaryWalletProvider);
-    final available = wallet == null
-        ? 0.0
-        : (wallet.balance - wallet.minimumBalance).clamp(0.0, double.infinity).toDouble();
+    final available = wallet == null ? 0.0 : (wallet.balance - wallet.minimumBalance).clamp(0.0, double.infinity).toDouble();
     final completed = goal.isCompleted;
     final monthly = goal.suggestedMonthlyContribution;
-    final suggested = completed
-        ? (goal.target * .25).clamp(100000.0, double.infinity).toDouble()
-        : monthly;
+    final suggested = completed ? (goal.target * .25).clamp(100000.0, double.infinity).toDouble() : monthly;
 
     return PremiumScaffold(
       child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         padding: AppSpacing.screen.copyWith(bottom: AppSpacing.bottomNav(context) + 28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,9 +45,9 @@ class GoalDetailPage extends ConsumerWidget {
             _HeroProgress(goal: goal, completed: completed),
             const SizedBox(height: 12),
             Row(children: [
-              Expanded(child: _StatCard('Tersimpan', rupiah(goal.saved), 'Dari target', LucideIcons.walletCards, AppColors.primaryLight)),
+              Expanded(child: _StatCard('Tersimpan', rupiah(goal.saved), goal.progress <= 0 ? 'Dari target' : '${(goal.progress * 100).round()}% dari target', LucideIcons.walletCards, AppColors.primaryLight)),
               const SizedBox(width: 8),
-              Expanded(child: _StatCard('Sisa target', rupiah(goal.remaining), '${(goal.progress * 100).round()}% tercapai', LucideIcons.flag, AppColors.primaryLight)),
+              Expanded(child: _StatCard('Sisa target', rupiah(goal.remaining), goal.progress >= 1 ? 'Tercapai' : '${((1 - goal.progress) * 100).round()}% lagi', LucideIcons.flag, AppColors.primaryLight)),
               const SizedBox(width: 8),
               Expanded(child: _StatCard('/ bulan', rupiah(monthly), 'Rekomendasi AI', LucideIcons.calendarDays, AppColors.primaryLight)),
             ]),
@@ -77,10 +72,7 @@ class GoalDetailPage extends ConsumerWidget {
   }
 
   Future<void> _showMenu(BuildContext context, WidgetRef ref, FinancialGoalSnapshot goal, {bool openEdit = false}) async {
-    if (openEdit) {
-      await _rename(context, ref, goal);
-      return;
-    }
+    if (openEdit) { await _rename(context, ref, goal); return; }
     final action = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -99,31 +91,15 @@ class GoalDetailPage extends ConsumerWidget {
       )),
     );
     if (!context.mounted || action == null) return;
-
-    if (action == 'rename') {
-      await _rename(context, ref, goal);
-      if (!context.mounted) return;
-    }
-    if (action == 'increase') {
-      await _increase(context, ref, goal);
-      if (!context.mounted) return;
-    }
-    if (action == 'pause') {
-      await _pause(context, ref, goal);
-      if (!context.mounted) return;
-    }
-    if (action == 'delete') {
-      await _delete(context, ref, goal);
-    }
+    if (action == 'rename') await _rename(context, ref, goal);
+    if (action == 'increase') await _increase(context, ref, goal);
+    if (action == 'pause') await _pause(context, ref, goal);
+    if (action == 'delete') await _delete(context, ref, goal);
   }
 
   Future<void> _rename(BuildContext context, WidgetRef ref, FinancialGoalSnapshot goal) async {
     final controller = TextEditingController(text: goal.title);
-    final value = await showDialog<String>(context: context, builder: (_) => AlertDialog(
-      title: const Text('Edit goal'),
-      content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(labelText: 'Nama goal')),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')), FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Simpan'))],
-    ));
+    final value = await showDialog<String>(context: context, builder: (_) => AlertDialog(title: const Text('Edit goal'), content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(labelText: 'Nama goal')), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')), FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Simpan'))]));
     controller.dispose();
     if (value == null || value.isEmpty) return;
     await ref.read(financialGoalsProvider.notifier).updateGoal(goal.id, title: value);
@@ -131,11 +107,7 @@ class GoalDetailPage extends ConsumerWidget {
 
   Future<void> _increase(BuildContext context, WidgetRef ref, FinancialGoalSnapshot goal) async {
     final controller = TextEditingController(text: ((goal.target * .25).clamp(100000.0, double.infinity)).round().toString());
-    final amount = await showDialog<double>(context: context, builder: (_) => AlertDialog(
-      title: const Text('Naikkan target'),
-      content: TextField(controller: controller, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Tambahan target')),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')), FilledButton(onPressed: () => Navigator.pop(context, double.tryParse(controller.text.replaceAll('.', '').replaceAll(',', ''))), child: const Text('Tambah'))],
-    ));
+    final amount = await showDialog<double>(context: context, builder: (_) => AlertDialog(title: const Text('Naikkan target'), content: TextField(controller: controller, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Tambahan target')), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')), FilledButton(onPressed: () => Navigator.pop(context, double.tryParse(controller.text.replaceAll('.', '').replaceAll(',', ''))), child: const Text('Tambah'))]));
     controller.dispose();
     if (amount == null || amount <= 0) return;
     final ok = await ref.read(financialGoalsProvider.notifier).updateGoal(goal.id, target: goal.target + amount);
@@ -149,11 +121,7 @@ class GoalDetailPage extends ConsumerWidget {
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref, FinancialGoalSnapshot goal) async {
-    final confirmed = await showDialog<bool>(context: context, builder: (_) => AlertDialog(
-      title: const Text('Hapus goal?'),
-      content: Text(goal.saved > 0 ? 'Dana ${rupiah(goal.saved)} akan dikembalikan ke wallet sesuai aturan server.' : 'Goal ini akan dihapus.'),
-      actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus'))],
-    ));
+    final confirmed = await showDialog<bool>(context: context, builder: (_) => AlertDialog(title: const Text('Hapus goal?'), content: Text(goal.saved > 0 ? 'Dana ${rupiah(goal.saved)} akan dikembalikan ke wallet sesuai aturan server.' : 'Goal ini akan dihapus.'), actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus'))]));
     if (confirmed != true) return;
     try {
       await ref.read(financialGoalsProvider.notifier).removeGoal(goal.id);
@@ -164,29 +132,14 @@ class GoalDetailPage extends ConsumerWidget {
   }
 
   Future<void> _contribute(BuildContext context, WidgetRef ref, FinancialGoalSnapshot goal, double suggested, double available) async {
-    if (goal.isCompleted) {
-      await _increase(context, ref, goal);
-      return;
-    }
-    if (available <= 0) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saldo yang aman untuk disetor saat ini Rp 0.')));
-      return;
-    }
-    final initial = suggested > 0
-        ? suggested.clamp(0.0, goal.remaining).toDouble()
-        : available.clamp(0.0, goal.remaining).toDouble();
+    if (goal.isCompleted) { await _increase(context, ref, goal); return; }
+    if (available <= 0) { if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saldo yang aman untuk disetor saat ini Rp 0.'))); return; }
+    final initial = suggested > 0 ? suggested.clamp(0.0, goal.remaining).toDouble() : available.clamp(0.0, goal.remaining).toDouble();
     final controller = TextEditingController(text: initial.round().toString());
-    final amount = await showDialog<double>(context: context, builder: (_) => AlertDialog(
-      title: const Text('Tambah dana ke goal'),
-      content: TextField(controller: controller, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Nominal', helperText: 'Maksimal aman ${rupiah(available)}')),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')), FilledButton(onPressed: () => Navigator.pop(context, double.tryParse(controller.text.replaceAll('.', '').replaceAll(',', ''))), child: const Text('Simpan'))],
-    ));
+    final amount = await showDialog<double>(context: context, builder: (_) => AlertDialog(title: const Text('Tambah dana ke goal'), content: TextField(controller: controller, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Nominal', helperText: 'Maksimal aman ${rupiah(available)}')), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')), FilledButton(onPressed: () => Navigator.pop(context, double.tryParse(controller.text.replaceAll('.', '').replaceAll(',', ''))), child: const Text('Simpan'))]));
     controller.dispose();
     if (amount == null || amount <= 0) return;
-    if (amount > available) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Maksimal aman ${rupiah(available)}.')));
-      return;
-    }
+    if (amount > available) { if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Maksimal aman ${rupiah(available)}.'))); return; }
     try {
       await ref.read(financialGoalsProvider.notifier).contribute(goal.id, amount);
       if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dana berhasil ditambahkan.')));
@@ -210,7 +163,7 @@ class _Header extends StatelessWidget {
     };
     return Row(children: [
       IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(LucideIcons.arrowLeft)),
-      Container(width: 44, height: 44, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .12), borderRadius: AppRadius.radiusLG, border: Border.all(color: AppColors.primary.withValues(alpha: .24))), child: Icon(goal.isCompleted ? Icons.lock_open_rounded : Icons.lock_rounded, color: goal.isCompleted ? AppColors.success : AppColors.primaryLight)),
+      AnimatedContainer(duration: const Duration(milliseconds: 350), curve: Curves.easeOutCubic, width: 44, height: 44, decoration: BoxDecoration(color: (goal.isCompleted ? AppColors.success : AppColors.primary).withValues(alpha: .12), borderRadius: AppRadius.radiusLG, border: Border.all(color: (goal.isCompleted ? AppColors.success : AppColors.primary).withValues(alpha: .24))), child: Icon(goal.isCompleted ? Icons.lock_open_rounded : Icons.lock_rounded, color: goal.isCompleted ? AppColors.success : AppColors.primaryLight)),
       const SizedBox(width: 10),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Flexible(child: Text(goal.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.heading3)), const SizedBox(width: 7), _Badge(goal.type)]), const SizedBox(height: 2), Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption)])),
       IconButton(onPressed: onMenu, icon: const Icon(Icons.more_vert_rounded)),
@@ -220,8 +173,7 @@ class _Header extends StatelessWidget {
 
 class _Badge extends StatelessWidget {
   const _Badge(this.text); final String text;
-  @override
-  Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .16), borderRadius: BorderRadius.circular(99)), child: Text(text, style: AppTypography.overline.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800)));
+  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .16), borderRadius: BorderRadius.circular(99)), child: Text(text, style: AppTypography.overline.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800)));
 }
 
 class _HeroProgress extends StatelessWidget {
@@ -231,9 +183,9 @@ class _HeroProgress extends StatelessWidget {
   Widget build(BuildContext context) {
     final percent = (goal.progress * 100).round();
     return PremiumCard(padding: const EdgeInsets.fromLTRB(16, 18, 16, 14), borderRadius: AppRadius.radiusXL, child: Column(children: [
-      Row(children: [Expanded(child: _HeroSide(title: 'Progress Goal', value: '$percent%', footer: completed ? '✓ On Track' : '● On Track', accent: completed ? AppColors.success : AppColors.primaryLight)), const SizedBox(width: 8), _SafeProgress(progress: goal.progress, completed: completed), const SizedBox(width: 8), Expanded(child: _HeroSide(title: 'Terkumpul', value: rupiah(goal.saved), footer: 'dari target\n${rupiah(goal.target)}', accent: AppColors.primaryLight, alignEnd: true))]),
+      Row(children: [Expanded(child: _HeroSide(title: 'Progress Goal', value: '$percent%', footer: completed ? '● Tercapai' : '● On Track', accent: completed ? AppColors.success : AppColors.primaryLight)), const SizedBox(width: 8), _SafeProgress(progress: goal.progress, completed: completed), const SizedBox(width: 8), Expanded(child: _HeroSide(title: 'Terkumpul', value: rupiah(goal.saved), footer: 'dari target\n${rupiah(goal.target)}', accent: AppColors.primaryLight, alignEnd: true))]),
       const SizedBox(height: 14),
-      ClipRRect(borderRadius: BorderRadius.circular(99), child: LinearProgressIndicator(value: goal.progress, minHeight: 8, backgroundColor: AppColors.border.withValues(alpha: .3), valueColor: AlwaysStoppedAnimation(completed ? AppColors.success : AppColors.primaryLight))),
+      ClipRRect(borderRadius: BorderRadius.circular(99), child: TweenAnimationBuilder<double>(tween: Tween(begin: 0, end: goal.progress), duration: const Duration(milliseconds: 650), curve: Curves.easeOutCubic, builder: (_, value, __) => LinearProgressIndicator(value: value, minHeight: 8, backgroundColor: AppColors.border.withValues(alpha: .3), valueColor: AlwaysStoppedAnimation(completed ? AppColors.success : AppColors.primaryLight)))),
       const SizedBox(height: 8),
       Row(children: [Expanded(child: Text('⚑  Sisa target: ${rupiah(goal.remaining)}', style: AppTypography.caption)), if (goal.deadline != null) Text('▣  ${_date(goal.deadline!)}', style: AppTypography.caption)]),
     ]));
@@ -243,68 +195,84 @@ class _HeroProgress extends StatelessWidget {
 class _HeroSide extends StatelessWidget {
   const _HeroSide({required this.title, required this.value, required this.footer, required this.accent, this.alignEnd = false});
   final String title, value, footer; final Color accent; final bool alignEnd;
-  @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start, children: [Text(title, style: AppTypography.caption), const SizedBox(height: 3), Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.heading2.copyWith(color: accent, fontWeight: FontWeight.w900)), const SizedBox(height: 3), Text(footer, textAlign: alignEnd ? TextAlign.end : TextAlign.start, style: AppTypography.caption)]);
+  @override Widget build(BuildContext context) => Column(crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start, children: [Text(title, style: AppTypography.caption), const SizedBox(height: 3), Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.heading2.copyWith(color: accent, fontWeight: FontWeight.w900)), const SizedBox(height: 3), Text(footer, textAlign: alignEnd ? TextAlign.end : TextAlign.start, style: AppTypography.caption)]);
 }
 
 class _SafeProgress extends StatelessWidget {
   const _SafeProgress({required this.progress, required this.completed});
   final double progress; final bool completed;
-  @override
-  Widget build(BuildContext context) => SizedBox(width: 88, height: 88, child: Stack(alignment: Alignment.center, children: [CircularProgressIndicator(value: progress, strokeWidth: 7, backgroundColor: AppColors.border.withValues(alpha: .35), valueColor: AlwaysStoppedAnimation(completed ? AppColors.success : AppColors.primaryLight)), Container(width: 48, height: 48, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.surface, boxShadow: AppShadows.glow), child: Icon(completed ? Icons.lock_open_rounded : Icons.lock_rounded, color: completed ? AppColors.success : AppColors.primaryLight, size: 24))]));
+  @override Widget build(BuildContext context) => SizedBox(width: 88, height: 88, child: Stack(alignment: Alignment.center, children: [TweenAnimationBuilder<double>(tween: Tween(begin: 0, end: progress), duration: const Duration(milliseconds: 750), curve: Curves.easeOutCubic, builder: (_, value, __) => CircularProgressIndicator(value: value, strokeWidth: 7, backgroundColor: AppColors.border.withValues(alpha: .35), valueColor: AlwaysStoppedAnimation(completed ? AppColors.success : AppColors.primaryLight)), Container(width: 50, height: 50, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.surface, boxShadow: AppShadows.glow), child: AnimatedSwitcher(duration: const Duration(milliseconds: 300), child: Icon(completed ? Icons.lock_open_rounded : Icons.lock_rounded, key: ValueKey(completed), color: completed ? AppColors.success : AppColors.primaryLight, size: 25)))]));
 }
 
 class _StatCard extends StatelessWidget {
   const _StatCard(this.title, this.value, this.footer, this.icon, this.accent);
   final String title, value, footer; final IconData icon; final Color accent;
-  @override
-  Widget build(BuildContext context) => PremiumCard(padding: const EdgeInsets.all(10), borderRadius: AppRadius.radiusLG, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(icon, size: 17, color: accent), const SizedBox(height: 6), Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption), const SizedBox(height: 3), Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w900)), const SizedBox(height: 3), Text(footer, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.overline.copyWith(color: accent))]));
+  @override Widget build(BuildContext context) => PremiumCard(padding: const EdgeInsets.all(10), borderRadius: AppRadius.radiusLG, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(icon, size: 17, color: accent), const SizedBox(height: 6), Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption), const SizedBox(height: 3), Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w900)), const SizedBox(height: 3), Text(footer, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.overline.copyWith(color: accent))]));
 }
 
 class _ProgressChart extends StatelessWidget {
-  const _ProgressChart({required this.goal}); final FinancialGoalSnapshot goal;
+  const _ProgressChart({required this.goal});
+  final FinancialGoalSnapshot goal;
+  Future<List<Map<String, dynamic>>> _load() async {
+    if (!NexoraSupabase.isInitialized || NexoraSupabase.client.auth.currentUser == null) return const [];
+    final rows = await NexoraSupabase.client.from('goal_contributions').select('amount, contributed_at').eq('goal_id', goal.id).order('contributed_at', ascending: true).limit(200);
+    return (rows as List).map((row) => Map<String, dynamic>.from(row as Map)).toList(growable: false);
+  }
   @override
-  Widget build(BuildContext context) => PremiumCard(padding: const EdgeInsets.fromLTRB(14, 14, 14, 10), borderRadius: AppRadius.radiusXL, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Expanded(child: Text('Grafik Progres', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w900))), Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6), decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(99), border: Border.all(color: AppColors.border)), child: const Text('6 Bulan Terakhir ▾'))]), const SizedBox(height: 9), Row(children: [Container(width: 8, height: 8, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.primaryLight)), const SizedBox(width: 6), Text('Terkumpul', style: AppTypography.overline), const SizedBox(width: 14), Text('┄┄ Target ideal', style: AppTypography.overline)]), const SizedBox(height: 7), SizedBox(height: 165, child: CustomPaint(painter: _GoalChartPainter(progress: goal.progress), child: const SizedBox.expand()))]));
+  Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(future: _load(), builder: (context, snapshot) {
+    final rows = snapshot.data ?? const <Map<String, dynamic>>[];
+    return PremiumCard(padding: const EdgeInsets.fromLTRB(14, 14, 14, 10), borderRadius: AppRadius.radiusXL, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [Expanded(child: Text('Grafik Progres', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w900))), Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6), decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(99), border: Border.all(color: AppColors.border)), child: const Text('6 Bulan Terakhir ▾'))]),
+      const SizedBox(height: 9),
+      Row(children: [Container(width: 8, height: 8, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.primaryLight)), const SizedBox(width: 6), Text('Terkumpul', style: AppTypography.overline), const SizedBox(width: 14), Text('┄┄ Target ideal', style: AppTypography.overline)]),
+      const SizedBox(height: 7),
+      SizedBox(height: 190, child: CustomPaint(painter: _GoalChartPainter(progress: goal.progress, target: goal.target, rows: rows), child: const SizedBox.expand())),
+    ]));
+  });
 }
 
 class _GoalChartPainter extends CustomPainter {
-  _GoalChartPainter({required this.progress}); final double progress;
+  _GoalChartPainter({required this.progress, required this.target, required this.rows});
+  final double progress, target; final List<Map<String, dynamic>> rows;
   @override
   void paint(Canvas canvas, Size size) {
-    final grid = Paint()..color = AppColors.border.withValues(alpha: .24)..strokeWidth = 1;
-    for (var i = 0; i < 4; i++) {
-      final y = 16 + i * (size.height - 42) / 3;
-      canvas.drawLine(Offset(28, y), Offset(size.width - 8, y), grid);
+    final left = 34.0, right = size.width - 10.0, top = 16.0, bottom = size.height - 28.0;
+    final grid = Paint()..color = AppColors.border.withValues(alpha: .22)..strokeWidth = 1;
+    for (var i = 0; i < 4; i++) { final y = top + i * (bottom - top) / 3; canvas.drawLine(Offset(left, y), Offset(right, y), grid); }
+    final now = DateTime.now();
+    final months = List.generate(6, (i) => DateTime(now.year, now.month - 5 + i, 1));
+    final values = List<double>.filled(6, 0);
+    for (final row in rows) {
+      final date = DateTime.tryParse(row['contributed_at']?.toString() ?? '');
+      final amount = (row['amount'] as num?)?.toDouble() ?? 0;
+      if (date == null) continue;
+      for (var i = 0; i < months.length; i++) {
+        if (date.year == months[i].year && date.month == months[i].month) { values[i] += amount; break; }
+      }
     }
-    const points = 6;
+    var running = 0.0;
+    final actualValues = <double>[];
+    for (final value in values) { running += value; actualValues.add(running); }
+    if (rows.isEmpty) { actualValues[5] = goal.saved; for (var i = 4; i >= 0; i--) actualValues[i] = goal.saved * (i / 5); }
+    final maxValue = [target, ...actualValues].fold<double>(0, (m, v) => v > m ? v : m);
+    final scale = maxValue <= 0 ? 1.0 : maxValue;
     final ideal = Path(); final actual = Path();
-    for (var i = 0; i < points; i++) {
-      final x = 30 + i * (size.width - 44) / (points - 1);
-      final idealY = size.height - 22 - (size.height - 48) * i / (points - 1);
-      final ratio = progress * (i + 1) / points;
-      final actualY = size.height - 22 - (size.height - 48) * ratio;
+    for (var i = 0; i < 6; i++) {
+      final x = left + i * (right - left) / 5;
+      final idealY = bottom - (bottom - top) * i / 5;
+      final actualY = bottom - (bottom - top) * (actualValues[i] / scale);
       if (i == 0) { ideal.moveTo(x, idealY); actual.moveTo(x, actualY); } else { ideal.lineTo(x, idealY); actual.lineTo(x, actualY); }
     }
     _dashed(canvas, ideal, Paint()..color = AppColors.textMuted.withValues(alpha: .55)..strokeWidth = 1.5..style = PaintingStyle.stroke);
-    canvas.drawPath(actual, Paint()..color = AppColors.primaryLight..strokeWidth = 2.5..style = PaintingStyle.stroke);
-    for (var i = 0; i < points; i++) {
-      final x = 30 + i * (size.width - 44) / (points - 1);
-      final ratio = progress * (i + 1) / points;
-      final y = size.height - 22 - (size.height - 48) * ratio;
-      canvas.drawCircle(Offset(x, y), i == points - 1 ? 5.0 : 3.0, Paint()..color = AppColors.primaryLight);
-    }
+    final fill = Path.from(actual)..lineTo(right, bottom)..lineTo(left, bottom)..close();
+    canvas.drawPath(fill, Paint()..shader = LinearGradient(colors: [AppColors.primary.withValues(alpha: .28), Colors.transparent]).createShader(Rect.fromLTWH(left, top, right - left, bottom - top)));
+    canvas.drawPath(actual, Paint()..color = AppColors.primaryLight..strokeWidth = 2.6..style = PaintingStyle.stroke);
+    final monthsLabel = const ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    for (var i = 0; i < 6; i++) { final x = left + i * (right - left) / 5; final y = bottom - (bottom - top) * (actualValues[i] / scale); canvas.drawCircle(Offset(x, y), i == 5 ? 5 : 3, Paint()..color = AppColors.primaryLight); final tp = TextPainter(text: TextSpan(text: monthsLabel[months[i].month - 1], style: const TextStyle(fontSize: 10, color: AppColors.textMuted)), textDirection: TextDirection.ltr)..layout(); tp.paint(canvas, Offset(x - tp.width / 2, bottom + 7)); }
+    final label = TextPainter(text: TextSpan(text: rupiah(actualValues[5]), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.primaryLight)), textDirection: TextDirection.ltr)..layout(); label.paint(canvas, Offset(right - label.width, (bottom - (bottom - top) * (actualValues[5] / scale)) - 18));
   }
-  void _dashed(Canvas canvas, Path path, Paint paint) {
-    for (final metric in path.computeMetrics()) {
-      var d = 0.0;
-      while (d < metric.length) {
-        final end = (d + 5.0).clamp(0.0, metric.length).toDouble();
-        canvas.drawPath(metric.extractPath(d, end), paint);
-        d += 9.0;
-      }
-    }
-  }
-  @override bool shouldRepaint(covariant _GoalChartPainter old) => old.progress != progress;
+  void _dashed(Canvas canvas, Path path, Paint paint) { for (final metric in path.computeMetrics()) { var d = 0.0; while (d < metric.length) { final end = (d + 5).clamp(0.0, metric.length).toDouble(); canvas.drawPath(metric.extractPath(d, end), paint); d += 9; } } }
+  @override bool shouldRepaint(covariant _GoalChartPainter old) => old.progress != progress || old.target != target || old.rows != rows;
 }
 
 class _AIInsight extends StatelessWidget {
@@ -312,29 +280,25 @@ class _AIInsight extends StatelessWidget {
   final FinancialGoalSnapshot goal; final bool completed; final double monthly, available; final String? walletName; final VoidCallback onContribute;
   @override
   Widget build(BuildContext context) {
-    final message = completed ? 'Target ini sudah tercapai. Kamu bisa menaikkan target dan melanjutkan akumulasi.' : 'Kamu masih butuh ${rupiah(goal.remaining)}. Dengan setoran sekitar ${rupiah(monthly)} per bulan, target lebih terarah.';
-    return Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(gradient: AppGradients.primary, borderRadius: AppRadius.radiusXL, boxShadow: AppShadows.glow), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Container(width: 42, height: 42, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .10), shape: BoxShape.circle), child: const Icon(LucideIcons.sparkles, color: Colors.white)), const SizedBox(width: 10), Expanded(child: Text('Nexora AI Insight', style: AppTypography.labelLarge.copyWith(color: Colors.white, fontWeight: FontWeight.w900))), const Icon(LucideIcons.chevronRight, color: Colors.white70)]),
-      const SizedBox(height: 10), Text(message, style: AppTypography.bodySmall.copyWith(color: Colors.white.withValues(alpha: .94), height: 1.4)),
-      const SizedBox(height: 9), _AIChip(icon: LucideIcons.badgeCheck, text: completed ? 'Konsistensi bagus — pertahankan kebiasaan ini.' : 'Rekomendasi setoran: ${rupiah(monthly)} / bulan'),
+    final message = completed ? 'Target ini sudah tercapai. Pertahankan kebiasaanmu atau naikkan target berikutnya.' : 'Kamu masih butuh ${rupiah(goal.remaining)}. Dengan setoran sekitar ${rupiah(monthly)} per bulan, target lebih terarah.';
+    return Container(padding: const EdgeInsets.fromLTRB(16, 15, 14, 15), decoration: BoxDecoration(gradient: AppGradients.primary, borderRadius: AppRadius.radiusXL, boxShadow: AppShadows.glow), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Container(width: 64, height: 64, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: .10)), padding: const EdgeInsets.all(3), child: SvgPicture.asset('assets/mascot/nexora_mascot_master.svg', fit: BoxFit.contain)), const SizedBox(width: 10), Expanded(child: Row(children: [const Icon(LucideIcons.sparkles, size: 14, color: Colors.white), const SizedBox(width: 5), Text('Nexora AI Insight', style: AppTypography.labelLarge.copyWith(color: Colors.white, fontWeight: FontWeight.w900)), const SizedBox(width: 6), Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.white.withValues(alpha: .12), borderRadius: AppRadius.radiusPill), child: Text('AI', style: AppTypography.overline.copyWith(color: Colors.white, fontWeight: FontWeight.w900)))])), const Icon(LucideIcons.chevronRight, color: Colors.white70)]),
+      const SizedBox(height: 8), Text(message, style: AppTypography.bodySmall.copyWith(color: Colors.white.withValues(alpha: .94), height: 1.4)),
+      const SizedBox(height: 9), _AIChip(icon: LucideIcons.badgeCheck, text: completed ? 'Konsistensimu bagus! Pertahankan.' : 'Rekomendasi setoran: ${rupiah(monthly)} / bulan'),
       if (!completed && available > 0) ...[const SizedBox(height: 7), _AIChip(icon: LucideIcons.walletCards, text: '${walletName ?? 'Wallet'} • bisa disetor sekarang ${rupiah(available)}')],
-      const SizedBox(height: 10), Row(children: [Expanded(child: Text('Lihat rekomendasi detail →', style: AppTypography.labelMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w800))), TextButton(onPressed: onContribute, child: Text(completed ? 'Naikkan' : 'Tambah dana', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)))]),
+      const SizedBox(height: 10), Row(children: [Expanded(child: GestureDetector(onTap: () {}, child: Text('Lihat rekomendasi detail →', style: AppTypography.labelMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w800)))), TextButton(onPressed: onContribute, child: Text(completed ? 'Naikkan' : 'Tambah dana', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)))]),
     ]));
   }
 }
 
 class _AIChip extends StatelessWidget {
   const _AIChip({required this.icon, required this.text}); final IconData icon; final String text;
-  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9), decoration: BoxDecoration(color: Colors.white.withValues(alpha: .09), borderRadius: AppRadius.radiusLG), child: Row(children: [Icon(icon, size: 16, color: Colors.white70), const SizedBox(width: 8), Expanded(child: Text(text, style: AppTypography.caption.copyWith(color: Colors.white, fontWeight: FontWeight.w700)))]));
+  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9), decoration: BoxDecoration(color: Colors.white.withValues(alpha: .10), borderRadius: AppRadius.radiusLG), child: Row(children: [Icon(icon, size: 16, color: Colors.white70), const SizedBox(width: 8), Expanded(child: Text(text, maxLines: 2, overflow: TextOverflow.ellipsis, style: AppTypography.caption.copyWith(color: Colors.white, fontWeight: FontWeight.w700)))]));
 }
 
 class _ContributionHistory extends StatelessWidget {
   const _ContributionHistory({required this.goalId}); final String goalId;
-  Future<List<Map<String, dynamic>>> _load() async {
-    if (!NexoraSupabase.isInitialized || NexoraSupabase.client.auth.currentUser == null) return const [];
-    final rows = await NexoraSupabase.client.from('goal_contributions').select('id, amount, note, contributed_at').eq('goal_id', goalId).order('contributed_at', ascending: false).limit(8);
-    return (rows as List).map((row) => Map<String, dynamic>.from(row as Map)).toList(growable: false);
-  }
+  Future<List<Map<String, dynamic>>> _load() async { if (!NexoraSupabase.isInitialized || NexoraSupabase.client.auth.currentUser == null) return const []; final rows = await NexoraSupabase.client.from('goal_contributions').select('id, amount, note, contributed_at').eq('goal_id', goalId).order('contributed_at', ascending: false).limit(8); return (rows as List).map((row) => Map<String, dynamic>.from(row as Map)).toList(growable: false); }
   @override Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(future: _load(), builder: (context, snapshot) { final rows = snapshot.data ?? const <Map<String, dynamic>>[]; return PremiumCard(padding: const EdgeInsets.fromLTRB(14, 14, 14, 8), borderRadius: AppRadius.radiusXL, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Expanded(child: Text('Aktivitas Transaksi', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w900))), Text('Lihat semua', style: AppTypography.labelMedium.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800))]), const SizedBox(height: 7), if (snapshot.connectionState == ConnectionState.waiting) const Padding(padding: EdgeInsets.all(12), child: LinearProgressIndicator(minHeight: 2)) else if (rows.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 14), child: Text('Belum ada setoran ke goal ini.', style: AppTypography.caption)) else ...rows.map((row) => _ContributionTile(row: row))])); });
 }
 
@@ -350,8 +314,7 @@ class _StatusCard extends StatelessWidget {
 
 class _Pill extends StatelessWidget {
   const _Pill(this.text, {this.success = false}); final String text; final bool success;
-  @override
-  Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6), decoration: BoxDecoration(color: (success ? AppColors.success : AppColors.primary).withValues(alpha: .10), borderRadius: BorderRadius.circular(99)), child: Text(text, style: AppTypography.overline.copyWith(color: success ? AppColors.success : AppColors.primaryLight, fontWeight: FontWeight.w800)));
+  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6), decoration: BoxDecoration(color: (success ? AppColors.success : AppColors.primary).withValues(alpha: .10), borderRadius: BorderRadius.circular(99)), child: Text(text, style: AppTypography.overline.copyWith(color: success ? AppColors.success : AppColors.primaryLight, fontWeight: FontWeight.w800)));
 }
 
 String _date(DateTime value) => '${value.day.toString().padLeft(2, '0')} ${_month(value.month)} ${value.year}';
