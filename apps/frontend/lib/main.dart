@@ -19,7 +19,7 @@ Future<void> main() async {
     systemNavigationBarDividerColor: Colors.transparent,
   ));
 
-  await initializeDateFormatting('id_ID');
+  initializeDateFormatting('id_ID');
   await NexoraSupabase.initializeIfConfigured();
 
   runApp(const ProviderScope(child: NexoraApp()));
