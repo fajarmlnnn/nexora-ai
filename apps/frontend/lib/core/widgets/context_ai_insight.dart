@@ -15,15 +15,80 @@ class ContextAIInsight extends StatelessWidget {
     this.title = 'Nexora AI',
     this.actionLabel = 'Lihat saran',
     this.onAction,
+    this.compact = false,
   });
 
   final String message;
   final String title;
   final String actionLabel;
   final VoidCallback? onAction;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    if (compact) {
+      return Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(minHeight: 68, maxHeight: 78),
+        padding: const EdgeInsets.fromLTRB(9, 8, 10, 8),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF080910), Color(0xFF17102C), Color(0xFF32155F)],
+          ),
+          borderRadius: AppRadius.radiusXL,
+          border: Border.all(color: AppColors.primaryLight.withValues(alpha: .13)),
+          boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .12), blurRadius: 24, spreadRadius: -8)],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withValues(alpha: .10),
+                boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .18), blurRadius: 18)],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(3),
+                child: SvgPicture.asset('assets/mascot/nexora_mascot_master.svg', fit: BoxFit.contain),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    const Icon(LucideIcons.sparkles, size: 12, color: AppColors.primaryLight),
+                    const SizedBox(width: 4),
+                    Text(title, style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800)),
+                    const SizedBox(width: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .18), borderRadius: AppRadius.radiusPill),
+                      child: Text('AI', style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontSize: 8, fontWeight: FontWeight.w800)),
+                    ),
+                  ]),
+                  const SizedBox(height: 2),
+                  Text(message, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: .74), height: 1.15)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: onAction,
+              behavior: HitTestBehavior.opaque,
+              child: const SizedBox(width: 30, height: 40, child: Center(child: Icon(LucideIcons.chevronRight, size: 19, color: AppColors.primaryLight))),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(10, 9, 12, 10),
