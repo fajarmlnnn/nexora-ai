@@ -72,6 +72,7 @@ class _AIPageState extends ConsumerState<AIPage>
   String? _lastFailedQuestion;
   String? _lastSubmittedQuestion;
   DateTime? _lastSubmittedAt;
+  int? _activePromptIndex;
 
   @override
   void dispose() {
@@ -123,7 +124,9 @@ class _AIPageState extends ConsumerState<AIPage>
 
     try {
       final answer = await _ai.chat(
-        messages: history.length > 20 ? history.sublist(history.length - 20) : history,
+        messages: history.length > 20
+            ? history.sublist(history.length - 20)
+            : history,
         analytics: analytics,
       );
       if (!mounted) return;
@@ -156,7 +159,8 @@ class _AIPageState extends ConsumerState<AIPage>
         ..clear()
         ..add(
           const _ChatMessage(
-            text: 'Halo! Aku Nexora AI.\nPercakapan baru siap. Ada kondisi keuangan yang ingin kamu pahami hari ini? 😊',
+            text:
+                'Halo! Aku Nexora AI.\nPercakapan baru siap. Ada kondisi keuangan yang ingin kamu pahami hari ini? 😊',
             fromUser: false,
           ),
         );
@@ -164,6 +168,7 @@ class _AIPageState extends ConsumerState<AIPage>
       _lastFailedQuestion = null;
       _lastSubmittedQuestion = null;
       _lastSubmittedAt = null;
+      _activePromptIndex = null;
     });
     _scrollToBottom();
   }
@@ -197,7 +202,7 @@ class _AIPageState extends ConsumerState<AIPage>
                   SliverToBoxAdapter(child: _buildPromptSection()),
                   SliverToBoxAdapter(child: _buildConversationHeader()),
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) => _Bubble(
@@ -211,16 +216,18 @@ class _AIPageState extends ConsumerState<AIPage>
                   ),
                   if (_isSending)
                     const SliverPadding(
-                      padding: EdgeInsets.fromLTRB(16, 0, 16, 14),
+                      padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
                       sliver: SliverToBoxAdapter(child: _TypingBubble()),
                     ),
                   if (_error != null)
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                       sliver: SliverToBoxAdapter(
                         child: _ErrorBubble(
                           message: _error!,
-                          onRetry: _lastFailedQuestion == null ? null : () => _ask(_lastFailedQuestion!),
+                          onRetry: _lastFailedQuestion == null
+                              ? null
+                              : () => _ask(_lastFailedQuestion!),
                         ),
                       ),
                     ),
@@ -244,7 +251,7 @@ class _AIPageState extends ConsumerState<AIPage>
             tooltip: 'Kembali',
             icon: LucideIcons.arrowLeft,
           ),
-          const SizedBox(width: 9),
+          const SizedBox(width: 8),
           Container(
             width: 40,
             height: 40,
@@ -253,14 +260,14 @@ class _AIPageState extends ConsumerState<AIPage>
               gradient: AppGradients.primary,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: .36),
-                  blurRadius: 18,
+                  color: AppColors.primary.withValues(alpha: .34),
+                  blurRadius: 16,
                 ),
               ],
             ),
             child: const Icon(LucideIcons.sparkles, color: Colors.white, size: 20),
           ),
-          const SizedBox(width: 9),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,10 +285,16 @@ class _AIPageState extends ConsumerState<AIPage>
                     Container(
                       width: 7,
                       height: 7,
-                      decoration: const BoxDecoration(color: AppColors.success, shape: BoxShape.circle),
+                      decoration: const BoxDecoration(
+                        color: AppColors.success,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                     const SizedBox(width: 5),
-                    Text('Assistant aktif', style: AppTypography.bodySmall.copyWith(color: Colors.white70)),
+                    Text(
+                      'Assistant aktif',
+                      style: AppTypography.bodySmall.copyWith(color: Colors.white70),
+                    ),
                   ],
                 ),
               ],
@@ -309,7 +322,7 @@ class _AIPageState extends ConsumerState<AIPage>
         builder: (context, outer) {
           final compact = outer.maxWidth < 350;
           final heroHeight = compact ? 304.0 : 314.0;
-          final mascotSize = compact ? 116.0 : 132.0;
+          final mascotSize = compact ? 104.0 : 114.0;
           return Container(
             height: heroHeight,
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
@@ -321,17 +334,19 @@ class _AIPageState extends ConsumerState<AIPage>
                 colors: [Color(0xFF321272), Color(0xFF100B27), Color(0xFF090B15)],
                 stops: [0, .48, 1],
               ),
-              border: Border.all(color: AppColors.primaryLight.withValues(alpha: .36)),
+              border: Border.all(
+                color: AppColors.primaryLight.withValues(alpha: .36),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: .24),
-                  blurRadius: 26,
-                  offset: const Offset(0, 9),
+                  color: AppColors.primary.withValues(alpha: .22),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
             child: Stack(
-              clipBehavior: Clip.none,
+              clipBehavior: Clip.hardEdge,
               children: [
                 Positioned(
                   top: 0,
@@ -339,15 +354,15 @@ class _AIPageState extends ConsumerState<AIPage>
                   child: _PoweredBadge(compact: compact),
                 ),
                 Positioned(
-                  right: 8,
-                  bottom: 9,
+                  right: 7,
+                  bottom: 14,
                   width: mascotSize,
                   height: mascotSize,
                   child: IgnorePointer(
                     child: AnimatedBuilder(
                       animation: _floatController,
                       builder: (context, child) => Transform.translate(
-                        offset: Offset(0, -3 * _floatController.value),
+                        offset: Offset(0, -2 * _floatController.value),
                         child: child,
                       ),
                       child: Image.asset(
@@ -359,24 +374,13 @@ class _AIPageState extends ConsumerState<AIPage>
                     ),
                   ),
                 ),
-                Positioned(
-                  top: 12,
-                  right: compact ? 92 : 104,
-                  child: Icon(
-                    LucideIcons.sparkle,
-                    color: AppColors.primaryLight.withValues(alpha: .7),
-                    size: 14,
-                  ),
-                ),
                 Positioned.fill(
                   child: Align(
                     alignment: Alignment.topLeft,
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: compact ? 190 : 216,
-                      ),
+                      constraints: BoxConstraints(maxWidth: compact ? 196 : 220),
                       child: Padding(
-                        padding: EdgeInsets.only(top: compact ? 34 : 38),
+                        padding: EdgeInsets.only(top: compact ? 36 : 38),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
@@ -393,12 +397,15 @@ class _AIPageState extends ConsumerState<AIPage>
                             RichText(
                               text: TextSpan(
                                 style: AppTypography.heading1.copyWith(
-                                  fontSize: compact ? 26 : 29,
+                                  fontSize: compact ? 25 : 28,
                                   height: 1.05,
                                 ),
                                 children: const [
                                   TextSpan(text: 'Aku '),
-                                  TextSpan(text: 'Nexora', style: TextStyle(color: AppColors.primaryLight)),
+                                  TextSpan(
+                                    text: 'Nexora',
+                                    style: TextStyle(color: AppColors.primaryLight),
+                                  ),
                                   TextSpan(text: ' AI'),
                                 ],
                               ),
@@ -408,10 +415,10 @@ class _AIPageState extends ConsumerState<AIPage>
                               'Asisten finansial cerdas yang siap\nmembantumu kapan saja.',
                               style: AppTypography.bodyMedium.copyWith(
                                 color: Colors.white.withValues(alpha: .86),
-                                height: 1.34,
+                                height: 1.3,
                               ),
                             ),
-                            const SizedBox(height: 13),
+                            const SizedBox(height: 12),
                             _PrivacyCard(compact: compact),
                           ],
                         ),
@@ -429,7 +436,7 @@ class _AIPageState extends ConsumerState<AIPage>
 
   Widget _buildPromptSection() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 22, 0, 16),
+      padding: const EdgeInsets.fromLTRB(16, 22, 0, 17),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -439,22 +446,36 @@ class _AIPageState extends ConsumerState<AIPage>
               children: [
                 Text('Mulai dari sini', style: AppTypography.heading2),
                 const Spacer(),
-                Text('Geser →', style: AppTypography.labelMedium.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w700)),
+                Text(
+                  'Geser →',
+                  style: AppTypography.labelMedium.copyWith(
+                    color: AppColors.primaryLight,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 10),
           SizedBox(
-            height: 124,
+            height: 154,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.only(right: 16, bottom: 2),
               itemCount: _quickStartPrompts.length,
               separatorBuilder: (_, _) => const SizedBox(width: 10),
               itemBuilder: (context, index) {
                 final prompt = _quickStartPrompts[index];
-                return _PromptCard(prompt: prompt, highlighted: index == 1, enabled: !_isSending, onTap: () => _ask(prompt.question));
+                return _PromptCard(
+                  prompt: prompt,
+                  highlighted: _activePromptIndex == index,
+                  enabled: !_isSending,
+                  onTap: () {
+                    setState(() => _activePromptIndex = index);
+                    _ask(prompt.question);
+                  },
+                );
               },
             ),
           ),
@@ -465,17 +486,19 @@ class _AIPageState extends ConsumerState<AIPage>
 
   Widget _buildConversationHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: Row(
         children: [
           Text('Percakapan', style: AppTypography.heading2),
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: .16),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: AppColors.primaryLight.withValues(alpha: .18)),
+              color: AppColors.primary.withValues(alpha: .13),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primaryLight.withValues(alpha: .16),
+              ),
             ),
             child: Text('${_messages.length}', style: AppTypography.labelMedium),
           ),
@@ -486,20 +509,24 @@ class _AIPageState extends ConsumerState<AIPage>
 
   Widget _buildQuickActions() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 15),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: _quickActions.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          mainAxisExtent: 58,
+          mainAxisExtent: 56,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
         ),
         itemBuilder: (context, index) {
           final prompt = _quickActions[index];
-          return _QuickActionButton(prompt: prompt, enabled: !_isSending, onTap: () => _ask(prompt.question));
+          return _QuickActionButton(
+            prompt: prompt,
+            enabled: !_isSending,
+            onTap: () => _ask(prompt.question),
+          );
         },
       ),
     );
@@ -509,57 +536,72 @@ class _AIPageState extends ConsumerState<AIPage>
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
         color: Colors.transparent,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(8, 7, 7, 7),
+          constraints: const BoxConstraints(minHeight: 58, maxHeight: 76),
+          padding: const EdgeInsets.fromLTRB(6, 5, 5, 5),
           decoration: BoxDecoration(
-            color: const Color(0xFF0D1020).withValues(alpha: .96),
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: AppColors.primary.withValues(alpha: .45)),
-            boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .2), blurRadius: 22, offset: const Offset(0, 6))],
+            color: const Color(0xFF0D1020).withValues(alpha: .98),
+            borderRadius: BorderRadius.circular(29),
+            border: Border.all(color: AppColors.primary.withValues(alpha: .42)),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: .16),
+                blurRadius: 18,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: .04),
-                  border: Border.all(color: Colors.white.withValues(alpha: .1)),
+                  color: Colors.white.withValues(alpha: .035),
+                  border: Border.all(color: Colors.white.withValues(alpha: .09)),
                 ),
-                child: const Icon(LucideIcons.mic, color: AppColors.primaryLight, size: 20),
+                child: const Icon(
+                  LucideIcons.mic,
+                  color: AppColors.primaryLight,
+                  size: 18,
+                ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 7),
               Expanded(
                 child: TextField(
                   controller: _controller,
                   enabled: !_isSending,
                   minLines: 1,
-                  maxLines: 4,
+                  maxLines: 2,
                   textInputAction: TextInputAction.send,
                   onSubmitted: (value) {
                     if (!value.contains('\n')) _ask(value);
                   },
-                  style: AppTypography.bodyMedium.copyWith(color: Colors.white),
+                  style: AppTypography.bodySmall.copyWith(color: Colors.white),
                   decoration: InputDecoration(
-                    hintText: _isSending ? 'Nexora sedang berpikir...' : 'Tanya apa saja tentang keuanganmu...',
+                    hintText: _isSending
+                        ? 'Nexora sedang berpikir...'
+                        : 'Tanya apa saja tentang keuanganmu...',
                     border: InputBorder.none,
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 7),
+                    hintStyle: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textMuted,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 7),
+              const SizedBox(width: 6),
               InkWell(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(20),
                 onTap: _isSending ? null : () => _ask(_controller.text),
                 child: Ink(
-                  width: 46,
-                  height: 46,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: _isSending ? null : AppGradients.primary,
@@ -567,8 +609,16 @@ class _AIPageState extends ConsumerState<AIPage>
                   ),
                   child: Center(
                     child: _isSending
-                        ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(LucideIcons.arrowUpRight, size: 23, color: Colors.white),
+                        ? const SizedBox(
+                            width: 15,
+                            height: 15,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(
+                            LucideIcons.arrowUpRight,
+                            size: 20,
+                            color: Colors.white,
+                          ),
                   ),
                 ),
               ),
@@ -581,7 +631,11 @@ class _AIPageState extends ConsumerState<AIPage>
 }
 
 class _HeaderIconButton extends StatelessWidget {
-  const _HeaderIconButton({required this.tooltip, required this.icon, this.onPressed});
+  const _HeaderIconButton({
+    required this.tooltip,
+    required this.icon,
+    this.onPressed,
+  });
 
   final String tooltip;
   final IconData icon;
@@ -621,19 +675,30 @@ class _PoweredBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 9, vertical: compact ? 6 : 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 9,
+        vertical: 6,
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFF201445).withValues(alpha: .82),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(17),
         border: Border.all(color: Colors.white.withValues(alpha: .08)),
-        boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .18), blurRadius: 14)],
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: .16),
+            blurRadius: 12,
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(LucideIcons.zap, size: 14, color: AppColors.primaryLight),
           const SizedBox(width: 5),
-          Text('AI Powered', style: AppTypography.labelMedium.copyWith(color: Colors.white)),
+          Text(
+            'AI Powered',
+            style: AppTypography.labelMedium.copyWith(color: Colors.white),
+          ),
         ],
       ),
     );
@@ -648,36 +713,54 @@ class _PrivacyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: compact ? 184 : 198),
+      constraints: BoxConstraints(maxWidth: compact ? 178 : 188),
       child: Container(
-        padding: const EdgeInsets.all(9),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
         decoration: BoxDecoration(
           color: const Color(0xFF23124F).withValues(alpha: .58),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.primaryLight.withValues(alpha: .32)),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.primaryLight.withValues(alpha: .30),
+          ),
         ),
         child: Row(
           children: [
             Container(
               width: 34,
               height: 34,
-              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .22), borderRadius: BorderRadius.circular(11)),
-              child: const Icon(LucideIcons.shieldCheck, color: AppColors.primaryLight, size: 18),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: .22),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                LucideIcons.shieldCheck,
+                color: AppColors.primaryLight,
+                size: 18,
+              ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 7),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text('Privasi aman', style: AppTypography.labelLarge),
-                  const SizedBox(height: 2),
-                  Text('Data kamu dienkripsi\ndan 100% aman.', style: AppTypography.caption.copyWith(color: Colors.white70), maxLines: 2),
+                  const SizedBox(height: 1),
+                  Text(
+                    'Data kamu dienkripsi\ndan 100% aman.',
+                    style: AppTypography.caption.copyWith(color: Colors.white70),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             ),
-            const SizedBox(width: 3),
-            const Icon(LucideIcons.chevronRight, color: Colors.white, size: 16),
+            const SizedBox(width: 2),
+            const Icon(
+              LucideIcons.chevronRight,
+              color: Colors.white,
+              size: 16,
+            ),
           ],
         ),
       ),
@@ -700,7 +783,12 @@ class _Prompt {
 }
 
 class _PromptCard extends StatelessWidget {
-  const _PromptCard({required this.prompt, required this.highlighted, required this.enabled, required this.onTap});
+  const _PromptCard({
+    required this.prompt,
+    required this.highlighted,
+    required this.enabled,
+    required this.onTap,
+  });
 
   final _Prompt prompt;
   final bool highlighted;
@@ -710,24 +798,39 @@ class _PromptCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 140,
+      width: 148,
+      height: 150,
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         child: InkWell(
           onTap: enabled ? onTap : null,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           child: Ink(
-            padding: const EdgeInsets.all(13),
+            padding: const EdgeInsets.fromLTRB(12, 11, 10, 9),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: highlighted ? const [Color(0xFF321178), Color(0xFF171026)] : const [Color(0xFF12162A), Color(0xFF090B14)],
+                colors: highlighted
+                    ? const [Color(0xFF321178), Color(0xFF171026)]
+                    : const [Color(0xFF12162A), Color(0xFF090B14)],
               ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: highlighted ? AppColors.primaryLight.withValues(alpha: .72) : Colors.white.withValues(alpha: .1)),
-              boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: highlighted ? .2 : .08), blurRadius: 18, offset: const Offset(0, 7))],
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: highlighted
+                    ? AppColors.primaryLight.withValues(alpha: .70)
+                    : Colors.white.withValues(alpha: .10),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(
+                    alpha: highlighted ? .18 : .06,
+                  ),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -735,21 +838,42 @@ class _PromptCard extends StatelessWidget {
                 Container(
                   width: 38,
                   height: 38,
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(13), gradient: AppGradients.primary),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    gradient: AppGradients.primary,
+                  ),
                   child: Icon(prompt.icon, color: Colors.white, size: 20),
                 ),
-                const Spacer(),
-                Text(prompt.title, style: AppTypography.heading3.copyWith(fontSize: 15), maxLines: 1, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 3),
-                Text(prompt.description, style: AppTypography.caption.copyWith(color: Colors.white70), maxLines: 2, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 4),
+                const SizedBox(height: 7),
+                Text(
+                  prompt.title,
+                  style: AppTypography.heading3.copyWith(fontSize: 15),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Expanded(
+                  child: Text(
+                    prompt.description,
+                    style: AppTypography.caption.copyWith(color: Colors.white70),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 Align(
                   alignment: Alignment.bottomRight,
                   child: Container(
                     width: 26,
                     height: 26,
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.primary.withValues(alpha: .2)),
-                    child: const Icon(LucideIcons.arrowRight, color: AppColors.primaryLight, size: 15),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary.withValues(alpha: .18),
+                    ),
+                    child: const Icon(
+                      LucideIcons.arrowRight,
+                      color: AppColors.primaryLight,
+                      size: 15,
+                    ),
                   ),
                 ),
               ],
@@ -762,7 +886,12 @@ class _PromptCard extends StatelessWidget {
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.text, required this.fromUser, required this.isInitial});
+  const _Bubble({
+    required this.text,
+    required this.fromUser,
+    required this.isInitial,
+  });
+
   final String text;
   final bool fromUser;
   final bool isInitial;
@@ -770,38 +899,69 @@ class _Bubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isInitial) return _InitialAssistantBubble(text: text);
+
     return Align(
       alignment: fromUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.only(bottom: 9),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             if (!fromUser)
               Container(
-                width: 26,
-                height: 26,
-                margin: const EdgeInsets.only(right: 7, bottom: 4),
-                decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .14), shape: BoxShape.circle),
-                child: const Icon(LucideIcons.sparkles, size: 13, color: AppColors.primaryLight),
+                width: 24,
+                height: 24,
+                margin: const EdgeInsets.only(right: 6, bottom: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: .12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  LucideIcons.sparkles,
+                  size: 12,
+                  color: AppColors.primaryLight,
+                ),
               ),
             Flexible(
               child: Container(
-                constraints: const BoxConstraints(maxWidth: 330),
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-                decoration: BoxDecoration(
-                  gradient: fromUser ? AppGradients.button : null,
-                  color: fromUser ? null : AppColors.card,
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(17),
-                    topRight: const Radius.circular(17),
-                    bottomLeft: Radius.circular(fromUser ? 17 : 5),
-                    bottomRight: Radius.circular(fromUser ? 5 : 17),
-                  ),
-                  border: fromUser ? null : Border.all(color: AppColors.border),
+                constraints: BoxConstraints(
+                  maxWidth: fromUser ? 255 : 300,
                 ),
-                child: Text(text, style: AppTypography.bodySmall.copyWith(color: fromUser ? Colors.white : AppColors.textPrimary, height: 1.45)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color: fromUser
+                      ? const Color(0xFF17142A)
+                      : AppColors.card,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(15),
+                    topRight: const Radius.circular(15),
+                    bottomLeft: Radius.circular(fromUser ? 15 : 5),
+                    bottomRight: Radius.circular(fromUser ? 5 : 15),
+                  ),
+                  border: Border.all(
+                    color: fromUser
+                        ? AppColors.primary.withValues(alpha: .22)
+                        : AppColors.border,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: .055),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  text,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: fromUser ? Colors.white : AppColors.textPrimary,
+                    height: 1.4,
+                  ),
+                ),
               ),
             ),
           ],
@@ -819,49 +979,97 @@ class _InitialAssistantBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final parts = text.split('Ada yang bisa aku bantu hari ini? 😊');
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Container(
             width: double.infinity,
-            margin: const EdgeInsets.only(left: 34, right: 44),
-            padding: const EdgeInsets.fromLTRB(15, 15, 15, 17),
+            margin: const EdgeInsets.only(left: 32, right: 42),
+            padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF18162C), Color(0xFF0D1020)]),
-              borderRadius: BorderRadius.circular(21),
-              border: Border.all(color: Colors.white.withValues(alpha: .08)),
-              boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .1), blurRadius: 20)],
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF17162B), Color(0xFF0D1020)],
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.white.withValues(alpha: .07)),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: .07),
+                  blurRadius: 16,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
             child: RichText(
               text: TextSpan(
-                style: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: .88), height: 1.55),
+                style: AppTypography.bodySmall.copyWith(
+                  color: Colors.white.withValues(alpha: .88),
+                  height: 1.48,
+                ),
                 children: [
                   TextSpan(text: parts.first.trim()),
                   const TextSpan(text: '\n'),
-                  TextSpan(text: 'Ada yang bisa aku bantu hari ini? 😊', style: AppTypography.bodyMedium.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w700)),
+                  TextSpan(
+                    text: 'Ada yang bisa aku bantu hari ini? 😊',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.primaryLight,
+                      fontWeight: FontWeight.w700,
+                      height: 1.48,
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
           Positioned(
             left: 0,
-            bottom: 17,
+            bottom: 14,
             child: Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(shape: BoxShape.circle, gradient: AppGradients.primary, boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .45), blurRadius: 20)]),
-              child: const Icon(LucideIcons.sparkles, color: Colors.white, size: 22),
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: AppGradients.primary,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: .28),
+                    blurRadius: 14,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                LucideIcons.sparkles,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
           Positioned(
             right: 0,
-            bottom: 1,
+            bottom: 2,
             child: Container(
-              width: 70,
-              height: 54,
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(28), gradient: AppGradients.primary, boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .32), blurRadius: 20)]),
-              child: const Center(child: Icon(LucideIcons.ellipsis, color: Colors.white70, size: 27)),
+              width: 54,
+              height: 42,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(21),
+                gradient: AppGradients.primary,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: .22),
+                    blurRadius: 14,
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Icon(
+                  LucideIcons.ellipsis,
+                  color: Colors.white70,
+                  size: 21,
+                ),
+              ),
             ),
           ),
         ],
@@ -871,7 +1079,12 @@ class _InitialAssistantBubble extends StatelessWidget {
 }
 
 class _QuickActionButton extends StatelessWidget {
-  const _QuickActionButton({required this.prompt, required this.enabled, required this.onTap});
+  const _QuickActionButton({
+    required this.prompt,
+    required this.enabled,
+    required this.onTap,
+  });
+
   final _Prompt prompt;
   final bool enabled;
   final VoidCallback onTap;
@@ -880,24 +1093,41 @@ class _QuickActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(19),
+      borderRadius: BorderRadius.circular(17),
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(19),
+        borderRadius: BorderRadius.circular(17),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(color: const Color(0xFF111426).withValues(alpha: .9), borderRadius: BorderRadius.circular(19), border: Border.all(color: AppColors.primary.withValues(alpha: .18))),
+          padding: const EdgeInsets.symmetric(horizontal: 9),
+          decoration: BoxDecoration(
+            color: const Color(0xFF111426).withValues(alpha: .9),
+            borderRadius: BorderRadius.circular(17),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: .16),
+            ),
+          ),
           child: Row(
             children: [
               Container(
                 width: 34,
                 height: 34,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), gradient: AppGradients.primary),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(11),
+                  gradient: AppGradients.primary,
+                ),
                 child: Icon(prompt.icon, color: Colors.white, size: 18),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(prompt.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(color: Colors.white, fontSize: 11.5)),
+                child: Text(
+                  prompt.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.labelMedium.copyWith(
+                    color: Colors.white,
+                    fontSize: 11.5,
+                  ),
+                ),
               ),
             ],
           ),
@@ -915,18 +1145,31 @@ class _TypingBubble extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: const BorderRadius.only(topLeft: Radius.circular(17), topRight: Radius.circular(17), bottomRight: Radius.circular(17), bottomLeft: Radius.circular(5)),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(15),
+            topRight: Radius.circular(15),
+            bottomRight: Radius.circular(15),
+            bottomLeft: Radius.circular(5),
+          ),
           border: Border.all(color: AppColors.border),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.sparkles, size: 14, color: AppColors.primaryLight),
-            SizedBox(width: 7),
-            SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+            Icon(
+              LucideIcons.sparkles,
+              size: 13,
+              color: AppColors.primaryLight,
+            ),
+            SizedBox(width: 6),
+            SizedBox(
+              width: 13,
+              height: 13,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
           ],
         ),
       ),
@@ -943,24 +1186,41 @@ class _ErrorBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: AppColors.danger.withValues(alpha: 0.07), borderRadius: BorderRadius.circular(15), border: Border.all(color: AppColors.danger.withValues(alpha: 0.2))),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: AppColors.danger.withValues(alpha: 0.2),
+        ),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(LucideIcons.circleAlert, size: 18, color: AppColors.danger),
+          const Icon(
+            LucideIcons.circleAlert,
+            size: 18,
+            color: AppColors.danger,
+          ),
           AppSpacing.hGapSM,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Nexora belum bisa menjawab', style: AppTypography.label),
+                Text(
+                  'Nexora belum bisa menjawab',
+                  style: AppTypography.label,
+                ),
                 const SizedBox(height: 3),
                 Text(message, style: AppTypography.caption),
                 if (onRetry != null) ...[
                   const SizedBox(height: 7),
                   TextButton.icon(
                     onPressed: onRetry,
-                    style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 30), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 30),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     icon: const Icon(LucideIcons.refreshCw, size: 15),
                     label: const Text('Coba lagi'),
                   ),
