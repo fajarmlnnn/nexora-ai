@@ -29,7 +29,7 @@ class _AIGlowPageState extends ConsumerState<AIGlowPage> with SingleTickerProvid
     P('Pengeluaran', 'Kategori & analisis\npengeluaranmu', 'Di kategori mana saya paling boros?', LucideIcons.receiptText),
     P('Goals', 'Pantau progres\ntarget finansialmu', 'Bagaimana progres target finansial saya?', LucideIcons.goal),
   ];
-  static const actions = [
+  static const quickActions = [
     P('Berikan ringkasan keuanganku', '', 'Berikan ringkasan keuanganku', LucideIcons.chartNoAxesCombined),
     P('Analisis pengeluaranku', '', 'Analisis pengeluaranku', LucideIcons.chartPie),
     P('Apakah aku bisa menabung lebih banyak?', '', 'Apakah aku bisa menabung lebih banyak?', LucideIcons.piggyBank),
@@ -144,7 +144,7 @@ class _AIGlowPageState extends ConsumerState<AIGlowPage> with SingleTickerProvid
             ),
             if (sending) const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.only(bottom: 12), child: Typing())),
             if (error != null) SliverToBoxAdapter(child: ErrorBox(error!, failed == null ? null : () => ask(failed!))),
-            SliverToBoxAdapter(child: actions()),
+            SliverToBoxAdapter(child: actionSection()),
             const SliverToBoxAdapter(child: SizedBox(height: 18)),
           ],
         ),
@@ -246,14 +246,14 @@ class _AIGlowPageState extends ConsumerState<AIGlowPage> with SingleTickerProvid
     ]),
   );
 
-  Widget actions() => Padding(
+  Widget actionSection() => Padding(
     padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
     child: GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: actions.length,
+      itemCount: quickActions.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisExtent: 60, crossAxisSpacing: 10, mainAxisSpacing: 10),
-      itemBuilder: (_, i) => Action(actions[i], i, !sending, () => ask(actions[i].question)),
+      itemBuilder: (_, i) => Action(quickActions[i], i, !sending, () => ask(quickActions[i].question)),
     ),
   );
 
