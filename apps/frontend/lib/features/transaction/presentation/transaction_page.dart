@@ -1097,3 +1097,16 @@ IconData _icon(TransactionCategory category) => switch (category) {
       TransactionCategory.education => LucideIcons.graduationCap,
       TransactionCategory.other => LucideIcons.circleDollarSign,
     };
+
+String _categoryLabel(TransactionCategory category) => switch (category) {
+      TransactionCategory.food => 'Makanan',
+      TransactionCategory.transport => 'Transportasi',
+      TransactionCategory.shopping => 'Belanja',
+      TransactionCategory.salary => 'Gaji',
+      TransactionCategory.investment => 'Investasi',
+      TransactionCategory.bills => 'Tagihan',
+      TransactionCategory.entertainment => 'Hiburan',
+      TransactionCategory.health => 'Kesehatan',
+      TransactionCategory.education => 'Pendidikan',
+      TransactionCategory.other => 'Lainnya',
+    };
