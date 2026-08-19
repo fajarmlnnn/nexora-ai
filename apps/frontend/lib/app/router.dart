@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/supabase/supabase_client.dart';
 import '../core/supabase/supabase_config.dart';
-import '../features/ai/presentation/ai_page.dart';
+import '../features/ai/presentation/ai_glow_page.dart';
 import '../features/auth/presentation/auth_page.dart';
 import '../features/budget/presentation/budget_page.dart';
 import '../features/dashboard/presentation/dashboard_page.dart';
@@ -33,8 +33,7 @@ final appRouter = GoRouter(
   initialLocation: '/splash',
   refreshListenable: _authRouterRefresh,
   redirect: (context, state) {
-    final isAuthenticated = SupabaseConfig.isConfigured &&
-        NexoraSupabase.client.auth.currentSession != null;
+    final isAuthenticated = SupabaseConfig.isConfigured && NexoraSupabase.client.auth.currentSession != null;
     return AuthRouteGuard.resolve(isAuthenticated: isAuthenticated, location: state.uri.toString());
   },
   routes: [
@@ -54,7 +53,7 @@ final appRouter = GoRouter(
     GoRoute(path: '/wallet/:walletId', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: WalletDetailPage(walletId: state.pathParameters['walletId']!))),
     GoRoute(path: '/financial-overview', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const FinancialOverviewRealtimePage())),
     GoRoute(path: '/profile', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const ProfilePage())),
-    GoRoute(path: '/ai', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const AIPage())),
+    GoRoute(path: '/ai', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const AIGlowPage())),
     GoRoute(path: '/add-income', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const MoneyFormPage(income: true))),
     GoRoute(path: '/add-expense', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const MoneyFormPage(income: false))),
     GoRoute(path: '/transfer', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const TransferPage())),
