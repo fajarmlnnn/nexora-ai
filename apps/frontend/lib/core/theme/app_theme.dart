@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'app_colors.dart';
 import 'app_typography.dart';
@@ -20,7 +21,7 @@ abstract final class AppTheme {
       secondaryContainer: AppColors.suggestion2,
       onSecondaryContainer: Colors.white,
       tertiary: AppColors.micCta,
-      onTertiary: Color(0xFF170F48),
+      onTertiary: const Color(0xFF170F48),
       tertiaryContainer: AppColors.heroIconBox,
       onTertiaryContainer: Colors.white,
       surface: AppColors.background,
