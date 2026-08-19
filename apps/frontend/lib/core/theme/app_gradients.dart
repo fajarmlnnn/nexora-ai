@@ -2,13 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
-/// Nexora AI Gradient System
 abstract final class AppGradients {
   AppGradients._();
-
-  // ==================================================
-  // Primary
-  // ==================================================
 
   static const LinearGradient primary = LinearGradient(
     begin: Alignment.topLeft,
@@ -17,46 +12,39 @@ abstract final class AppGradients {
     stops: [0.0, .55, 1],
   );
 
-  // ==================================================
-  // Balance Card
-  // ==================================================
+  static const LinearGradient heroCard = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF170F48), Color(0xFF120C35), Color(0xFF09091C)],
+    stops: [0.0, .56, 1.0],
+  );
+
+  static const LinearGradient nexoraBackground = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [AppColors.nexoraBackgroundEdge, AppColors.background, Color(0xFF07071A)],
+    stops: [0.0, .52, 1.0],
+  );
+
+  static const LinearGradient background = nexoraBackground;
 
   static const LinearGradient balanceCard = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF9B7BFF), AppColors.primary, Color(0xFF5131C9)],
+    colors: [Color(0xFF9B7BFF), AppColors.primary, Color(0xFF351D83)],
     stops: [0, .45, 1],
   );
-
-  // ==================================================
-  // AI Card
-  // ==================================================
 
   static const LinearGradient aiCard = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF8B5CF6), Color(0xFF6D4AFF), Color(0xFF4C2DB8)],
+    colors: [Color(0xFF8E5FF6), Color(0xFF4D25B1), Color(0xFF21105B)],
   );
-
-  // ==================================================
-  // Button
-  // ==================================================
 
   static const LinearGradient button = LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
-    colors: [Color(0xFF6D4AFF), Color(0xFF8B5CF6)],
-  );
-
-  // ==================================================
-  // Background
-  // ==================================================
-
-  static const LinearGradient background = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0xFF06080D), AppColors.background, Color(0xFF0D111A)],
-    stops: [0, .55, 1],
+    colors: [AppColors.sendButton, AppColors.aiAccent],
   );
 
   static const LinearGradient surface = LinearGradient(
@@ -65,19 +53,11 @@ abstract final class AppGradients {
     colors: [AppColors.card, AppColors.cardSecondary],
   );
 
-  // ==================================================
-  // Success
-  // ==================================================
-
   static const LinearGradient success = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [Color(0xFF54E38E), AppColors.success],
   );
-
-  // ==================================================
-  // Warning
-  // ==================================================
 
   static const LinearGradient warning = LinearGradient(
     begin: Alignment.topLeft,
@@ -85,19 +65,11 @@ abstract final class AppGradients {
     colors: [Color(0xFFFFD06A), AppColors.warning],
   );
 
-  // ==================================================
-  // Danger
-  // ==================================================
-
   static const LinearGradient danger = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [Color(0xFFFF7A7A), AppColors.danger],
   );
-
-  // ==================================================
-  // Glass
-  // ==================================================
 
   static const LinearGradient glass = LinearGradient(
     begin: Alignment.topLeft,
@@ -105,13 +77,9 @@ abstract final class AppGradients {
     colors: [Color(0x18FFFFFF), Color(0x08FFFFFF)],
   );
 
-  // ==================================================
-  // Premium Dark
-  // ==================================================
-
   static const LinearGradient premiumDark = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFF0B0D14), Color(0xFF131826)],
+    colors: [Color(0xFF00010A), Color(0xFF0A0A1F)],
   );
 }
