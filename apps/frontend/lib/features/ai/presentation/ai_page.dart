@@ -1,17 +1,16 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/network/api_exception.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_gradients.dart';
-import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../../finance/state/financial_analytics_provider.dart';
 import '../data/ai_api_service.dart';
 
+// Nexora AI layout is intentionally kept local to this screen so the visual
+// proportions can be tuned without changing the application's business logic.
 class AIPage extends ConsumerStatefulWidget {
   const AIPage({super.key});
 
@@ -24,6 +23,7 @@ class _AIPageState extends ConsumerState<AIPage>
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final _ai = AiApiService();
+
   final List<_ChatMessage> _messages = [
     const _ChatMessage(
       text:
@@ -43,26 +43,60 @@ class _AIPageState extends ConsumerState<AIPage>
       'Lihat pemasukan\ndan pengeluaran',
       'Bagaimana kondisi cashflow saya?',
       LucideIcons.chartNoAxesCombined,
+      const Color(0xFF050715),
+      const Color(0xFF170D3D),
     ),
     _Prompt(
       'Pengeluaran',
       'Kategori & analisis\npengeluaranmu',
       'Di kategori mana saya paling boros?',
       LucideIcons.receiptText,
+      const Color(0xFF130B38),
+      const Color(0xFF351D83),
     ),
     _Prompt(
       'Goals',
       'Pantau progres\ntarget finansialmu',
       'Bagaimana progres target finansial saya?',
       LucideIcons.goal,
+      const Color(0xFF040615),
+      const Color(0xFF19142E),
     ),
   ];
 
   static const _quickActions = [
-    _Prompt('Berikan ringkasan keuanganku', '', 'Berikan ringkasan keuanganku', LucideIcons.chartNoAxesCombined),
-    _Prompt('Analisis pengeluaranku', '', 'Analisis pengeluaranku', LucideIcons.chartPie),
-    _Prompt('Apakah aku bisa menabung lebih banyak?', '', 'Apakah aku bisa menabung lebih banyak?', LucideIcons.piggyBank),
-    _Prompt('Rekomendasi financial planning', '', 'Rekomendasi financial planning', LucideIcons.sparkles),
+    _Prompt(
+      'Berikan ringkasan keuanganku',
+      '',
+      'Berikan ringkasan keuanganku',
+      LucideIcons.chartNoAxesCombined,
+      Color(0xFF0D0B31),
+      Color(0xFF734ECA),
+    ),
+    _Prompt(
+      'Analisis pengeluaranku',
+      '',
+      'Analisis pengeluaranku',
+      LucideIcons.chartPie,
+      Color(0xFF110947),
+      Color(0xFF734ECA),
+    ),
+    _Prompt(
+      'Apakah aku bisa menabung lebih banyak?',
+      '',
+      'Apakah aku bisa menabung lebih banyak?',
+      LucideIcons.piggyBank,
+      Color(0xFF0D0B31),
+      Color(0xFF734ECA),
+    ),
+    _Prompt(
+      'Rekomendasi financial planning',
+      '',
+      'Rekomendasi financial planning',
+      LucideIcons.sparkles,
+      Color(0xFF0D0B31),
+      Color(0xFF8E5FF6),
+    ),
   ];
 
   static const _duplicateWindow = Duration(seconds: 3);
@@ -189,13 +223,20 @@ class _AIPageState extends ConsumerState<AIPage>
     return PremiumScaffold(
       bottomPadding: false,
       child: Container(
-        color: const Color(0xFF07080D),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF00010A), Color(0xFF0A0A1F)],
+          ),
+        ),
         child: Column(
           children: [
             Expanded(
               child: CustomScrollView(
                 controller: _scrollController,
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 slivers: [
                   SliverToBoxAdapter(child: _buildHeader()),
                   SliverToBoxAdapter(child: _buildHero()),
@@ -232,6 +273,7 @@ class _AIPageState extends ConsumerState<AIPage>
                       ),
                     ),
                   SliverToBoxAdapter(child: _buildQuickActions()),
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
                 ],
               ),
             ),
@@ -243,105 +285,118 @@ class _AIPageState extends ConsumerState<AIPage>
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 5),
-      child: Row(
-        children: [
-          const _HeaderIconButton(
-            tooltip: 'Kembali',
-            icon: LucideIcons.arrowLeft,
-          ),
-          const SizedBox(width: 8),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: AppGradients.primary,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: .34),
-                  blurRadius: 16,
-                ),
-              ],
+    return SizedBox(
+      height: 70,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            const _HeaderIconButton(
+              tooltip: 'Kembali',
+              icon: LucideIcons.arrowLeft,
             ),
-            child: const Icon(LucideIcons.sparkles, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Nexora AI',
-                  style: AppTypography.heading2.copyWith(fontSize: 22, height: 1.05),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+            const SizedBox(width: 8),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF8E5FF6), Color(0xFF4D25B1)],
                 ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: AppColors.success,
-                        shape: BoxShape.circle,
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x446633D9),
+                    blurRadius: 14,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                LucideIcons.sparkles,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Nexora AI',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      height: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF27D96F),
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      'Assistant aktif',
-                      style: AppTypography.bodySmall.copyWith(color: Colors.white70),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 5),
+                      const Text(
+                        'Assistant aktif',
+                        style: TextStyle(
+                          color: Color(0xFFBDB9C9),
+                          fontSize: 13,
+                          height: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          const _HeaderIconButton(
-            tooltip: 'Riwayat percakapan',
-            icon: LucideIcons.history,
-          ),
-          const SizedBox(width: 6),
-          _HeaderIconButton(
-            tooltip: 'Percakapan baru',
-            icon: LucideIcons.squarePen,
-            onPressed: _startNewChat,
-          ),
-        ],
+            const _HeaderIconButton(
+              tooltip: 'Riwayat percakapan',
+              icon: LucideIcons.history,
+            ),
+            const SizedBox(width: 8),
+            _HeaderIconButton(
+              tooltip: 'Percakapan baru',
+              icon: LucideIcons.squarePen,
+              onPressed: _startNewChat,
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildHero() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: LayoutBuilder(
-        builder: (context, outer) {
-          final compact = outer.maxWidth < 350;
-          final heroHeight = compact ? 304.0 : 314.0;
-          final mascotSize = compact ? 104.0 : 114.0;
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final heroHeight = width < 344 ? 220.0 : 208.0;
+          final mascotSize = width < 344 ? 78.0 : 86.0;
+
           return Container(
+            constraints: const BoxConstraints(minHeight: 180),
             height: heroHeight,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              borderRadius: AppRadius.radiusXXL,
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF321272), Color(0xFF100B27), Color(0xFF090B15)],
-                stops: [0, .48, 1],
-              ),
-              border: Border.all(
-                color: AppColors.primaryLight.withValues(alpha: .36),
-              ),
-              boxShadow: [
+              color: const Color(0xFF170F48),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0x665F42C8)),
+              boxShadow: const [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: .22),
+                  color: Color(0x3A6632D9),
                   blurRadius: 24,
-                  offset: const Offset(0, 8),
+                  offset: Offset(0, 8),
                 ),
               ],
             ),
@@ -351,11 +406,11 @@ class _AIPageState extends ConsumerState<AIPage>
                 Positioned(
                   top: 0,
                   right: 0,
-                  child: _PoweredBadge(compact: compact),
+                  child: _PoweredBadge(),
                 ),
                 Positioned(
-                  right: 7,
-                  bottom: 14,
+                  right: 2,
+                  bottom: 2,
                   width: mascotSize,
                   height: mascotSize,
                   child: IgnorePointer(
@@ -368,58 +423,64 @@ class _AIPageState extends ConsumerState<AIPage>
                       child: Image.asset(
                         'assets/mascot/nexora-analytic.png',
                         fit: BoxFit.contain,
-                        alignment: Alignment.center,
                         filterQuality: FilterQuality.high,
                       ),
                     ),
                   ),
                 ),
                 Positioned.fill(
-                  child: Align(
-                    alignment: Alignment.topLeft,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: compact ? 196 : 220),
-                      child: Padding(
-                        padding: EdgeInsets.only(top: compact ? 36 : 38),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 34),
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: FractionallySizedBox(
+                        widthFactor: width < 344 ? .66 : .68,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
+                            const Text(
                               'Hai Fajar! 👋',
-                              style: AppTypography.heading3.copyWith(
-                                fontSize: compact ? 18 : 20,
-                                fontWeight: FontWeight.w500,
-                                height: 1.1,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(height: 5),
-                            RichText(
-                              text: TextSpan(
-                                style: AppTypography.heading1.copyWith(
-                                  fontSize: compact ? 25 : 28,
-                                  height: 1.05,
-                                ),
-                                children: const [
+                            const SizedBox(height: 6),
+                            const Text.rich(
+                              TextSpan(
+                                children: [
                                   TextSpan(text: 'Aku '),
                                   TextSpan(
                                     text: 'Nexora',
-                                    style: TextStyle(color: AppColors.primaryLight),
+                                    style: TextStyle(color: Color(0xFF9A70FF)),
                                   ),
                                   TextSpan(text: ' AI'),
                                 ],
                               ),
-                            ),
-                            const SizedBox(height: 9),
-                            Text(
-                              'Asisten finansial cerdas yang siap\nmembantumu kapan saja.',
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: Colors.white.withValues(alpha: .86),
-                                height: 1.3,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 27,
+                                fontWeight: FontWeight.w800,
+                                height: 1,
                               ),
                             ),
                             const SizedBox(height: 12),
-                            _PrivacyCard(compact: compact),
+                            const Text(
+                              'Asisten finansial cerdas yang siap\nmembantumu kapan saja.',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Color(0xFFD8D3E3),
+                                fontSize: 14,
+                                height: 1.3,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            const _PrivacyCard(),
                           ],
                         ),
                       ),
@@ -436,35 +497,43 @@ class _AIPageState extends ConsumerState<AIPage>
 
   Widget _buildPromptSection() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 22, 0, 17),
+      padding: const EdgeInsets.only(top: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                Text('Mulai dari sini', style: AppTypography.heading2),
+                const Text(
+                  'Mulai dari sini',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 const Spacer(),
-                Text(
+                const Text(
                   'Geser →',
-                  style: AppTypography.labelMedium.copyWith(
-                    color: AppColors.primaryLight,
+                  style: TextStyle(
+                    color: Color(0xFF9A70FF),
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           SizedBox(
-            height: 154,
+            height: 92,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.only(right: 16, bottom: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _quickStartPrompts.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              separatorBuilder: (_, _) => const SizedBox(width: 12),
               itemBuilder: (context, index) {
                 final prompt = _quickStartPrompts[index];
                 return _PromptCard(
@@ -486,21 +555,35 @@ class _AIPageState extends ConsumerState<AIPage>
 
   Widget _buildConversationHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
       child: Row(
         children: [
-          Text('Percakapan', style: AppTypography.heading2),
+          const Text(
+            'Percakapan',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            width: 32,
+            height: 32,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: .13),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.primaryLight.withValues(alpha: .16),
+              color: const Color(0xFF110947),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0x443F238D)),
+            ),
+            child: Text(
+              '${_messages.length}',
+              style: const TextStyle(
+                color: Color(0xFFC8B9FF),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
               ),
             ),
-            child: Text('${_messages.length}', style: AppTypography.labelMedium),
           ),
         ],
       ),
@@ -509,16 +592,16 @@ class _AIPageState extends ConsumerState<AIPage>
 
   Widget _buildQuickActions() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 15),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: _quickActions.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          mainAxisExtent: 56,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
+          mainAxisExtent: 52,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
         ),
         itemBuilder: (context, index) {
           final prompt = _quickActions[index];
@@ -533,95 +616,74 @@ class _AIPageState extends ConsumerState<AIPage>
   }
 
   Widget _buildComposer() {
-    return SafeArea(
-      top: false,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
-        color: Colors.transparent,
+    final media = MediaQuery.of(context);
+    final systemBottom = math.max(media.viewPadding.bottom, media.viewInsets.bottom);
+
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        bottom: 16 + systemBottom,
+      ),
+      child: SizedBox(
+        height: 64,
         child: Container(
-          constraints: const BoxConstraints(minHeight: 58, maxHeight: 76),
-          padding: const EdgeInsets.fromLTRB(6, 5, 5, 5),
           decoration: BoxDecoration(
-            color: const Color(0xFF0D1020).withValues(alpha: .98),
-            borderRadius: BorderRadius.circular(29),
-            border: Border.all(color: AppColors.primary.withValues(alpha: .42)),
-            boxShadow: [
+            color: const Color(0xFF0A091D),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: const Color(0x664D25B1)),
+            boxShadow: const [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: .16),
-                blurRadius: 18,
-                offset: const Offset(0, 5),
+                color: Color(0x2E6632D9),
+                blurRadius: 20,
+                offset: Offset(0, 5),
               ),
             ],
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: .035),
-                  border: Border.all(color: Colors.white.withValues(alpha: .09)),
-                ),
-                child: const Icon(
-                  LucideIcons.mic,
-                  color: AppColors.primaryLight,
-                  size: 18,
-                ),
+              const SizedBox(width: 8),
+              _ComposerCircleButton(
+                icon: LucideIcons.mic,
+                color: const Color(0xFFAD90F5),
+                onTap: _isSending ? null : () {},
               ),
-              const SizedBox(width: 7),
+              const SizedBox(width: 8),
               Expanded(
                 child: TextField(
                   controller: _controller,
                   enabled: !_isSending,
                   minLines: 1,
-                  maxLines: 2,
+                  maxLines: 1,
                   textInputAction: TextInputAction.send,
-                  onSubmitted: (value) {
-                    if (!value.contains('\n')) _ask(value);
-                  },
-                  style: AppTypography.bodySmall.copyWith(color: Colors.white),
+                  onSubmitted: _ask,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                  ),
                   decoration: InputDecoration(
+                    border: InputBorder.none,
+                    isDense: true,
                     hintText: _isSending
                         ? 'Nexora sedang berpikir...'
                         : 'Tanya apa saja tentang keuanganmu...',
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 7),
-                    hintStyle: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textMuted,
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF6F6B7C),
+                      fontSize: 14,
                     ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
-              InkWell(
-                borderRadius: BorderRadius.circular(20),
+              const SizedBox(width: 8),
+              _ComposerCircleButton(
+                icon: LucideIcons.arrowUpRight,
+                color: const Color(0xFF4D25B1),
                 onTap: _isSending ? null : () => _ask(_controller.text),
-                child: Ink(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: _isSending ? null : AppGradients.primary,
-                    color: _isSending ? AppColors.cardMuted : null,
-                  ),
-                  child: Center(
-                    child: _isSending
-                        ? const SizedBox(
-                            width: 15,
-                            height: 15,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(
-                            LucideIcons.arrowUpRight,
-                            size: 20,
-                            color: Colors.white,
-                          ),
-                  ),
-                ),
               ),
+              const SizedBox(width: 8),
             ],
           ),
         ),
@@ -647,17 +709,17 @@ class _HeaderIconButton extends StatelessWidget {
       button: true,
       label: tooltip,
       child: Material(
-        color: const Color(0xFF111426).withValues(alpha: .82),
+        color: const Color(0xFF0B0D1A),
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onPressed,
           child: Container(
-            width: 42,
-            height: 42,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: .08)),
+              border: Border.all(color: const Color(0x332F3453)),
             ),
             child: Icon(icon, color: Colors.white, size: 20),
           ),
@@ -668,36 +730,31 @@ class _HeaderIconButton extends StatelessWidget {
 }
 
 class _PoweredBadge extends StatelessWidget {
-  const _PoweredBadge({required this.compact});
-
-  final bool compact;
+  const _PoweredBadge();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 8 : 9,
-        vertical: 6,
-      ),
+      height: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF201445).withValues(alpha: .82),
-        borderRadius: BorderRadius.circular(17),
-        border: Border.all(color: Colors.white.withValues(alpha: .08)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: .16),
-            blurRadius: 12,
-          ),
-        ],
+        color: const Color(0xFF090630),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0x443D2B80)),
       ),
-      child: Row(
+      alignment: Alignment.center,
+      child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(LucideIcons.zap, size: 14, color: AppColors.primaryLight),
-          const SizedBox(width: 5),
+          Icon(LucideIcons.zap, size: 14, color: Color(0xFFAD90F5)),
+          SizedBox(width: 6),
           Text(
             'AI Powered',
-            style: AppTypography.labelMedium.copyWith(color: Colors.white),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -706,56 +763,64 @@ class _PoweredBadge extends StatelessWidget {
 }
 
 class _PrivacyCard extends StatelessWidget {
-  const _PrivacyCard({required this.compact});
-
-  final bool compact;
+  const _PrivacyCard();
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: compact ? 178 : 188),
+    return SizedBox(
+      height: 64,
+      width: 188,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF23124F).withValues(alpha: .58),
+          color: const Color(0xFF211B3E),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.primaryLight.withValues(alpha: .30),
-          ),
+          border: Border.all(color: const Color(0x443D2B80)),
         ),
         child: Row(
           children: [
             Container(
-              width: 34,
-              height: 34,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: .22),
-                borderRadius: BorderRadius.circular(10),
+                color: const Color(0xFF200B58),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
                 LucideIcons.shieldCheck,
-                color: AppColors.primaryLight,
-                size: 18,
+                color: Color(0xFFAD90F5),
+                size: 19,
               ),
             ),
-            const SizedBox(width: 7),
-            Expanded(
+            const SizedBox(width: 8),
+            const Expanded(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Privasi aman', style: AppTypography.labelLarge),
-                  const SizedBox(height: 1),
                   Text(
-                    'Data kamu dienkripsi\ndan 100% aman.',
-                    style: AppTypography.caption.copyWith(color: Colors.white70),
-                    maxLines: 2,
+                    'Privasi aman',
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Data kamu dienkripsi',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Color(0xFFBDB9C9),
+                      fontSize: 10,
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 2),
             const Icon(
               LucideIcons.chevronRight,
               color: Colors.white,
@@ -768,18 +833,22 @@ class _PrivacyCard extends StatelessWidget {
   }
 }
 
-class _ChatMessage {
-  const _ChatMessage({required this.text, required this.fromUser});
-  final String text;
-  final bool fromUser;
-}
-
 class _Prompt {
-  const _Prompt(this.title, this.description, this.question, this.icon);
+  const _Prompt(
+    this.title,
+    this.description,
+    this.question,
+    this.icon,
+    this.cardColor,
+    this.iconColor,
+  );
+
   final String title;
   final String description;
   final String question;
   final IconData icon;
+  final Color cardColor;
+  final Color iconColor;
 }
 
 class _PromptCard extends StatelessWidget {
@@ -798,81 +867,47 @@ class _PromptCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 148,
-      height: 150,
+      width: 101,
+      height: 92,
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         child: InkWell(
           onTap: enabled ? onTap : null,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
           child: Ink(
-            padding: const EdgeInsets.fromLTRB(12, 11, 10, 9),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: highlighted
-                    ? const [Color(0xFF321178), Color(0xFF171026)]
-                    : const [Color(0xFF12162A), Color(0xFF090B14)],
-              ),
-              borderRadius: BorderRadius.circular(18),
+              color: highlighted ? const Color(0xFF351D83) : prompt.cardColor,
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: highlighted
-                    ? AppColors.primaryLight.withValues(alpha: .70)
-                    : Colors.white.withValues(alpha: .10),
+                    ? const Color(0xFF8E5FF6)
+                    : const Color(0x223C3A55),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(
-                    alpha: highlighted ? .18 : .06,
-                  ),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 38,
-                  height: 38,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    gradient: AppGradients.primary,
+                    color: highlighted ? const Color(0xFF8E5FF6) : prompt.iconColor,
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(prompt.icon, color: Colors.white, size: 20),
+                  child: Icon(prompt.icon, color: Colors.white, size: 22),
                 ),
-                const SizedBox(height: 7),
-                Text(
-                  prompt.title,
-                  style: AppTypography.heading3.copyWith(fontSize: 15),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 8),
                 Expanded(
                   child: Text(
-                    prompt.description,
-                    style: AppTypography.caption.copyWith(color: Colors.white70),
-                    maxLines: 2,
+                    prompt.title,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.bottomRight,
-                  child: Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary.withValues(alpha: .18),
-                    ),
-                    child: const Icon(
-                      LucideIcons.arrowRight,
-                      color: AppColors.primaryLight,
-                      size: 15,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -903,68 +938,34 @@ class _Bubble extends StatelessWidget {
     return Align(
       alignment: fromUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 9),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            if (!fromUser)
-              Container(
-                width: 24,
-                height: 24,
-                margin: const EdgeInsets.only(right: 6, bottom: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: .12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  LucideIcons.sparkles,
-                  size: 12,
-                  color: AppColors.primaryLight,
-                ),
-              ),
-            Flexible(
-              child: Container(
-                constraints: BoxConstraints(
-                  maxWidth: fromUser ? 255 : 300,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 9,
-                ),
-                decoration: BoxDecoration(
-                  color: fromUser
-                      ? const Color(0xFF17142A)
-                      : AppColors.card,
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(15),
-                    topRight: const Radius.circular(15),
-                    bottomLeft: Radius.circular(fromUser ? 15 : 5),
-                    bottomRight: Radius.circular(fromUser ? 5 : 15),
-                  ),
-                  border: Border.all(
-                    color: fromUser
-                        ? AppColors.primary.withValues(alpha: .22)
-                        : AppColors.border,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: .055),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  text,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: fromUser ? Colors.white : AppColors.textPrimary,
-                    height: 1.4,
-                  ),
-                ),
-              ),
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * .75,
+          ),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: fromUser ? const Color(0xFF17142A) : const Color(0xFF0D0C19),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(fromUser ? 20 : 4),
+              topRight: const Radius.circular(20),
+              bottomLeft: const Radius.circular(20),
+              bottomRight: Radius.circular(fromUser ? 4 : 20),
             ),
-          ],
+            border: Border.all(
+              color: fromUser
+                  ? const Color(0x332F2070)
+                  : const Color(0x222E2A45),
+            ),
+          ),
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Color(0xFFE4E0EA),
+              fontSize: 14,
+              height: 1.45,
+            ),
+          ),
         ),
       ),
     );
@@ -973,6 +974,7 @@ class _Bubble extends StatelessWidget {
 
 class _InitialAssistantBubble extends StatelessWidget {
   const _InitialAssistantBubble({required this.text});
+
   final String text;
 
   @override
@@ -980,94 +982,64 @@ class _InitialAssistantBubble extends StatelessWidget {
     final parts = text.split('Ada yang bisa aku bantu hari ini? 😊');
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Stack(
-        clipBehavior: Clip.none,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(left: 32, right: 42),
-            padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF17162B), Color(0xFF0D1020)],
-              ),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withValues(alpha: .07)),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: .07),
-                  blurRadius: 16,
-                  offset: const Offset(0, 5),
-                ),
-              ],
+            width: 48,
+            height: 48,
+            margin: const EdgeInsets.only(right: 12),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFF6632D9),
             ),
-            child: RichText(
-              text: TextSpan(
-                style: AppTypography.bodySmall.copyWith(
-                  color: Colors.white.withValues(alpha: .88),
-                  height: 1.48,
+            child: const Icon(
+              LucideIcons.sparkles,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+          Flexible(
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * .75,
+              ),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D0C19),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(4),
+                  topRight: Radius.circular(20),
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
                 ),
-                children: [
-                  TextSpan(text: parts.first.trim()),
-                  const TextSpan(text: '\n'),
-                  TextSpan(
-                    text: 'Ada yang bisa aku bantu hari ini? 😊',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.primaryLight,
-                      fontWeight: FontWeight.w700,
-                      height: 1.48,
+                border: Border.all(color: const Color(0x332E2A45)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x226632D9),
+                    blurRadius: 18,
+                    offset: Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(
+                    color: Color(0xFFE4E0EA),
+                    fontSize: 14,
+                    height: 1.45,
+                  ),
+                  children: [
+                    TextSpan(text: parts.first.trim()),
+                    const TextSpan(text: '\n'),
+                    TextSpan(
+                      text: 'Ada yang bisa aku bantu hari ini? 😊',
+                      style: const TextStyle(
+                        color: Color(0xFF9A70FF),
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            bottom: 14,
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppGradients.primary,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: .28),
-                    blurRadius: 14,
-                  ),
-                ],
-              ),
-              child: const Icon(
-                LucideIcons.sparkles,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ),
-          Positioned(
-            right: 0,
-            bottom: 2,
-            child: Container(
-              width: 54,
-              height: 42,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(21),
-                gradient: AppGradients.primary,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: .22),
-                    blurRadius: 14,
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(
-                  LucideIcons.ellipsis,
-                  color: Colors.white70,
-                  size: 21,
+                  ],
                 ),
               ),
             ),
@@ -1093,43 +1065,85 @@ class _QuickActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(17),
+      borderRadius: BorderRadius.circular(999),
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(17),
+        borderRadius: BorderRadius.circular(999),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 9),
+          padding: const EdgeInsets.only(left: 12, right: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFF111426).withValues(alpha: .9),
-            borderRadius: BorderRadius.circular(17),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: .16),
-            ),
+            color: prompt.cardColor,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: const Color(0x222F2A4A)),
           ),
           child: Row(
             children: [
               Container(
-                width: 34,
-                height: 34,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(11),
-                  gradient: AppGradients.primary,
+                  color: prompt.iconColor,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(prompt.icon, color: Colors.white, size: 18),
+                child: Icon(prompt.icon, color: Colors.white, size: 17),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   prompt.title,
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.labelMedium.copyWith(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ComposerCircleButton extends StatelessWidget {
+  const _ComposerCircleButton({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Ink(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color,
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x226632D9),
+                blurRadius: 10,
+              ),
+            ],
+          ),
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: 20,
           ),
         ),
       ),
@@ -1145,32 +1159,19 @@ class _TypingBubble extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(15),
-            topRight: Radius.circular(15),
-            bottomRight: Radius.circular(15),
-            bottomLeft: Radius.circular(5),
-          ),
-          border: Border.all(color: AppColors.border),
+          color: const Color(0xFF0D0C19),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0x222E2A45)),
         ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              LucideIcons.sparkles,
-              size: 13,
-              color: AppColors.primaryLight,
-            ),
-            SizedBox(width: 6),
-            SizedBox(
-              width: 13,
-              height: 13,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ],
+        child: const SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Color(0xFF9A70FF),
+          ),
         ),
       ),
     );
@@ -1179,6 +1180,7 @@ class _TypingBubble extends StatelessWidget {
 
 class _ErrorBubble extends StatelessWidget {
   const _ErrorBubble({required this.message, required this.onRetry});
+
   final String message;
   final VoidCallback? onRetry;
 
@@ -1187,11 +1189,9 @@ class _ErrorBubble extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.danger.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: AppColors.danger.withValues(alpha: 0.2),
-        ),
+        color: const Color(0x331F0B19),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x553F1728)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1199,21 +1199,30 @@ class _ErrorBubble extends StatelessWidget {
           const Icon(
             LucideIcons.circleAlert,
             size: 18,
-            color: AppColors.danger,
+            color: Color(0xFFFF6B81),
           ),
-          AppSpacing.hGapSM,
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Nexora belum bisa menjawab',
-                  style: AppTypography.label,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 3),
-                Text(message, style: AppTypography.caption),
-                if (onRetry != null) ...[
-                  const SizedBox(height: 7),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    color: Color(0xFFBDB9C9),
+                    fontSize: 11,
+                  ),
+                ),
+                if (onRetry != null)
                   TextButton.icon(
                     onPressed: onRetry,
                     style: TextButton.styleFrom(
@@ -1224,7 +1233,6 @@ class _ErrorBubble extends StatelessWidget {
                     icon: const Icon(LucideIcons.refreshCw, size: 15),
                     label: const Text('Coba lagi'),
                   ),
-                ],
               ],
             ),
           ),
@@ -1232,4 +1240,11 @@ class _ErrorBubble extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ChatMessage {
+  const _ChatMessage({required this.text, required this.fromUser});
+
+  final String text;
+  final bool fromUser;
 }
