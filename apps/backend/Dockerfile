@@ -32,13 +32,31 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Copy dependency manifests first for Docker layer caching.
 COPY composer.json composer.lock ./
 
-RUN composer install \
-        --no-dev \
-        --no-interaction \
-        --no-progress \
-        --prefer-dist \
-        --optimize-autoloader \
-        --no-scripts
+# GitHub can temporarily return HTTP 429 while Composer resolves/downloads
+# public dist archives. Keep production builds resilient by limiting Composer's
+# parallel HTTP work and retrying with exponential backoff before failing.
+RUN set -eu; \
+    attempt=1; \
+    max_attempts=5; \
+    while [ "$attempt" -le "$max_attempts" ]; do \
+        if COMPOSER_MAX_PARALLEL_HTTP=1 composer install \
+            --no-dev \
+            --no-interaction \
+            --no-progress \
+            --prefer-dist \
+            --optimize-autoloader \
+            --no-scripts; then \
+            break; \
+        fi; \
+        if [ "$attempt" -eq "$max_attempts" ]; then \
+            echo "Composer install failed after $max_attempts attempts." >&2; \
+            exit 1; \
+        fi; \
+        delay=$((attempt * 10)); \
+        echo "Composer install failed (attempt $attempt/$max_attempts); retrying in ${delay}s..." >&2; \
+        sleep "$delay"; \
+        attempt=$((attempt + 1)); \
+    done
 
 # Copy the Laravel application.
 COPY . .
