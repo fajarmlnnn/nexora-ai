@@ -59,30 +59,10 @@ class _AIPageState extends ConsumerState<AIPage>
   ];
 
   static const _quickActions = [
-    _Prompt(
-      'Berikan ringkasan keuanganku',
-      '',
-      'Berikan ringkasan keuanganku',
-      LucideIcons.chartNoAxesCombined,
-    ),
-    _Prompt(
-      'Analisis pengeluaranku',
-      '',
-      'Analisis pengeluaranku',
-      LucideIcons.chartPie,
-    ),
-    _Prompt(
-      'Apakah aku bisa menabung lebih banyak?',
-      '',
-      'Apakah aku bisa menabung lebih banyak?',
-      LucideIcons.piggyBank,
-    ),
-    _Prompt(
-      'Rekomendasi financial planning',
-      '',
-      'Rekomendasi financial planning',
-      LucideIcons.sparkles,
-    ),
+    _Prompt('Berikan ringkasan keuanganku', '', 'Berikan ringkasan keuanganku', LucideIcons.chartNoAxesCombined),
+    _Prompt('Analisis pengeluaranku', '', 'Analisis pengeluaranku', LucideIcons.chartPie),
+    _Prompt('Apakah aku bisa menabung lebih banyak?', '', 'Apakah aku bisa menabung lebih banyak?', LucideIcons.piggyBank),
+    _Prompt('Rekomendasi financial planning', '', 'Rekomendasi financial planning', LucideIcons.sparkles),
   ];
 
   static const _duplicateWindow = Duration(seconds: 3);
@@ -143,8 +123,7 @@ class _AIPageState extends ConsumerState<AIPage>
 
     try {
       final answer = await _ai.chat(
-        messages:
-            history.length > 20 ? history.sublist(history.length - 20) : history,
+        messages: history.length > 20 ? history.sublist(history.length - 20) : history,
         analytics: analytics,
       );
       if (!mounted) return;
@@ -177,8 +156,7 @@ class _AIPageState extends ConsumerState<AIPage>
         ..clear()
         ..add(
           const _ChatMessage(
-            text:
-                'Halo! Aku Nexora AI.\nPercakapan baru siap. Ada kondisi keuangan yang ingin kamu pahami hari ini? 😊',
+            text: 'Halo! Aku Nexora AI.\nPercakapan baru siap. Ada kondisi keuangan yang ingin kamu pahami hari ini? 😊',
             fromUser: false,
           ),
         );
@@ -212,8 +190,7 @@ class _AIPageState extends ConsumerState<AIPage>
             Expanded(
               child: CustomScrollView(
                 controller: _scrollController,
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                 slivers: [
                   SliverToBoxAdapter(child: _buildHeader()),
                   SliverToBoxAdapter(child: _buildHero()),
@@ -243,9 +220,7 @@ class _AIPageState extends ConsumerState<AIPage>
                       sliver: SliverToBoxAdapter(
                         child: _ErrorBubble(
                           message: _error!,
-                          onRetry: _lastFailedQuestion == null
-                              ? null
-                              : () => _ask(_lastFailedQuestion!),
+                          onRetry: _lastFailedQuestion == null ? null : () => _ask(_lastFailedQuestion!),
                         ),
                       ),
                     ),
@@ -262,70 +237,61 @@ class _AIPageState extends ConsumerState<AIPage>
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 5),
       child: Row(
         children: [
-          _HeaderIconButton(
+          const _HeaderIconButton(
             tooltip: 'Kembali',
             icon: LucideIcons.arrowLeft,
-            onPressed: () => Navigator.maybePop(context),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 9),
           Container(
-            width: 44,
-            height: 44,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: AppGradients.primary,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: .42),
-                  blurRadius: 22,
-                  spreadRadius: 1,
+                  color: AppColors.primary.withValues(alpha: .36),
+                  blurRadius: 18,
                 ),
               ],
             ),
-            child: const Icon(
-              LucideIcons.sparkles,
-              color: Colors.white,
-              size: 22,
-            ),
+            child: const Icon(LucideIcons.sparkles, color: Colors.white, size: 20),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 9),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Nexora AI', style: AppTypography.heading2),
+                Text(
+                  'Nexora AI',
+                  style: AppTypography.heading2.copyWith(fontSize: 22, height: 1.05),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
                 Row(
                   children: [
                     Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppColors.success,
-                        shape: BoxShape.circle,
-                      ),
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(color: AppColors.success, shape: BoxShape.circle),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Assistant aktif',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: Colors.white70,
-                      ),
-                    ),
+                    const SizedBox(width: 5),
+                    Text('Assistant aktif', style: AppTypography.bodySmall.copyWith(color: Colors.white70)),
                   ],
                 ),
               ],
             ),
           ),
-          _HeaderIconButton(
+          const _HeaderIconButton(
             tooltip: 'Riwayat percakapan',
             icon: LucideIcons.history,
-            onPressed: _scrollToBottom,
           ),
-          const SizedBox(width: 7),
+          const SizedBox(width: 6),
           _HeaderIconButton(
             tooltip: 'Percakapan baru',
             icon: LucideIcons.squarePen,
@@ -339,124 +305,124 @@ class _AIPageState extends ConsumerState<AIPage>
   Widget _buildHero() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 218),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-        decoration: BoxDecoration(
-          borderRadius: AppRadius.radiusXXL,
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF321272), Color(0xFF100B27), Color(0xFF090B15)],
-            stops: [0, .48, 1],
-          ),
-          border: Border.all(
-            color: AppColors.primaryLight.withValues(alpha: .36),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: .26),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final compact = constraints.maxWidth < 350;
-            return Stack(
-              children: [
-                Positioned(
-                  top: 14,
-                  right: 82,
-                  child: Icon(
-                    LucideIcons.sparkle,
-                    color: AppColors.primaryLight.withValues(alpha: .8),
-                    size: 16,
-                  ),
+      child: LayoutBuilder(
+        builder: (context, outer) {
+          final compact = outer.maxWidth < 350;
+          final heroHeight = compact ? 304.0 : 314.0;
+          final mascotSize = compact ? 116.0 : 132.0;
+          return Container(
+            height: heroHeight,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+            decoration: BoxDecoration(
+              borderRadius: AppRadius.radiusXXL,
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF321272), Color(0xFF100B27), Color(0xFF090B15)],
+                stops: [0, .48, 1],
+              ),
+              border: Border.all(color: AppColors.primaryLight.withValues(alpha: .36)),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: .24),
+                  blurRadius: 26,
+                  offset: const Offset(0, 9),
                 ),
+              ],
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
                 Positioned(
                   top: 0,
                   right: 0,
                   child: _PoweredBadge(compact: compact),
                 ),
                 Positioned(
-                  right: compact ? -8 : -2,
-                  bottom: -4,
-                  child: AnimatedBuilder(
-                    animation: _floatController,
-                    builder: (context, child) => Transform.translate(
-                      offset: Offset(0, -4 * _floatController.value),
-                      child: child,
-                    ),
-                    child: Container(
-                      width: compact ? 122 : 144,
-                      height: compact ? 142 : 160,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: .24),
-                            blurRadius: 38,
-                            spreadRadius: 6,
-                          ),
-                        ],
+                  right: 8,
+                  bottom: 9,
+                  width: mascotSize,
+                  height: mascotSize,
+                  child: IgnorePointer(
+                    child: AnimatedBuilder(
+                      animation: _floatController,
+                      builder: (context, child) => Transform.translate(
+                        offset: Offset(0, -3 * _floatController.value),
+                        child: child,
                       ),
                       child: Image.asset(
                         'assets/mascot/nexora-analytic.png',
                         fit: BoxFit.contain,
+                        alignment: Alignment.center,
+                        filterQuality: FilterQuality.high,
                       ),
                     ),
                   ),
                 ),
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: compact ? 184 : 220),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(height: compact ? 34 : 40),
-                      Text(
-                        'Hai Fajar! 👋',
-                        style: AppTypography.heading3.copyWith(
-                          fontSize: compact ? 19 : 21,
-                          fontWeight: FontWeight.w500,
-                        ),
+                Positioned(
+                  top: 12,
+                  right: compact ? 92 : 104,
+                  child: Icon(
+                    LucideIcons.sparkle,
+                    color: AppColors.primaryLight.withValues(alpha: .7),
+                    size: 14,
+                  ),
+                ),
+                Positioned.fill(
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: compact ? 190 : 216,
                       ),
-                      const SizedBox(height: 5),
-                      RichText(
-                        text: TextSpan(
-                          style: AppTypography.heading1.copyWith(
-                            fontSize: compact ? 27 : 30,
-                            height: 1.06,
-                          ),
-                          children: const [
-                            TextSpan(text: 'Aku '),
-                            TextSpan(
-                              text: 'Nexora',
-                              style: TextStyle(color: AppColors.primaryLight),
+                      child: Padding(
+                        padding: EdgeInsets.only(top: compact ? 34 : 38),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Hai Fajar! 👋',
+                              style: AppTypography.heading3.copyWith(
+                                fontSize: compact ? 18 : 20,
+                                fontWeight: FontWeight.w500,
+                                height: 1.1,
+                              ),
                             ),
-                            TextSpan(text: ' AI'),
+                            const SizedBox(height: 5),
+                            RichText(
+                              text: TextSpan(
+                                style: AppTypography.heading1.copyWith(
+                                  fontSize: compact ? 26 : 29,
+                                  height: 1.05,
+                                ),
+                                children: const [
+                                  TextSpan(text: 'Aku '),
+                                  TextSpan(text: 'Nexora', style: TextStyle(color: AppColors.primaryLight)),
+                                  TextSpan(text: ' AI'),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 9),
+                            Text(
+                              'Asisten finansial cerdas yang siap\nmembantumu kapan saja.',
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: Colors.white.withValues(alpha: .86),
+                                height: 1.34,
+                              ),
+                            ),
+                            const SizedBox(height: 13),
+                            _PrivacyCard(compact: compact),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Asisten finansial cerdas yang siap\nmembantumu kapan saja.',
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: Colors.white.withValues(alpha: .86),
-                          height: 1.42,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      _PrivacyCard(compact: compact),
-                    ],
+                    ),
                   ),
                 ),
               ],
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -473,13 +439,7 @@ class _AIPageState extends ConsumerState<AIPage>
               children: [
                 Text('Mulai dari sini', style: AppTypography.heading2),
                 const Spacer(),
-                Text(
-                  'Geser →',
-                  style: AppTypography.labelMedium.copyWith(
-                    color: AppColors.primaryLight,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                Text('Geser →', style: AppTypography.labelMedium.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w700)),
               ],
             ),
           ),
@@ -494,12 +454,7 @@ class _AIPageState extends ConsumerState<AIPage>
               separatorBuilder: (_, _) => const SizedBox(width: 10),
               itemBuilder: (context, index) {
                 final prompt = _quickStartPrompts[index];
-                return _PromptCard(
-                  prompt: prompt,
-                  highlighted: index == 1,
-                  enabled: !_isSending,
-                  onTap: () => _ask(prompt.question),
-                );
+                return _PromptCard(prompt: prompt, highlighted: index == 1, enabled: !_isSending, onTap: () => _ask(prompt.question));
               },
             ),
           ),
@@ -520,9 +475,7 @@ class _AIPageState extends ConsumerState<AIPage>
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: .16),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: AppColors.primaryLight.withValues(alpha: .18),
-              ),
+              border: Border.all(color: AppColors.primaryLight.withValues(alpha: .18)),
             ),
             child: Text('${_messages.length}', style: AppTypography.labelMedium),
           ),
@@ -546,11 +499,7 @@ class _AIPageState extends ConsumerState<AIPage>
         ),
         itemBuilder: (context, index) {
           final prompt = _quickActions[index];
-          return _QuickActionButton(
-            prompt: prompt,
-            enabled: !_isSending,
-            onTap: () => _ask(prompt.question),
-          );
+          return _QuickActionButton(prompt: prompt, enabled: !_isSending, onTap: () => _ask(prompt.question));
         },
       ),
     );
@@ -568,34 +517,20 @@ class _AIPageState extends ConsumerState<AIPage>
             color: const Color(0xFF0D1020).withValues(alpha: .96),
             borderRadius: BorderRadius.circular(32),
             border: Border.all(color: AppColors.primary.withValues(alpha: .45)),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: .22),
-                blurRadius: 24,
-                offset: const Offset(0, 7),
-              ),
-            ],
+            boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .2), blurRadius: 22, offset: const Offset(0, 6))],
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Semantics(
-                button: true,
-                label: 'Mikrofon',
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: .04),
-                    border: Border.all(color: Colors.white.withValues(alpha: .1)),
-                  ),
-                  child: const Icon(
-                    LucideIcons.mic,
-                    color: AppColors.primaryLight,
-                    size: 20,
-                  ),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: .04),
+                  border: Border.all(color: Colors.white.withValues(alpha: .1)),
                 ),
+                child: const Icon(LucideIcons.mic, color: AppColors.primaryLight, size: 20),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -610,54 +545,30 @@ class _AIPageState extends ConsumerState<AIPage>
                   },
                   style: AppTypography.bodyMedium.copyWith(color: Colors.white),
                   decoration: InputDecoration(
-                    hintText: _isSending
-                        ? 'Nexora sedang berpikir...'
-                        : 'Tanya apa saja tentang keuanganmu...',
+                    hintText: _isSending ? 'Nexora sedang berpikir...' : 'Tanya apa saja tentang keuanganmu...',
                     border: InputBorder.none,
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    hintStyle: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.textMuted,
-                    ),
+                    hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
                   ),
                 ),
               ),
               const SizedBox(width: 7),
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(24),
-                  onTap: _isSending ? null : () => _ask(_controller.text),
-                  child: Ink(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: _isSending ? null : AppGradients.primary,
-                      color: _isSending ? AppColors.cardMuted : null,
-                      boxShadow: _isSending
-                          ? null
-                          : [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: .36),
-                                blurRadius: 16,
-                                offset: const Offset(0, 7),
-                              ),
-                            ],
-                    ),
-                    child: Center(
-                      child: _isSending
-                          ? const SizedBox(
-                              width: 17,
-                              height: 17,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(
-                              LucideIcons.arrowUpRight,
-                              size: 23,
-                              color: Colors.white,
-                            ),
-                    ),
+              InkWell(
+                borderRadius: BorderRadius.circular(24),
+                onTap: _isSending ? null : () => _ask(_controller.text),
+                child: Ink(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: _isSending ? null : AppGradients.primary,
+                    color: _isSending ? AppColors.cardMuted : null,
+                  ),
+                  child: Center(
+                    child: _isSending
+                        ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(LucideIcons.arrowUpRight, size: 23, color: Colors.white),
                   ),
                 ),
               ),
@@ -670,15 +581,11 @@ class _AIPageState extends ConsumerState<AIPage>
 }
 
 class _HeaderIconButton extends StatelessWidget {
-  const _HeaderIconButton({
-    required this.tooltip,
-    required this.icon,
-    required this.onPressed,
-  });
+  const _HeaderIconButton({required this.tooltip, required this.icon, this.onPressed});
 
   final String tooltip;
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -692,13 +599,13 @@ class _HeaderIconButton extends StatelessWidget {
           customBorder: const CircleBorder(),
           onTap: onPressed,
           child: Container(
-            width: 44,
-            height: 44,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white.withValues(alpha: .08)),
             ),
-            child: Icon(icon, color: Colors.white, size: 21),
+            child: Icon(icon, color: Colors.white, size: 20),
           ),
         ),
       ),
@@ -714,30 +621,19 @@ class _PoweredBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 8 : 10,
-        vertical: compact ? 6 : 7,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 9, vertical: compact ? 6 : 6),
       decoration: BoxDecoration(
         color: const Color(0xFF201445).withValues(alpha: .82),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withValues(alpha: .08)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: .22),
-            blurRadius: 18,
-          ),
-        ],
+        boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .18), blurRadius: 14)],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(LucideIcons.zap, size: 14, color: AppColors.primaryLight),
-          const SizedBox(width: 6),
-          Text(
-            'AI Powered',
-            style: AppTypography.labelMedium.copyWith(color: Colors.white),
-          ),
+          const SizedBox(width: 5),
+          Text('AI Powered', style: AppTypography.labelMedium.copyWith(color: Colors.white)),
         ],
       ),
     );
@@ -751,45 +647,39 @@ class _PrivacyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: compact ? 178 : 205,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF23124F).withValues(alpha: .58),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.primaryLight.withValues(alpha: .32)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: .22),
-              borderRadius: BorderRadius.circular(12),
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: compact ? 184 : 198),
+      child: Container(
+        padding: const EdgeInsets.all(9),
+        decoration: BoxDecoration(
+          color: const Color(0xFF23124F).withValues(alpha: .58),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.primaryLight.withValues(alpha: .32)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .22), borderRadius: BorderRadius.circular(11)),
+              child: const Icon(LucideIcons.shieldCheck, color: AppColors.primaryLight, size: 18),
             ),
-            child: const Icon(
-              LucideIcons.shieldCheck,
-              color: AppColors.primaryLight,
-              size: 19,
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Privasi aman', style: AppTypography.labelLarge),
+                  const SizedBox(height: 2),
+                  Text('Data kamu dienkripsi\ndan 100% aman.', style: AppTypography.caption.copyWith(color: Colors.white70), maxLines: 2),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Privasi aman', style: AppTypography.labelLarge),
-                const SizedBox(height: 2),
-                Text(
-                  'Data kamu dienkripsi\ndan 100% aman.',
-                  style: AppTypography.caption.copyWith(color: Colors.white70),
-                ),
-              ],
-            ),
-          ),
-          const Icon(LucideIcons.chevronRight, color: Colors.white, size: 16),
-        ],
+            const SizedBox(width: 3),
+            const Icon(LucideIcons.chevronRight, color: Colors.white, size: 16),
+          ],
+        ),
       ),
     );
   }
@@ -797,14 +687,12 @@ class _PrivacyCard extends StatelessWidget {
 
 class _ChatMessage {
   const _ChatMessage({required this.text, required this.fromUser});
-
   final String text;
   final bool fromUser;
 }
 
 class _Prompt {
   const _Prompt(this.title, this.description, this.question, this.icon);
-
   final String title;
   final String description;
   final String question;
@@ -812,12 +700,7 @@ class _Prompt {
 }
 
 class _PromptCard extends StatelessWidget {
-  const _PromptCard({
-    required this.prompt,
-    required this.highlighted,
-    required this.enabled,
-    required this.onTap,
-  });
+  const _PromptCard({required this.prompt, required this.highlighted, required this.enabled, required this.onTap});
 
   final _Prompt prompt;
   final bool highlighted;
@@ -840,25 +723,11 @@ class _PromptCard extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: highlighted
-                    ? const [Color(0xFF321178), Color(0xFF171026)]
-                    : const [Color(0xFF12162A), Color(0xFF090B14)],
+                colors: highlighted ? const [Color(0xFF321178), Color(0xFF171026)] : const [Color(0xFF12162A), Color(0xFF090B14)],
               ),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: highlighted
-                    ? AppColors.primaryLight.withValues(alpha: .72)
-                    : Colors.white.withValues(alpha: .1),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(
-                    alpha: highlighted ? .2 : .08,
-                  ),
-                  blurRadius: 18,
-                  offset: const Offset(0, 7),
-                ),
-              ],
+              border: Border.all(color: highlighted ? AppColors.primaryLight.withValues(alpha: .72) : Colors.white.withValues(alpha: .1)),
+              boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: highlighted ? .2 : .08), blurRadius: 18, offset: const Offset(0, 7))],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -866,47 +735,21 @@ class _PromptCard extends StatelessWidget {
                 Container(
                   width: 38,
                   height: 38,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(13),
-                    gradient: AppGradients.primary,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: .28),
-                        blurRadius: 14,
-                      ),
-                    ],
-                  ),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(13), gradient: AppGradients.primary),
                   child: Icon(prompt.icon, color: Colors.white, size: 20),
                 ),
                 const Spacer(),
-                Text(
-                  prompt.title,
-                  style: AppTypography.heading3.copyWith(fontSize: 15),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(prompt.title, style: AppTypography.heading3.copyWith(fontSize: 15), maxLines: 1, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 3),
-                Text(
-                  prompt.description,
-                  style: AppTypography.caption.copyWith(color: Colors.white70),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(prompt.description, style: AppTypography.caption.copyWith(color: Colors.white70), maxLines: 2, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 4),
                 Align(
                   alignment: Alignment.bottomRight,
                   child: Container(
                     width: 26,
                     height: 26,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary.withValues(alpha: .2),
-                    ),
-                    child: const Icon(
-                      LucideIcons.arrowRight,
-                      color: AppColors.primaryLight,
-                      size: 15,
-                    ),
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.primary.withValues(alpha: .2)),
+                    child: const Icon(LucideIcons.arrowRight, color: AppColors.primaryLight, size: 15),
                   ),
                 ),
               ],
@@ -919,12 +762,7 @@ class _PromptCard extends StatelessWidget {
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({
-    required this.text,
-    required this.fromUser,
-    required this.isInitial,
-  });
-
+  const _Bubble({required this.text, required this.fromUser, required this.isInitial});
   final String text;
   final bool fromUser;
   final bool isInitial;
@@ -932,7 +770,6 @@ class _Bubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isInitial) return _InitialAssistantBubble(text: text);
-
     return Align(
       alignment: fromUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Padding(
@@ -941,22 +778,14 @@ class _Bubble extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            if (!fromUser) ...[
+            if (!fromUser)
               Container(
                 width: 26,
                 height: 26,
                 margin: const EdgeInsets.only(right: 7, bottom: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.14),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  LucideIcons.sparkles,
-                  size: 13,
-                  color: AppColors.primaryLight,
-                ),
+                decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .14), shape: BoxShape.circle),
+                child: const Icon(LucideIcons.sparkles, size: 13, color: AppColors.primaryLight),
               ),
-            ],
             Flexible(
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 330),
@@ -972,13 +801,7 @@ class _Bubble extends StatelessWidget {
                   ),
                   border: fromUser ? null : Border.all(color: AppColors.border),
                 ),
-                child: Text(
-                  text,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: fromUser ? Colors.white : AppColors.textPrimary,
-                    height: 1.45,
-                  ),
-                ),
+                child: Text(text, style: AppTypography.bodySmall.copyWith(color: fromUser ? Colors.white : AppColors.textPrimary, height: 1.45)),
               ),
             ),
           ],
@@ -990,7 +813,6 @@ class _Bubble extends StatelessWidget {
 
 class _InitialAssistantBubble extends StatelessWidget {
   const _InitialAssistantBubble({required this.text});
-
   final String text;
 
   @override
@@ -1006,36 +828,18 @@ class _InitialAssistantBubble extends StatelessWidget {
             margin: const EdgeInsets.only(left: 34, right: 44),
             padding: const EdgeInsets.fromLTRB(15, 15, 15, 17),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF18162C), Color(0xFF0D1020)],
-              ),
+              gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF18162C), Color(0xFF0D1020)]),
               borderRadius: BorderRadius.circular(21),
               border: Border.all(color: Colors.white.withValues(alpha: .08)),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: .1),
-                  blurRadius: 20,
-                ),
-              ],
+              boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .1), blurRadius: 20)],
             ),
             child: RichText(
               text: TextSpan(
-                style: AppTypography.bodyMedium.copyWith(
-                  color: Colors.white.withValues(alpha: .88),
-                  height: 1.55,
-                ),
+                style: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: .88), height: 1.55),
                 children: [
                   TextSpan(text: parts.first.trim()),
                   const TextSpan(text: '\n'),
-                  TextSpan(
-                    text: 'Ada yang bisa aku bantu hari ini? 😊',
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.primaryLight,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  TextSpan(text: 'Ada yang bisa aku bantu hari ini? 😊', style: AppTypography.bodyMedium.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
@@ -1046,16 +850,7 @@ class _InitialAssistantBubble extends StatelessWidget {
             child: Container(
               width: 46,
               height: 46,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppGradients.primary,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: .45),
-                    blurRadius: 20,
-                  ),
-                ],
-              ),
+              decoration: BoxDecoration(shape: BoxShape.circle, gradient: AppGradients.primary, boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .45), blurRadius: 20)]),
               child: const Icon(LucideIcons.sparkles, color: Colors.white, size: 22),
             ),
           ),
@@ -1065,19 +860,8 @@ class _InitialAssistantBubble extends StatelessWidget {
             child: Container(
               width: 70,
               height: 54,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                gradient: AppGradients.primary,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: .32),
-                    blurRadius: 20,
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(LucideIcons.ellipsis, color: Colors.white70, size: 27),
-              ),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(28), gradient: AppGradients.primary, boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .32), blurRadius: 20)]),
+              child: const Center(child: Icon(LucideIcons.ellipsis, color: Colors.white70, size: 27)),
             ),
           ),
         ],
@@ -1087,12 +871,7 @@ class _InitialAssistantBubble extends StatelessWidget {
 }
 
 class _QuickActionButton extends StatelessWidget {
-  const _QuickActionButton({
-    required this.prompt,
-    required this.enabled,
-    required this.onTap,
-  });
-
+  const _QuickActionButton({required this.prompt, required this.enabled, required this.onTap});
   final _Prompt prompt;
   final bool enabled;
   final VoidCallback onTap;
@@ -1107,33 +886,18 @@ class _QuickActionButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(19),
         child: Ink(
           padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF111426).withValues(alpha: .9),
-            borderRadius: BorderRadius.circular(19),
-            border: Border.all(color: AppColors.primary.withValues(alpha: .18)),
-          ),
+          decoration: BoxDecoration(color: const Color(0xFF111426).withValues(alpha: .9), borderRadius: BorderRadius.circular(19), border: Border.all(color: AppColors.primary.withValues(alpha: .18))),
           child: Row(
             children: [
               Container(
                 width: 34,
                 height: 34,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: AppGradients.primary,
-                ),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), gradient: AppGradients.primary),
                 child: Icon(prompt.icon, color: Colors.white, size: 18),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  prompt.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.labelMedium.copyWith(
-                    color: Colors.white,
-                    fontSize: 11.5,
-                  ),
-                ),
+                child: Text(prompt.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(color: Colors.white, fontSize: 11.5)),
               ),
             ],
           ),
@@ -1154,12 +918,7 @@ class _TypingBubble extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(17),
-            topRight: Radius.circular(17),
-            bottomRight: Radius.circular(17),
-            bottomLeft: Radius.circular(5),
-          ),
+          borderRadius: const BorderRadius.only(topLeft: Radius.circular(17), topRight: Radius.circular(17), bottomRight: Radius.circular(17), bottomLeft: Radius.circular(5)),
           border: Border.all(color: AppColors.border),
         ),
         child: const Row(
@@ -1167,11 +926,7 @@ class _TypingBubble extends StatelessWidget {
           children: [
             Icon(LucideIcons.sparkles, size: 14, color: AppColors.primaryLight),
             SizedBox(width: 7),
-            SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
+            SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
           ],
         ),
       ),
@@ -1181,7 +936,6 @@ class _TypingBubble extends StatelessWidget {
 
 class _ErrorBubble extends StatelessWidget {
   const _ErrorBubble({required this.message, required this.onRetry});
-
   final String message;
   final VoidCallback? onRetry;
 
@@ -1189,11 +943,7 @@ class _ErrorBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.danger.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: AppColors.danger.withValues(alpha: 0.2)),
-      ),
+      decoration: BoxDecoration(color: AppColors.danger.withValues(alpha: 0.07), borderRadius: BorderRadius.circular(15), border: Border.all(color: AppColors.danger.withValues(alpha: 0.2))),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1210,11 +960,7 @@ class _ErrorBubble extends StatelessWidget {
                   const SizedBox(height: 7),
                   TextButton.icon(
                     onPressed: onRetry,
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(0, 30),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                    style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 30), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                     icon: const Icon(LucideIcons.refreshCw, size: 15),
                     label: const Text('Coba lagi'),
                   ),
