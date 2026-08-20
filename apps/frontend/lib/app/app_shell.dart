@@ -72,11 +72,11 @@ class _PremiumBottomNav extends StatelessWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return SizedBox(
-      height: 78 + bottomInset,
+      height: 76 + bottomInset,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(18, 1, 18, bottomInset + 7),
+        padding: EdgeInsets.fromLTRB(18, 0, 18, bottomInset + 8),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(32),
           child: BackdropFilter(
             filter: ui.ImageFilter.blur(sigmaX: 26, sigmaY: 26),
             child: DecoratedBox(
@@ -86,9 +86,9 @@ class _PremiumBottomNav extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xF2080910),
-                    Color(0xF217102C),
-                    Color(0xF232155F),
+                    Color(0xE60D111C),
+                    Color(0xE60F1626),
+                    Color(0xE60D111C),
                   ],
                   stops: [0, .48, 1],
                 ),
@@ -150,9 +150,9 @@ class _PremiumBottomNav extends StatelessWidget {
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeOutCubic,
                         left: indicatorLeft,
-                        top: 7,
+                        top: 12,
                         width: indicatorWidth,
-                        height: 48,
+                        height: 40,
                         child: IgnorePointer(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
@@ -161,9 +161,9 @@ class _PremiumBottomNav extends StatelessWidget {
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  Color(0xA04A2B72),
-                                  Color(0x7F6D3CB8),
-                                  Color(0x4E32155F),
+                                  Color(0xFF4B3580),
+                                  Color(0xCC4B3580),
+                                  Color(0x994B3580),
                                 ],
                                 stops: [0, .48, 1],
                               ),
@@ -205,7 +205,7 @@ class _PremiumBottomNav extends StatelessWidget {
                             onTap: onTap,
                           ),
                           Expanded(
-                            child: Center(child: _CenterButton(onTap: onAdd)),
+                            child: Center(child: Transform.translate(offset: const Offset(0, -8), child: _CenterButton(onTap: onAdd))),
                           ),
                           _NavItem(
                             label: 'Wallet',
@@ -267,7 +267,7 @@ class _NavItem extends StatelessWidget {
             highlightColor: Colors.white.withValues(alpha: .025),
             onTap: () => onTap(index),
             child: SizedBox(
-              height: 64,
+              height: 62,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -287,8 +287,8 @@ class _NavItem extends StatelessWidget {
                     style: AppTypography.caption.copyWith(
                       color: selected
                           ? Colors.white
-                          : const Color(0xFFD2CCDF),
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                          : const Color(0xFF8A8A9A),
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                       fontSize: 9.5,
                       height: 1.05,
                       letterSpacing: .02,
@@ -323,8 +323,8 @@ class AnimatedIconColor extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<Color?>(
       tween: ColorTween(
-        begin: selected ? const Color(0xFFD5B7FF) : const Color(0xFFD2CCDF),
-        end: selected ? const Color(0xFFF7F0FF) : const Color(0xFFD2CCDF),
+        begin: selected ? const Color(0xFFD5B7FF) : const Color(0xFF8A8A9A),
+        end: selected ? const Color(0xFFF7F0FF) : const Color(0xFF8A8A9A),
       ),
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
@@ -390,17 +390,17 @@ class _CenterButtonState extends State<_CenterButton>
           behavior: HitTestBehavior.opaque,
           onTap: _handleTap,
           child: Container(
-            width: 54,
-            height: 54,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFFD1A8FF),
-                  Color(0xFFA66BFF),
-                  Color(0xFF743DE6),
+                  Color(0xFFC9A3FF),
+                  Color(0xFF9567FD),
+                  Color(0xFF6A3BD7),
                 ],
               ),
               border: Border.all(
@@ -410,9 +410,9 @@ class _CenterButtonState extends State<_CenterButton>
               boxShadow: [
                 ...AppShadows.button,
                 BoxShadow(
-                  color: const Color(0xFF9B6CFF).withValues(alpha: .70),
-                  blurRadius: 22,
-                  spreadRadius: 1,
+                  color: const Color(0xFF9567FD).withValues(alpha: .40),
+                  blurRadius: 38,
+                  spreadRadius: 2,
                 ),
                 BoxShadow(
                   color: const Color(0xFF6F3FE8).withValues(alpha: .26),
@@ -425,7 +425,7 @@ class _CenterButtonState extends State<_CenterButton>
             child: const Icon(
               LucideIcons.plus,
               color: Colors.white,
-              size: 28,
+              size: 34,
             ),
           ),
         ),
