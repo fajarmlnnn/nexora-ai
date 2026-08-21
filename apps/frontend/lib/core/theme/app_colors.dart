@@ -45,6 +45,28 @@ abstract final class AppColors {
   static const micCta = Color(0xFFAD90F5);
   static const headerButton = Color(0xFF080A17);
 
+  // Goals screen palette. These are deliberately distinct from the AI page
+  // component colors so adjacent cards have depth without becoming flat.
+  static const goalsBackgroundEdge = Color(0xFF000000);
+  static const goalsBackgroundCenter = Color(0xFF0A0A12);
+  static const goalsSummaryCard = Color(0xFF120F22);
+  static const goalsTrack = Color(0xFF1A1830);
+  static const goalsPurple = Color(0xFF6A3BD7);
+  static const goalsPurpleBright = Color(0xFF9567FD);
+  static const goalsTotalBadge = Color(0xFF1B1435);
+  static const goalsProgressTrack = Color(0xFF1D1B30);
+  static const goalsCard = Color(0xFF12121E);
+  static const goalsCardAlt = Color(0xFF10101A);
+  static const goalsSavingIconOuter = Color(0xFF6B54A2);
+  static const goalsSavingIconInner = Color(0xFF261D48);
+  static const goalsWishlistIcon = Color(0xFF2E1E3B);
+  static const goalsWishlistAccent = Color(0xFFD65B9E);
+  static const goalsWishlistText = Color(0xFFF472B6);
+  static const goalsTravelIcon = Color(0xFF1F1F37);
+  static const goalsPromo = Color(0xFF0C0C18);
+  static const goalsPromoAvatar = Color(0xFF07040B);
+  static const goalsNav = Color(0xFF0D111C);
+
   static const textPrimary = Colors.white;
   static const textSecondary = Color(0xFFA8B0C3);
   static const textMuted = Color(0xFF6C7388);
