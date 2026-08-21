@@ -554,33 +554,23 @@ class _AIGlowPageState extends ConsumerState<AIGlowPage>
               Expanded(
                 child: TextField(
                   controller: c,
-                  enabled: !sending,
                   minLines: 1,
-                  maxLines: 2,
+                  maxLines: 3,
                   textInputAction: TextInputAction.send,
-                  onSubmitted: (v) {
-                    if (!v.contains('\n')) ask(v);
-                  },
-                  style: AppTypography.bodySmall.copyWith(
-                    color: Colors.white,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: sending
-                        ? 'Nexora sedang berpikir...'
-                        : 'Tanya apa saja tentang keuanganmu...',
+                  onSubmitted: ask,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    hintText: 'Tanya apa saja tentang keuanganmu...',
+                    hintStyle: TextStyle(color: Colors.white38),
                     border: InputBorder.none,
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 7),
-                    hintStyle: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textMuted,
-                    ),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              InkWell(
-                onTap: sending ? null : () => ask(c.text),
-                borderRadius: BorderRadius.circular(18),
+              const SizedBox(width: 6),
+              Material(
+                color: Colors.transparent,
                 child: Ink(
                   width: 42,
                   height: 42,
@@ -590,18 +580,14 @@ class _AIGlowPageState extends ConsumerState<AIGlowPage>
                         ? AppColors.cardMuted
                         : AppColors.sendButton,
                   ),
-                  child: Center(
-                    child: sending
-                        ? const SizedBox(
-                            width: 15,
-                            height: 15,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(
-                            LucideIcons.arrowUpRight,
-                            color: Colors.white,
-                            size: 20,
-                          ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(22),
+                    onTap: sending ? null : () => ask(c.text),
+                    child: Icon(
+                      sending ? LucideIcons.loaderCircle : LucideIcons.arrowUp,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),
@@ -617,44 +603,15 @@ class _Bg extends StatelessWidget {
   const _Bg();
 
   @override
-  Widget build(BuildContext c) {
-    return const DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: AppGradients.nexoraBackground,
-      ),
-    );
-  }
-}
-
-class IconBox extends StatelessWidget {
-  const IconBox({super.key});
-
-  @override
-  Widget build(BuildContext c) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: AppGradients.primary,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: .28),
-            blurRadius: 14,
-          ),
-        ],
-      ),
-      child: const Icon(
-        LucideIcons.sparkles,
-        color: Colors.white,
-        size: 20,
-      ),
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(gradient: AppGradients.aiBackground),
     );
   }
 }
 
 class H extends StatelessWidget {
-  const H({super.key, required this.icon, required this.label, this.onTap});
+  const H({required this.icon, required this.label, this.onTap});
 
   final IconData icon;
   final String label;
@@ -684,37 +641,95 @@ class H extends StatelessWidget {
   }
 }
 
-class Powered extends StatelessWidget {
-  const Powered({super.key});
+class IconBox extends StatelessWidget {
+  const IconBox();
 
   @override
   Widget build(BuildContext c) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      width: 40,
+      height: 40,
       decoration: BoxDecoration(
-        color: AppColors.aiPowered,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.primaryLight.withValues(alpha: .1),
-        ),
+        shape: BoxShape.circle,
+        gradient: AppGradients.primary,
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: .10),
-            blurRadius: 12,
+            color: AppColors.primary.withValues(alpha: .28),
+            blurRadius: 14,
           ),
         ],
       ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
+      child: const Icon(
+        LucideIcons.sparkles,
+        color: Colors.white,
+        size: 19,
+      ),
+    );
+  }
+}
+
+class Powered extends StatelessWidget {
+  const Powered();
+
+  @override
+  Widget build(BuildContext c) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.aiBadge,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppColors.primaryLight.withValues(alpha: .22),
+        ),
+      ),
+      child: const Text(
+        'AI Powered',
+        style: TextStyle(
+          color: AppColors.primaryLight,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class Privacy extends StatelessWidget {
+  const Privacy();
+
+  @override
+  Widget build(BuildContext c) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.subCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: .06)),
+      ),
+      child: Row(
         children: [
-          Icon(LucideIcons.zap, size: 14, color: AppColors.primaryLight),
-          SizedBox(width: 5),
-          Text(
-            'AI Powered',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.iconContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              LucideIcons.shieldCheck,
+              color: AppColors.primaryLight,
+              size: 19,
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Data finansialmu tetap aman dan privat.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+                height: 1.25,
+              ),
             ),
           ),
         ],
@@ -723,64 +738,316 @@ class Powered extends StatelessWidget {
   }
 }
 
-class Privacy extends StatelessWidget {
-  const Privacy({super.key});
+class Feature extends StatelessWidget {
+  const Feature(this.p, this.index, this.selected, this.enabled, this.onTap);
+
+  final P p;
+  final int index;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext c) {
-    return Container(
-      constraints: const BoxConstraints(
-        maxWidth: 190,
-        minHeight: 72,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.heroSubCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.primaryLight.withValues(alpha: .25),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: AppColors.heroIconBox,
-              borderRadius: BorderRadius.circular(10),
+  Widget build(BuildContext context) {
+    final backgrounds = [
+      AppColors.featureTile1,
+      AppColors.featureTile2,
+      AppColors.featureTile3,
+    ];
+    final icons = [
+      AppColors.featureIcon1,
+      AppColors.featureIcon2,
+      AppColors.featureIcon3,
+    ];
+
+    return Opacity(
+      opacity: enabled ? 1 : .55,
+      child: Material(
+        color: Colors.transparent,
+        child: Ink(
+          width: 142,
+          decoration: BoxDecoration(
+            color: backgrounds[index % backgrounds.length],
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected
+                  ? AppColors.primaryLight.withValues(alpha: .55)
+                  : Colors.white.withValues(alpha: .055),
             ),
-            child: const Icon(
-              LucideIcons.shieldCheck,
-              color: AppColors.primaryLight,
-              size: 18,
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: .22),
+                      blurRadius: 18,
+                    ),
+                  ]
+                : null,
+          ),
+          child: InkWell(
+            onTap: enabled ? onTap : null,
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: icons[index % icons.length],
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(p.icon, color: Colors.white, size: 21),
+                  ),
+                  const Spacer(),
+                  Text(
+                    p.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.labelLarge.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    p.subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: Colors.white54,
+                      fontSize: 10,
+                      height: 1.15,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+        ),
+      ),
+    );
+  }
+}
+
+class Action extends StatelessWidget {
+  const Action(this.p, this.index, this.enabled, this.onTap);
+
+  final P p;
+  final int index;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = [
+      AppColors.suggestion1,
+      AppColors.suggestion2,
+      AppColors.suggestion3,
+      AppColors.suggestion4,
+    ];
+
+    return Opacity(
+      opacity: enabled ? 1 : .55,
+      child: Material(
+        color: Colors.transparent,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: colors[index % colors.length],
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white.withValues(alpha: .055)),
+          ),
+          child: InkWell(
+            onTap: enabled ? onTap : null,
+            borderRadius: BorderRadius.circular(999),
+            child: Row(
               children: [
-                Text('Privasi aman', style: AppTypography.labelLarge),
-                const SizedBox(height: 1),
-                Text(
-                  'Data kamu dienkripsi dan 100% aman.',
-                  style: AppTypography.caption.copyWith(
-                    color: Colors.white70,
+                const SizedBox(width: 10),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: .09),
+                    shape: BoxShape.circle,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  child: Icon(p.icon, color: Colors.white, size: 16),
                 ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    p.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
               ],
             ),
           ),
-          const Icon(
-            LucideIcons.chevronRight,
+        ),
+      ),
+    );
+  }
+}
+
+class Bubble extends StatelessWidget {
+  const Bubble(this.m);
+
+  final M m;
+
+  @override
+  Widget build(BuildContext context) {
+    if (m.user) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 300),
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            gradient: AppGradients.primary,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Text(
+            m.text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              height: 1.35,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          margin: const EdgeInsets.only(right: 10, top: 2),
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.chatAvatar,
+          ),
+          child: const Icon(
+            LucideIcons.sparkles,
             color: Colors.white,
             size: 16,
           ),
+        ),
+        Flexible(
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.chatBubble,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(20),
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
+              border: Border.all(color: Colors.white.withValues(alpha: .05)),
+            ),
+            child: Text(
+              m.text,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class Typing extends StatelessWidget {
+  const Typing();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 32,
+            height: 32,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.chatAvatar,
+              ),
+              child: Icon(
+                LucideIcons.sparkles,
+                color: Colors.white,
+                size: 16,
+              ),
+            ),
+          ),
+          SizedBox(width: 10),
+          Text(
+            'Nexora AI sedang berpikir...',
+            style: TextStyle(color: Colors.white54, fontSize: 12),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class ErrorBox extends StatelessWidget {
+  const ErrorBox(this.message, this.onRetry);
+
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: .08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.red.withValues(alpha: .18)),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              LucideIcons.circleAlert,
+              color: Colors.redAccent,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            if (onRetry != null)
+              TextButton(
+                onPressed: onRetry,
+                child: const Text('Coba lagi'),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -794,372 +1061,10 @@ class M {
 }
 
 class P {
-  const P(this.title, this.desc, this.question, this.icon);
+  const P(this.title, this.subtitle, this.question, this.icon);
 
   final String title;
-  final String desc;
+  final String subtitle;
   final String question;
   final IconData icon;
-}
-
-class Feature extends StatelessWidget {
-  const Feature(
-    this.p,
-    this.i,
-    this.active,
-    this.enabled,
-    this.tap, {
-    super.key,
-  });
-
-  final P p;
-  final int i;
-  final bool active;
-  final bool enabled;
-  final VoidCallback tap;
-
-  @override
-  Widget build(BuildContext context) {
-    final cards = <Color>[
-      AppColors.featureTile1,
-      AppColors.featureTile2,
-      AppColors.featureTile3,
-    ];
-    final icons = <Color>[
-      AppColors.featureIcon1,
-      AppColors.featureIcon2,
-      AppColors.featureIcon3,
-    ];
-    final cardColor = active ? AppColors.featureTile2 : cards[i];
-    final iconColor = active ? AppColors.featureIcon2 : icons[i];
-
-    return SizedBox(
-      width: 154,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(17),
-        child: InkWell(
-          onTap: enabled ? tap : null,
-          borderRadius: BorderRadius.circular(17),
-          child: Ink(
-            padding: const EdgeInsets.fromLTRB(12, 11, 10, 9),
-            decoration: BoxDecoration(
-              color: cardColor,
-              borderRadius: BorderRadius.circular(17),
-              border: Border.all(
-                color: active
-                    ? AppColors.primaryLight.withValues(alpha: .72)
-                    : Colors.white.withValues(alpha: .09),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(
-                    alpha: active ? .16 : .045,
-                  ),
-                  blurRadius: 14,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: iconColor,
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: Icon(
-                    p.icon,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  p.title,
-                  style: AppTypography.heading3.copyWith(fontSize: 15),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Expanded(
-                  child: Text(
-                    p.desc,
-                    style: AppTypography.caption.copyWith(
-                      color: Colors.white70,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.bottomRight,
-                  child: Container(
-                    width: 27,
-                    height: 27,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.arrowButton.withValues(alpha: .72),
-                    ),
-                    child: const Icon(
-                      LucideIcons.arrowRight,
-                      color: AppColors.primaryLight,
-                      size: 15,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class Bubble extends StatelessWidget {
-  const Bubble(this.m, {super.key});
-
-  final M m;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!m.user && m.text.startsWith('Halo! Aku Nexora AI.')) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.chatBubble, Color(0xFF090914)],
-          ),
-          borderRadius: BorderRadius.circular(17),
-          border: Border.all(
-            color: AppColors.primary.withValues(alpha: .16),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: .05),
-              blurRadius: 14,
-            ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              margin: const EdgeInsets.only(right: 10, top: 2),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.chatAvatar,
-              ),
-              child: const Icon(
-                LucideIcons.sparkles,
-                color: Colors.white,
-                size: 16,
-              ),
-            ),
-            Expanded(
-              child: Text(
-                m.text,
-                style: AppTypography.bodySmall.copyWith(
-                  color: Colors.white.withValues(alpha: .9),
-                  height: 1.45,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Align(
-      alignment: m.user ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: m.user ? 235 : 285,
-        ),
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: m.user ? AppColors.userBubble : AppColors.chatBubble,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Text(
-          m.text,
-          style: AppTypography.bodySmall.copyWith(
-            color: Colors.white.withValues(alpha: .92),
-            height: 1.38,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class Action extends StatelessWidget {
-  const Action(this.p, this.i, this.enabled, this.tap, {super.key});
-
-  final P p;
-  final int i;
-  final bool enabled;
-  final VoidCallback tap;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = <Color>[
-      AppColors.suggestion1,
-      AppColors.suggestion2,
-      AppColors.suggestion3,
-      AppColors.suggestion4,
-    ];
-
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(15),
-      child: InkWell(
-        onTap: enabled ? tap : null,
-        borderRadius: BorderRadius.circular(15),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 9),
-          decoration: BoxDecoration(
-            color: AppColors.quickActionCard,
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: .13),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: .035),
-                blurRadius: 10,
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: cs[i],
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: Icon(
-                  p.icon,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  p.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.labelMedium.copyWith(
-                    color: Colors.white,
-                    fontSize: 11.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class Typing extends StatelessWidget {
-  const Typing({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: AppColors.chatBubble,
-          borderRadius: BorderRadius.circular(13),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              LucideIcons.sparkles,
-              size: 13,
-              color: AppColors.primaryLight,
-            ),
-            SizedBox(width: 6),
-            SizedBox(
-              width: 13,
-              height: 13,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class ErrorBox extends StatelessWidget {
-  const ErrorBox(this.message, this.retry, {super.key});
-
-  final String message;
-  final VoidCallback? retry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.danger.withValues(alpha: .07),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: AppColors.danger.withValues(alpha: .2),
-          ),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              LucideIcons.circleAlert,
-              size: 18,
-              color: AppColors.danger,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Nexora belum bisa menjawab',
-                    style: AppTypography.label,
-                  ),
-                  Text(message, style: AppTypography.caption),
-                  if (retry != null)
-                    TextButton.icon(
-                      onPressed: retry,
-                      icon: const Icon(
-                        LucideIcons.refreshCw,
-                        size: 15,
-                      ),
-                      label: const Text('Coba lagi'),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
