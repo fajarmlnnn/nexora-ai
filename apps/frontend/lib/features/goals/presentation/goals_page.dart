@@ -574,51 +574,53 @@ class _GoalCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        child: Ink(
+        child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 100),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.goalsCard,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: accent.withValues(alpha: .11)),
-            boxShadow: [
-              BoxShadow(
-                color: accent.withValues(alpha: .06),
-                blurRadius: 18,
-                spreadRadius: -7,
-                offset: const Offset(0, 7),
-              ),
-            ],
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 45,
-                height: 45,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: saving
-                      ? const RadialGradient(
-                          colors: [AppColors.goalsSavingIconOuter, AppColors.goalsSavingIconInner],
-                        )
-                      : null,
-                  color: saving ? null : iconBackground,
-                  border: Border.all(color: accent.withValues(alpha: .16)),
+          child: Ink(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.goalsCard,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: accent.withValues(alpha: .11)),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withValues(alpha: .06),
+                  blurRadius: 18,
+                  spreadRadius: -7,
+                  offset: const Offset(0, 7),
                 ),
-                child: Icon(
-                  goal.icon,
-                  size: 23,
-                  color: saving ? AppColors.goalsPurpleBright : accent,
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 45,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: saving
+                        ? const RadialGradient(
+                            colors: [AppColors.goalsSavingIconOuter, AppColors.goalsSavingIconInner],
+                          )
+                        : null,
+                    color: saving ? null : iconBackground,
+                    border: Border.all(color: accent.withValues(alpha: .16)),
+                  ),
+                  child: Icon(
+                    goal.icon,
+                    size: 23,
+                    color: saving ? AppColors.goalsPurpleBright : accent,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _GoalMain(goal: goal, accent: accent),
-              ),
-              const SizedBox(width: 10),
-              SizedBox(width: 74, child: _GoalSide(goal: goal, accent: accent)),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _GoalMain(goal: goal, accent: accent),
+                ),
+                const SizedBox(width: 10),
+                SizedBox(width: 74, child: _GoalSide(goal: goal, accent: accent)),
+              ],
+            ),
           ),
         ),
       ),
