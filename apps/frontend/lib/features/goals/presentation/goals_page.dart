@@ -19,109 +19,99 @@ class GoalsPage extends ConsumerStatefulWidget {
 }
 
 class _GoalsPageState extends ConsumerState<GoalsPage> {
+  static const _tabs = ['Semua', 'Wishlist', 'Saving', 'Debt'];
   int _selectedTab = 0;
   bool _sortByProgress = false;
-
-  static const _tabs = ['Semua', 'Wishlist', 'Saving', 'Debt'];
 
   @override
   Widget build(BuildContext context) {
     final allGoals = ref.watch(financialGoalsProvider);
-    final filteredGoals = switch (_selectedTab) {
+    final goals = switch (_selectedTab) {
       1 => allGoals.where((goal) => goal.type == 'Wishlist').toList(),
       2 => allGoals.where((goal) => goal.type == 'Saving').toList(),
       3 => allGoals.where((goal) => goal.type == 'Debt').toList(),
       _ => [...allGoals],
     };
-
     if (_sortByProgress) {
-      filteredGoals.sort((a, b) => b.progress.compareTo(a.progress));
+      goals.sort((a, b) => b.progress.compareTo(a.progress));
     }
 
     return PremiumScaffold(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-                sliver: SliverToBoxAdapter(
-                  child: _Header(
-                    onAdd: () => showAddGoalSheet(context, ref),
-                  ),
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+            sliver: SliverToBoxAdapter(
+              child: _Header(onAdd: () => showAddGoalSheet(context, ref)),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverToBoxAdapter(child: _Overview(goals: allGoals)),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverToBoxAdapter(
+              child: _Tabs(
+                labels: _tabs,
+                selected: _selectedTab,
+                onSelected: (value) => setState(() => _selectedTab = value),
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverToBoxAdapter(
+              child: _SectionHeader(
+                sortByProgress: _sortByProgress,
+                onToggleSort: () => setState(
+                  () => _sortByProgress = !_sortByProgress,
                 ),
               ),
-              const SliverPadding(padding: EdgeInsets.only(top: 24)),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverToBoxAdapter(
-                  child: _Overview(goals: allGoals),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+          if (goals.isEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverToBoxAdapter(
+                child: _EmptyGoals(
+                  onAdd: () => showAddGoalSheet(context, ref),
                 ),
               ),
-              const SliverPadding(padding: EdgeInsets.only(top: 24)),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverToBoxAdapter(
-                  child: _Tabs(
-                    labels: _tabs,
-                    selected: _selectedTab,
-                    onSelected: (index) => setState(() => _selectedTab = index),
-                  ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    if (index.isOdd) return const SizedBox(height: 12);
+                    final goal = goals[index ~/ 2];
+                    return _GoalCard(
+                      goal: goal,
+                      onTap: () => context.push('/goals/${goal.id}'),
+                    );
+                  },
+                  childCount: goals.length * 2 - 1,
                 ),
               ),
-              const SliverPadding(padding: EdgeInsets.only(top: 20)),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverToBoxAdapter(
-                  child: _SectionHeader(
-                    sortByProgress: _sortByProgress,
-                    onToggleSort: () => setState(
-                      () => _sortByProgress = !_sortByProgress,
-                    ),
-                  ),
-                ),
-              ),
-              const SliverPadding(padding: EdgeInsets.only(top: 12)),
-              if (filteredGoals.isEmpty)
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver: SliverToBoxAdapter(
-                    child: _EmptyGoals(onAdd: () => showAddGoalSheet(context, ref)),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver: SliverList.separated(
-                    itemCount: filteredGoals.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final goal = filteredGoals[index];
-                      return _GoalCard(
-                        goal: goal,
-                        onTap: () => context.push('/goals/${goal.id}'),
-                      );
-                    },
-                  ),
-                ),
-              const SliverPadding(padding: EdgeInsets.only(top: 20)),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverToBoxAdapter(
-                  child: _AIRecommendation(),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsets.only(
-                  top: 18,
-                  bottom: 108 + MediaQuery.paddingOf(context).bottom,
-                ),
-                sliver: const SliverToBoxAdapter(child: SizedBox.shrink()),
-              ),
-            ],
-          );
-        },
+            ),
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: const SliverToBoxAdapter(child: _AIRecommendation()),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 108 + MediaQuery.paddingOf(context).bottom,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -129,13 +119,11 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
 
 class _Header extends StatelessWidget {
   const _Header({required this.onAdd});
-
   final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: Column(
@@ -159,29 +147,16 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
-        _GlowIconButton(
-          icon: LucideIcons.plus,
-          onTap: onAdd,
-          size: 40,
-          iconSize: 24,
-        ),
+        _GlowIconButton(icon: LucideIcons.plus, onTap: onAdd),
       ],
     );
   }
 }
 
 class _GlowIconButton extends StatelessWidget {
-  const _GlowIconButton({
-    required this.icon,
-    required this.onTap,
-    this.size = 40,
-    this.iconSize = 22,
-  });
-
+  const _GlowIconButton({required this.icon, required this.onTap});
   final IconData icon;
   final VoidCallback onTap;
-  final double size;
-  final double iconSize;
 
   @override
   Widget build(BuildContext context) {
@@ -189,10 +164,10 @@ class _GlowIconButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(size),
+        borderRadius: BorderRadius.circular(999),
         child: Ink(
-          width: size,
-          height: size,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: const LinearGradient(
@@ -200,9 +175,7 @@ class _GlowIconButton extends StatelessWidget {
               end: Alignment.bottomRight,
               colors: [AppColors.goalsPurpleBright, AppColors.goalsPurple],
             ),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: .14),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: .14)),
             boxShadow: [
               BoxShadow(
                 color: AppColors.goalsPurpleBright.withValues(alpha: .28),
@@ -211,7 +184,7 @@ class _GlowIconButton extends StatelessWidget {
               ),
             ],
           ),
-          child: Icon(icon, color: Colors.white, size: iconSize),
+          child: Icon(icon, color: Colors.white, size: 24),
         ),
       ),
     );
@@ -220,7 +193,6 @@ class _GlowIconButton extends StatelessWidget {
 
 class _Overview extends StatelessWidget {
   const _Overview({required this.goals});
-
   final List<FinancialGoalSnapshot> goals;
 
   @override
@@ -238,9 +210,7 @@ class _Overview extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.goalsSummaryCard,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFF5E4A8D).withValues(alpha: .25),
-        ),
+        border: Border.all(color: const Color(0xFF5E4A8D).withValues(alpha: .25)),
         boxShadow: [
           BoxShadow(
             color: AppColors.goalsPurple.withValues(alpha: .12),
@@ -253,13 +223,10 @@ class _Overview extends StatelessWidget {
       child: Column(
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _ProgressDonut(value: progress),
               const SizedBox(width: 16),
-              Expanded(
-                child: _SummaryText(saved: saved, target: target),
-              ),
+              Expanded(child: _SummaryText(saved: saved, target: target)),
               const SizedBox(width: 8),
               _TotalGoalsBadge(count: goals.length),
             ],
@@ -297,7 +264,6 @@ class _Overview extends StatelessWidget {
 
 class _SummaryText extends StatelessWidget {
   const _SummaryText({required this.saved, required this.target});
-
   final double saved;
   final double target;
 
@@ -322,8 +288,8 @@ class _SummaryText extends StatelessWidget {
           child: RichText(
             text: TextSpan(
               style: AppTypography.heading3.copyWith(
-                fontWeight: FontWeight.w800,
                 color: Colors.white,
+                fontWeight: FontWeight.w800,
               ),
               children: [
                 TextSpan(text: rupiah(saved)),
@@ -368,7 +334,6 @@ class _SummaryText extends StatelessWidget {
 
 class _ProgressDonut extends StatelessWidget {
   const _ProgressDonut({required this.value});
-
   final double value;
 
   @override
@@ -401,49 +366,37 @@ class _ProgressDonut extends StatelessWidget {
 
 class _DonutPainter extends CustomPainter {
   const _DonutPainter({required this.value});
-
   final double value;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final radius = (size.shortestSide / 2) - 4;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-
+    final rect = Rect.fromCircle(
+      center: size.center(Offset.zero),
+      radius: size.shortestSide / 2 - 5,
+    );
     final track = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 10
-      ..strokeCap = StrokeCap.butt
       ..color = AppColors.goalsTrack;
     canvas.drawArc(rect, 0, math.pi * 2, false, track);
 
-    final shader = const LinearGradient(
-      begin: Alignment.topRight,
-      end: Alignment.bottomLeft,
-      colors: [AppColors.goalsPurpleBright, AppColors.goalsPurple],
-    ).createShader(rect);
     final fill = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 10
-      ..strokeCap = StrokeCap.butt
-      ..shader = shader;
-    canvas.drawArc(
-      rect,
-      -math.pi / 2,
-      math.pi * 2 * value,
-      false,
-      fill,
-    );
+      ..shader = const LinearGradient(
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft,
+        colors: [AppColors.goalsPurpleBright, AppColors.goalsPurple],
+      ).createShader(rect);
+    canvas.drawArc(rect, -math.pi / 2, math.pi * 2 * value, false, fill);
   }
 
   @override
-  bool shouldRepaint(covariant _DonutPainter oldDelegate) =>
-      oldDelegate.value != value;
+  bool shouldRepaint(covariant _DonutPainter oldDelegate) => oldDelegate.value != value;
 }
 
 class _TotalGoalsBadge extends StatelessWidget {
   const _TotalGoalsBadge({required this.count});
-
   final int count;
 
   @override
@@ -458,22 +411,10 @@ class _TotalGoalsBadge extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            LucideIcons.flag,
-            size: 15,
-            color: AppColors.goalsPurpleBright,
-          ),
+          const Icon(LucideIcons.flag, size: 15, color: AppColors.goalsPurpleBright),
           const SizedBox(height: 2),
-          Text(
-            '$count',
-            style: AppTypography.labelLarge.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          Text(
-            'Total',
-            style: AppTypography.overline.copyWith(fontSize: 7),
-          ),
+          Text('$count', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
+          Text('Total', style: AppTypography.overline.copyWith(fontSize: 7)),
         ],
       ),
     );
@@ -482,45 +423,43 @@ class _TotalGoalsBadge extends StatelessWidget {
 
 class _GradientProgressBar extends StatelessWidget {
   const _GradientProgressBar({required this.value, this.height = 6});
-
   final double value;
   final double height;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: Stack(
-        children: [
-          Container(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth * value.clamp(0.0, 1.0);
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: SizedBox(
             height: height,
-            width: double.infinity,
-            color: AppColors.goalsProgressTrack,
-          ),
-          FractionallySizedBox(
-            widthFactor: value.clamp(0.0, 1.0).toDouble(),
-            child: Container(
-              height: height,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.goalsPurple, AppColors.goalsPurpleBright],
+            child: Stack(
+              children: [
+                Positioned.fill(child: ColoredBox(color: AppColors.goalsProgressTrack)),
+                SizedBox(
+                  width: width,
+                  height: height,
+                  child: const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.goalsPurple, AppColors.goalsPurpleBright],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
 class _Tabs extends StatelessWidget {
-  const _Tabs({
-    required this.labels,
-    required this.selected,
-    required this.onSelected,
-  });
-
+  const _Tabs({required this.labels, required this.selected, required this.onSelected});
   final List<String> labels;
   final int selected;
   final ValueChanged<int> onSelected;
@@ -533,9 +472,7 @@ class _Tabs extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.goalsCardAlt.withValues(alpha: .72),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: .05),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: .05)),
       ),
       child: Row(
         children: List.generate(labels.length, (index) {
@@ -551,23 +488,7 @@ class _Tabs extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(999),
                   gradient: active
-                      ? const LinearGradient(
-                          colors: [
-                            AppColors.goalsPurple,
-                            Color(0xFF8B5CF6),
-                          ],
-                        )
-                      : null,
-                  boxShadow: active
-                      ? [
-                          BoxShadow(
-                            color: AppColors.goalsPurpleBright.withValues(
-                              alpha: .24,
-                            ),
-                            blurRadius: 14,
-                            spreadRadius: -5,
-                          ),
-                        ]
+                      ? const LinearGradient(colors: [AppColors.goalsPurple, Color(0xFF8B5CF6)])
                       : null,
                 ),
                 child: Text(
@@ -575,9 +496,7 @@ class _Tabs extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.bodySmall.copyWith(
-                    color: active
-                        ? Colors.white
-                        : const Color(0xFFA3AEC4),
+                    color: active ? Colors.white : const Color(0xFFA3AEC4),
                     fontWeight: active ? FontWeight.w800 : FontWeight.w700,
                   ),
                 ),
@@ -591,11 +510,7 @@ class _Tabs extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.sortByProgress,
-    required this.onToggleSort,
-  });
-
+  const _SectionHeader({required this.sortByProgress, required this.onToggleSort});
   final bool sortByProgress;
   final VoidCallback onToggleSort;
 
@@ -606,9 +521,7 @@ class _SectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             'Goals aktif',
-            style: AppTypography.heading3.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
+            style: AppTypography.heading3.copyWith(fontWeight: FontWeight.w800),
           ),
         ),
         TextButton.icon(
@@ -621,9 +534,7 @@ class _SectionHeader extends StatelessWidget {
           icon: Icon(
             LucideIcons.slidersHorizontal,
             size: 18,
-            color: sortByProgress
-                ? AppColors.goalsPurpleBright
-                : AppColors.textSecondary,
+            color: sortByProgress ? AppColors.goalsPurpleBright : AppColors.textSecondary,
           ),
           label: Text(
             sortByProgress ? 'Progress' : 'Urutkan',
@@ -640,29 +551,24 @@ class _SectionHeader extends StatelessWidget {
 
 class _GoalCard extends StatelessWidget {
   const _GoalCard({required this.goal, required this.onTap});
-
   final FinancialGoalSnapshot goal;
   final VoidCallback onTap;
 
-  bool get _wishlist => goal.type == 'Wishlist';
-  bool get _debt => goal.type == 'Debt';
-
-  Color get _accent {
-    if (_wishlist) return AppColors.goalsWishlistText;
-    if (_debt) return const Color(0xFFFF6B7A);
+  Color get accent {
+    if (goal.type == 'Wishlist') return AppColors.goalsWishlistText;
+    if (goal.type == 'Debt') return const Color(0xFFFF6B7A);
     return AppColors.goalsPurpleBright;
   }
 
-  Color get _iconBackground {
-    if (_wishlist) return AppColors.goalsWishlistIcon;
-    if (_debt) return const Color(0xFF251B2D);
-    return AppColors.goalsSavingIconInner;
-  }
-
-  String get _badgeLabel => goal.type;
-
   @override
   Widget build(BuildContext context) {
+    final saving = goal.type == 'Saving';
+    final iconBackground = goal.type == 'Wishlist'
+        ? AppColors.goalsWishlistIcon
+        : goal.type == 'Debt'
+            ? const Color(0xFF251B2D)
+            : AppColors.goalsSavingIconInner;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -674,41 +580,45 @@ class _GoalCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.goalsCard,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: _accent.withValues(alpha: .11),
-            ),
+            border: Border.all(color: accent.withValues(alpha: .11)),
             boxShadow: [
               BoxShadow(
-                color: _accent.withValues(alpha: .06),
+                color: accent.withValues(alpha: .06),
                 blurRadius: 18,
                 spreadRadius: -7,
                 offset: const Offset(0, 7),
               ),
             ],
           ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 330;
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _GoalIcon(goal: goal, background: _iconBackground),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _GoalMain(
-                      goal: goal,
-                      accent: _accent,
-                      badgeLabel: _badgeLabel,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  SizedBox(
-                    width: compact ? 65 : 76,
-                    child: _GoalSide(goal: goal, accent: _accent),
-                  ),
-                ],
-              );
-            },
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 45,
+                height: 45,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: saving
+                      ? const RadialGradient(
+                          colors: [AppColors.goalsSavingIconOuter, AppColors.goalsSavingIconInner],
+                        )
+                      : null,
+                  color: saving ? null : iconBackground,
+                  border: Border.all(color: accent.withValues(alpha: .16)),
+                ),
+                child: Icon(
+                  goal.icon,
+                  size: 23,
+                  color: saving ? AppColors.goalsPurpleBright : accent,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _GoalMain(goal: goal, accent: accent),
+              ),
+              const SizedBox(width: 10),
+              SizedBox(width: 74, child: _GoalSide(goal: goal, accent: accent)),
+            ],
           ),
         ),
       ),
@@ -716,57 +626,19 @@ class _GoalCard extends StatelessWidget {
   }
 }
 
-class _GoalIcon extends StatelessWidget {
-  const _GoalIcon({required this.goal, required this.background});
-
-  final FinancialGoalSnapshot goal;
-  final Color background;
-
-  @override
-  Widget build(BuildContext context) {
-    final isSaving = goal.type == 'Saving';
-    return Container(
-      width: 45,
-      height: 45,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: isSaving
-            ? const RadialGradient(
-                colors: [
-                  AppColors.goalsSavingIconOuter,
-                  AppColors.goalsSavingIconInner,
-                ],
-              )
-            : null,
-        color: isSaving ? null : background,
-        border: Border.all(
-          color: isSaving
-              ? AppColors.goalsPurpleBright.withValues(alpha: .18)
-              : Colors.white.withValues(alpha: .06),
-        ),
-      ),
-      child: Icon(
-        goal.icon,
-        size: 23,
-        color: isSaving ? AppColors.goalsPurpleBright : AppColors.goalsWishlistText,
-      ),
-    );
-  }
-}
-
 class _GoalMain extends StatelessWidget {
-  const _GoalMain({
-    required this.goal,
-    required this.accent,
-    required this.badgeLabel,
-  });
-
+  const _GoalMain({required this.goal, required this.accent});
   final FinancialGoalSnapshot goal;
   final Color accent;
-  final String badgeLabel;
 
   @override
   Widget build(BuildContext context) {
+    final description = switch (goal.type) {
+      'Wishlist' => 'Target wishlist pribadi',
+      'Debt' => 'Rencana pelunasan finansial',
+      _ => 'Keamanan finansial utama',
+    };
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -777,28 +649,24 @@ class _GoalMain extends StatelessWidget {
                 goal.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.bodyLarge.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+                style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w800),
               ),
             ),
             const SizedBox(width: 7),
-            Flexible(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: .14),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  badgeLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.overline.copyWith(
-                    color: accent,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 8,
-                  ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: .14),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                goal.type,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.overline.copyWith(
+                  color: accent,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 8,
                 ),
               ),
             ),
@@ -806,7 +674,7 @@ class _GoalMain extends StatelessWidget {
         ),
         const SizedBox(height: 3),
         Text(
-          _descriptionFor(goal),
+          description,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: AppTypography.caption.copyWith(
@@ -815,10 +683,7 @@ class _GoalMain extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        _GradientProgressBar(
-          value: goal.progress,
-          height: 4,
-        ),
+        _GradientProgressBar(value: goal.progress, height: 4),
         const SizedBox(height: 6),
         Text(
           '${rupiah(goal.saved)} / ${rupiah(goal.target)}',
@@ -832,22 +697,10 @@ class _GoalMain extends StatelessWidget {
       ],
     );
   }
-
-  String _descriptionFor(FinancialGoalSnapshot goal) {
-    switch (goal.type) {
-      case 'Wishlist':
-        return 'Target wishlist pribadi';
-      case 'Debt':
-        return 'Rencana pelunasan finansial';
-      default:
-        return 'Keamanan finansial utama';
-    }
-  }
 }
 
 class _GoalSide extends StatelessWidget {
   const _GoalSide({required this.goal, required this.accent});
-
   final FinancialGoalSnapshot goal;
   final Color accent;
 
@@ -867,21 +720,12 @@ class _GoalSide extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(width: 4),
-            const Icon(
-              LucideIcons.ellipsisVertical,
-              size: 17,
-              color: AppColors.textSecondary,
-            ),
+            const SizedBox(width: 2),
+            const Icon(LucideIcons.ellipsisVertical, size: 17, color: AppColors.textSecondary),
           ],
         ),
         const SizedBox(height: 5),
-        Text(
-          'Sisa',
-          style: AppTypography.overline.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
+        Text('Sisa', style: AppTypography.overline.copyWith(color: AppColors.textSecondary)),
         Text(
           rupiah(goal.remaining),
           maxLines: 1,
@@ -891,15 +735,11 @@ class _GoalSide extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const Spacer(),
+        const SizedBox(height: 10),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            const Icon(
-              LucideIcons.calendarDays,
-              size: 12,
-              color: AppColors.textSecondary,
-            ),
+            const Icon(LucideIcons.calendarDays, size: 12, color: AppColors.textSecondary),
             const SizedBox(width: 4),
             Flexible(
               child: Text(
@@ -920,20 +760,7 @@ class _GoalSide extends StatelessWidget {
 
   String _dateLabel(DateTime? date) {
     if (date == null) return 'Tanpa tanggal';
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 }
@@ -954,9 +781,7 @@ class _AIRecommendation extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.goalsPromo,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: AppColors.goalsPurpleBright.withValues(alpha: .20),
-            ),
+            border: Border.all(color: AppColors.goalsPurpleBright.withValues(alpha: .20)),
             boxShadow: [
               BoxShadow(
                 color: AppColors.goalsPurple.withValues(alpha: .20),
@@ -1007,10 +832,7 @@ class _AIRecommendation extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: AppColors.goalsPurple.withValues(alpha: .20),
                             borderRadius: BorderRadius.circular(999),
@@ -1031,9 +853,7 @@ class _AIRecommendation extends StatelessWidget {
                       'Butuh bantuan capai goals?',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w800),
                     ),
                     Text(
                       'Dapatkan rekomendasi finansial yang lebih personal.',
@@ -1065,7 +885,6 @@ class _AIRecommendation extends StatelessWidget {
 
 class _EmptyGoals extends StatelessWidget {
   const _EmptyGoals({required this.onAdd});
-
   final VoidCallback onAdd;
 
   @override
@@ -1079,25 +898,17 @@ class _EmptyGoals extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Icon(
-            LucideIcons.target,
-            size: 36,
-            color: AppColors.goalsPurpleBright,
-          ),
+          const Icon(LucideIcons.target, size: 36, color: AppColors.goalsPurpleBright),
           const SizedBox(height: 10),
           Text(
             'Belum ada goal',
-            style: AppTypography.bodyLarge.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
+            style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 4),
           Text(
             'Buat target pertama kamu untuk mulai merencanakan keuangan.',
             textAlign: TextAlign.center,
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 14),
           FilledButton.icon(
