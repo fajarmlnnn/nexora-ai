@@ -17,7 +17,13 @@ Future<void> showAddWalletSheet(BuildContext context, WidgetRef ref) async {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: AppColors.background,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withValues(alpha: .68),
+    elevation: 0,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+    ),
+    clipBehavior: Clip.antiAlias,
     builder: (_) => const _AddWalletSheet(),
   );
 }
@@ -49,38 +55,24 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
     super.dispose();
   }
 
-  String _typeLabel(WalletType type) {
-    switch (type) {
-      case WalletType.bank:
-        return 'Bank';
-      case WalletType.ewallet:
-        return 'E-Wallet';
-      case WalletType.cash:
-        return 'Uang Tunai';
-      case WalletType.investment:
-        return 'Investasi';
-    }
-  }
+  String _typeLabel(WalletType type) => switch (type) {
+        WalletType.bank => 'Bank',
+        WalletType.ewallet => 'E-Wallet',
+        WalletType.cash => 'Uang Tunai',
+        WalletType.investment => 'Investasi',
+      };
 
-  String _defaultProvider(WalletType type) {
-    switch (type) {
-      case WalletType.bank:
-        return 'Nama bank';
-      case WalletType.ewallet:
-        return 'Nama e-wallet';
-      case WalletType.cash:
-        return 'Tunai';
-      case WalletType.investment:
-        return 'Platform investasi';
-    }
-  }
+  String _defaultProvider(WalletType type) => switch (type) {
+        WalletType.bank => 'Nama bank',
+        WalletType.ewallet => 'Nama e-wallet',
+        WalletType.cash => 'Tunai',
+        WalletType.investment => 'Platform investasi',
+      };
 
   Future<void> _save() async {
     if (_saving || !_formKey.currentState!.validate()) return;
 
-    final balance = double.tryParse(
-      _balanceController.text.replaceAll('.', '').replaceAll(',', ''),
-    );
+    final balance = double.tryParse(_balanceController.text.replaceAll('.', '').replaceAll(',', ''));
     if (balance == null || balance < 0) {
       _showError('Saldo awal tidak valid.');
       return;
@@ -89,19 +81,13 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
     setState(() => _saving = true);
 
     final wallet = WalletModel(
-      // The Supabase repository replaces this local ID with a database UUID
-      // when it is not already a UUID. The returned WalletModel is canonical.
       id: 'wallet_${DateTime.now().microsecondsSinceEpoch}',
       name: _nameController.text.trim(),
-      bankName: _providerController.text.trim().isEmpty
-          ? _defaultProvider(_type)
-          : _providerController.text.trim(),
-      accountNumber: _accountController.text.trim().isEmpty
-          ? _type.name.toUpperCase()
-          : _accountController.text.trim(),
+      bankName: _providerController.text.trim().isEmpty ? _defaultProvider(_type) : _providerController.text.trim(),
+      accountNumber: _accountController.text.trim().isEmpty ? _type.name.toUpperCase() : _accountController.text.trim(),
       balance: 0,
       type: _type,
-      color: AppColors.primary,
+      color: AppColors.brandPrimary,
       isPrimary: _isPrimary,
     );
 
@@ -130,15 +116,10 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
       }
 
       if (_isPrimary) {
-        final primarySet = await ref
-            .read(walletProvider.notifier)
-            .setPrimaryWallet(created.id);
-        if (!primarySet) {
-          throw StateError('Wallet berhasil dibuat, tetapi gagal dijadikan wallet utama.');
-        }
+        final primarySet = await ref.read(walletProvider.notifier).setPrimaryWallet(created.id);
+        if (!primarySet) throw StateError('Wallet berhasil dibuat, tetapi gagal dijadikan wallet utama.');
       }
     } catch (error) {
-      // Avoid leaving an orphan wallet when the opening transaction fails.
       await ref.read(walletProvider.notifier).deleteWallet(created.id);
       if (!mounted) return;
       setState(() => _saving = false);
@@ -148,138 +129,141 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
 
     if (!mounted) return;
     Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${created.name} berhasil ditambahkan.'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${created.name} berhasil ditambahkan.')));
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
+
+  InputDecoration _decoration(String label, IconData icon) => InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, size: 19),
+      );
 
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(18, 12, 18, 18 + bottom),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: AppRadius.radiusPill,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text('Tambah Wallet', style: AppTypography.heading2),
-              const SizedBox(height: 3),
-              Text('Tambahkan aset agar saldo dan transaksi bisa dilacak dengan benar.', style: AppTypography.bodySmall),
-              const SizedBox(height: 18),
-              _Field(
-                controller: _nameController,
-                label: 'Nama wallet',
-                hint: 'Contoh: BCA Utama',
-                icon: LucideIcons.walletMinimal,
-                validator: (value) => value == null || value.trim().isEmpty ? 'Nama wallet wajib diisi.' : null,
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<WalletType>(
-                initialValue: _type,
-                decoration: _decoration('Tipe wallet', LucideIcons.layers3),
-                dropdownColor: AppColors.card,
-                items: WalletType.values
-                    .map((type) => DropdownMenuItem(value: type, child: Text(_typeLabel(type))))
-                    .toList(),
-                onChanged: _saving ? null : (value) => setState(() => _type = value ?? WalletType.bank),
-              ),
-              const SizedBox(height: 12),
-              _Field(
-                controller: _providerController,
-                label: _type == WalletType.cash ? 'Sumber' : 'Bank / platform',
-                hint: _defaultProvider(_type),
-                icon: LucideIcons.building2,
-              ),
-              const SizedBox(height: 12),
-              _Field(
-                controller: _accountController,
-                label: 'Nomor akun (opsional)',
-                hint: 'Boleh dikosongkan',
-                icon: LucideIcons.hash,
-              ),
-              const SizedBox(height: 12),
-              _Field(
-                controller: _balanceController,
-                label: 'Saldo awal',
-                hint: '0',
-                icon: LucideIcons.walletCards,
-                keyboardType: const TextInputType.numberWithOptions(decimal: false),
-                validator: (value) {
-                  final parsed = double.tryParse((value ?? '').replaceAll('.', '').replaceAll(',', ''));
-                  return parsed == null || parsed < 0 ? 'Masukkan saldo yang valid.' : null;
-                },
-              ),
-              const SizedBox(height: 6),
-              SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                title: Text('Jadikan wallet utama', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700)),
-                subtitle: Text('Wallet ini akan diprioritaskan di ringkasan.', style: AppTypography.caption),
-                value: _isPrimary,
-                activeTrackColor: AppColors.primary,
-                onChanged: _saving ? null : (value) => setState(() => _isPrimary = value),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(gradient: AppGradients.primary, borderRadius: AppRadius.radiusLG),
-                  child: ElevatedButton.icon(
-                    onPressed: _saving ? null : _save,
-                    icon: _saving
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Icon(LucideIcons.plus),
-                    label: Text(_saving ? 'Menyimpan...' : 'Simpan Wallet'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                      disabledForegroundColor: Colors.white70,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusLG),
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF0E0B24), Color(0xFF08071A)],
+        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border(top: BorderSide(color: Color(0x332C214A))),
+      ),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20, 12, 20, 16 + bottom),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight.withValues(alpha: .30),
+                      borderRadius: AppRadius.radiusPill,
                     ),
                   ),
                 ),
-              ),
-              SizedBox(height: AppSpacing.bottomNav(context)),
-            ],
+                const SizedBox(height: 22),
+                Text('Tambah Wallet', style: AppTypography.heading1.copyWith(fontSize: 28, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                Text(
+                  'Tambahkan aset agar saldo dan transaksi bisa dilacak dengan benar.',
+                  style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 22),
+                _Field(
+                  controller: _nameController,
+                  label: 'Nama wallet',
+                  hint: 'Contoh: BCA Utama',
+                  icon: LucideIcons.walletMinimal,
+                  validator: (value) => value == null || value.trim().isEmpty ? 'Nama wallet wajib diisi.' : null,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<WalletType>(
+                  initialValue: _type,
+                  decoration: _decoration('Tipe wallet', LucideIcons.layers3),
+                  dropdownColor: AppColors.space800,
+                  borderRadius: AppRadius.radiusLG,
+                  items: WalletType.values.map((type) => DropdownMenuItem(value: type, child: Text(_typeLabel(type)))).toList(),
+                  onChanged: _saving ? null : (value) => setState(() => _type = value ?? WalletType.bank),
+                ),
+                const SizedBox(height: 12),
+                _Field(
+                  controller: _providerController,
+                  label: _type == WalletType.cash ? 'Sumber' : 'Bank / platform',
+                  hint: _defaultProvider(_type),
+                  icon: LucideIcons.building2,
+                ),
+                const SizedBox(height: 12),
+                _Field(
+                  controller: _accountController,
+                  label: 'Nomor akun (opsional)',
+                  hint: 'Boleh dikosongkan',
+                  icon: LucideIcons.hash,
+                ),
+                const SizedBox(height: 12),
+                _Field(
+                  controller: _balanceController,
+                  label: 'Saldo awal',
+                  hint: '0',
+                  icon: LucideIcons.walletCards,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: false),
+                  validator: (value) {
+                    final parsed = double.tryParse((value ?? '').replaceAll('.', '').replaceAll(',', ''));
+                    return parsed == null || parsed < 0 ? 'Masukkan saldo yang valid.' : null;
+                  },
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile.adaptive(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 2),
+                  title: Text('Jadikan wallet utama', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800, color: Colors.white)),
+                  subtitle: Text('Wallet ini akan diprioritaskan di ringkasan.', style: AppTypography.caption),
+                  value: _isPrimary,
+                  activeTrackColor: AppColors.brandPrimary,
+                  thumbColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? Colors.white : AppColors.textMuted),
+                  onChanged: _saving ? null : (value) => setState(() => _isPrimary = value),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: AppGradients.aurora,
+                      borderRadius: AppRadius.radiusXL,
+                      boxShadow: [BoxShadow(color: AppColors.brandPrimary.withValues(alpha: .30), blurRadius: 26, offset: const Offset(0, 12))],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: _saving ? null : _save,
+                      icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(LucideIcons.plus),
+                      label: Text(_saving ? 'Menyimpan...' : 'Simpan Wallet'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        disabledForegroundColor: Colors.white70,
+                        minimumSize: const Size.fromHeight(58),
+                        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXL),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: AppSpacing.bottomNav(context)),
+              ],
+            ),
           ),
         ),
       ),
-    );
-  }
-
-  InputDecoration _decoration(String label, IconData icon) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon, size: 19),
-      filled: true,
-      fillColor: AppColors.card,
-      border: OutlineInputBorder(borderRadius: AppRadius.radiusLG, borderSide: BorderSide(color: AppColors.border.withValues(alpha: .5))),
-      enabledBorder: OutlineInputBorder(borderRadius: AppRadius.radiusLG, borderSide: BorderSide(color: AppColors.border.withValues(alpha: .5))),
-      focusedBorder: OutlineInputBorder(borderRadius: AppRadius.radiusLG, borderSide: const BorderSide(color: AppColors.primaryLight)),
     );
   }
 }
@@ -295,22 +279,11 @@ class _Field extends StatelessWidget {
   final TextInputType? keyboardType;
 
   @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      validator: validator,
-      keyboardType: keyboardType,
-      style: AppTypography.bodySmall.copyWith(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: Icon(icon, size: 19),
-        filled: true,
-        fillColor: AppColors.card,
-        border: OutlineInputBorder(borderRadius: AppRadius.radiusLG, borderSide: BorderSide(color: AppColors.border.withValues(alpha: .5))),
-        enabledBorder: OutlineInputBorder(borderRadius: AppRadius.radiusLG, borderSide: BorderSide(color: AppColors.border.withValues(alpha: .5))),
-        focusedBorder: OutlineInputBorder(borderRadius: AppRadius.radiusLG, borderSide: const BorderSide(color: AppColors.primaryLight)),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => TextFormField(
+        controller: controller,
+        validator: validator,
+        keyboardType: keyboardType,
+        style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+        decoration: InputDecoration(labelText: label, hintText: hint, prefixIcon: Icon(icon, size: 20)),
+      );
 }
