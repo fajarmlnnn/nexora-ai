@@ -12,7 +12,7 @@ import '../features/budget/presentation/budget_page.dart';
 import '../features/dashboard/presentation/dashboard_page.dart';
 import '../features/dashboard/presentation/financial_overview_realtime_page.dart';
 import '../features/forms/presentation/money_form_page.dart';
-import '../features/goals/presentation/goal_detail_page.dart';
+import '../features/goals/presentation/goal_detail_page_v2.dart';
 import '../features/goals/presentation/goals_page.dart';
 import '../features/installment/presentation/installment_page.dart';
 import '../features/notifications/presentation/notifications_page.dart';
@@ -49,7 +49,7 @@ final appRouter = GoRouter(
         StatefulShellBranch(routes: [GoRoute(path: '/goals', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const GoalsPage()))]),
       ],
     ),
-    GoRoute(path: '/goals/:goalId', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: GoalDetailPage(goalId: state.pathParameters['goalId']!))),
+    GoRoute(path: '/goals/:goalId', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: GoalDetailPageV2(goalId: state.pathParameters['goalId']!))),
     GoRoute(path: '/wallet/:walletId', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: WalletDetailPage(walletId: state.pathParameters['walletId']!))),
     GoRoute(path: '/financial-overview', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const FinancialOverviewRealtimePage())),
     GoRoute(path: '/profile', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const ProfilePage())),
