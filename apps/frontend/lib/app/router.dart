@@ -1,11 +1,16 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../core/supabase/supabase_client.dart';
 import '../core/supabase/supabase_config.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_gradients.dart';
+import '../core/theme/app_radius.dart';
+import '../core/theme/app_shadows.dart';
+import '../core/theme/app_spacing.dart';
+import '../core/theme/app_typography.dart';
 import '../features/ai/presentation/ai_page_v2.dart';
 import '../features/auth/presentation/auth_page.dart';
 import '../features/budget/presentation/budget_page.dart';
@@ -62,28 +67,66 @@ final appRouter = GoRouter(
     GoRoute(path: '/reports', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const ReportPage())),
     GoRoute(path: '/notifications', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const NotificationsPage())),
   ],
-  errorBuilder: (context, state) => Scaffold(body: Center(child: Text('404\n${state.uri}', textAlign: TextAlign.center))),
+  errorBuilder: (context, state) => _NexoraErrorPage(uri: state.uri.toString()),
 );
 
 class _AuthRouterRefresh extends ChangeNotifier {
   StreamSubscription<AuthState>? _subscription;
   _AuthRouterRefresh() {
     if (!SupabaseConfig.isConfigured) return;
-    _subscription = NexoraSupabase.client.auth.onAuthStateChange.listen((_) => notifyListeners(), onError: (Object error, StackTrace stack) => debugPrint('Supabase auth state error: $error'));
+    _subscription = NexoraSupabase.client.auth.onAuthStateChange.listen(
+      (_) => notifyListeners(),
+      onError: (Object error, StackTrace stack) => debugPrint('Supabase auth state error: $error'),
+    );
   }
   @override
   void dispose() { _subscription?.cancel(); super.dispose(); }
+}
+
+class _NexoraErrorPage extends StatelessWidget {
+  const _NexoraErrorPage({required this.uri});
+  final String uri;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: AppSpacing.screen,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(width: 88, height: 88, decoration: BoxDecoration(shape: BoxShape.circle, gradient: AppGradients.aiAurora, boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .28), blurRadius: 30)]), child: const Icon(LucideIcons.sparkles, color: Colors.white, size: 38)),
+                  const SizedBox(height: 24),
+                  Text('Something went off track', textAlign: TextAlign.center, style: AppTypography.heading1.copyWith(fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 10),
+                  Text('Nexora tidak menemukan halaman yang kamu cari. Kita bisa kembali ke pusat finansialmu.', textAlign: TextAlign.center, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, height: 1.5)),
+                  const SizedBox(height: 20),
+                  Container(width: double.infinity, padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: AppColors.card.withValues(alpha: .72), borderRadius: AppRadius.radiusLG, border: Border.all(color: AppColors.border.withValues(alpha: .55)), boxShadow: AppShadows.card), child: Text(uri, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: AppTypography.caption.copyWith(color: AppColors.textMuted))),
+                  const SizedBox(height: 24),
+                  SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => context.go('/'), icon: const Icon(LucideIcons.house), label: const Text('Kembali ke Home'), style: FilledButton.styleFrom(padding: const EdgeInsets.all(17), shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXL)))),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 CustomTransitionPage<void> _buildTransitionPage({required GoRouterState state, required Widget child}) {
   return CustomTransitionPage<void>(
     key: state.pageKey,
     child: child,
-    transitionDuration: const Duration(milliseconds: 360),
-    reverseTransitionDuration: const Duration(milliseconds: 260),
+    transitionDuration: const Duration(milliseconds: 320),
+    reverseTransitionDuration: const Duration(milliseconds: 220),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
-      return FadeTransition(opacity: curved, child: SlideTransition(position: Tween<Offset>(begin: const Offset(0.04, .03), end: Offset.zero).animate(curved), child: child));
+      return FadeTransition(opacity: curved, child: SlideTransition(position: Tween<Offset>(begin: const Offset(0.025, .015), end: Offset.zero).animate(curved), child: child));
     },
   );
 }
