@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feat/financial-engine-v1
+      - redesign/nexora-visual-overhaul
 
   pull_request:
     branches:

@@ -25,32 +25,22 @@ class _ProfilePageState extends State<ProfilePage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Logout?'),
-        content: const Text('Sesi Nexora di perangkat ini akan diakhiri.'),
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXL),
+        title: const Text('Keluar dari Nexora?'),
+        content: const Text('Sesi di perangkat ini akan diakhiri.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Logout'),
-          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Batal')),
+          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Logout')),
         ],
       ),
     );
-
     if (confirmed != true || !mounted) return;
     setState(() => _loggingOut = true);
-
     try {
       await _authRepository.logout();
     } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logout gagal: $error')),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Logout gagal: $error')));
     } finally {
       if (mounted) setState(() => _loggingOut = false);
     }
@@ -61,17 +51,11 @@ class _ProfilePageState extends State<ProfilePage> {
     final user = _authRepository.currentUser;
     final displayName = user?.userMetadata?['name']?.toString();
     final email = user?.email ?? 'Akun Nexora';
-    final title = displayName?.trim().isNotEmpty == true
-        ? displayName!
-        : 'Nexora User';
+    final title = displayName?.trim().isNotEmpty == true ? displayName! : 'Nexora User';
 
     final items = const [
       (LucideIcons.userRound, 'Account', 'Personal information'),
-      (
-        LucideIcons.slidersHorizontal,
-        'Preferences',
-        'Theme, currency, language',
-      ),
+      (LucideIcons.slidersHorizontal, 'Preferences', 'Theme, currency, language'),
       (LucideIcons.cloudUpload, 'Backup', 'Sync and restore data'),
       (LucideIcons.download, 'Export Data', 'CSV and report export'),
       (LucideIcons.chartPie, 'Reports', 'Income, expense, and cashflow'),
@@ -82,84 +66,66 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return PremiumScaffold(
       child: ListView(
-        padding: AppSpacing.screen.copyWith(
-          bottom: AppSpacing.bottomNav(context),
-        ),
+        padding: AppSpacing.screen.copyWith(bottom: AppSpacing.bottomNav(context)),
         children: [
-          Text('Profile', style: AppTypography.heading1),
-          AppSpacing.gapLG,
+          Row(
+            children: [
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Profile', style: AppTypography.heading1.copyWith(fontSize: 30, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 5),
+                Text('Atur pengalaman Nexora sesuai caramu.', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+              ])),
+              Container(width: 40, height: 40, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.surface.withValues(alpha: .8), border: Border.all(color: AppColors.border.withValues(alpha: .55))), child: const Icon(LucideIcons.settings2, size: 19)),
+            ],
+          ),
+          const SizedBox(height: 22),
           Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.card,
+              gradient: AppGradients.primary,
               borderRadius: AppRadius.radiusXXL,
               boxShadow: AppShadows.card,
             ),
-            child: Row(
+            child: Stack(
               children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    gradient: AppGradients.primary,
-                    borderRadius: AppRadius.radiusXXL,
-                  ),
-                  child: const Icon(
-                    LucideIcons.userRound,
-                    color: Colors.white,
-                    size: 34,
-                  ),
-                ),
-                AppSpacing.hGapMD,
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: AppTypography.heading3),
-                      Text(email, style: AppTypography.bodySmall),
-                      AppSpacing.gapXS,
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: AppGradients.primary,
-                          borderRadius: AppRadius.radiusLG,
-                        ),
-                        child: const Text(
-                          'Premium',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                Positioned(right: -35, top: -55, child: Container(width: 150, height: 150, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: .07)))),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Container(width: 64, height: 64, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .13), shape: BoxShape.circle, border: Border.all(color: Colors.white.withValues(alpha: .2))), child: const Icon(LucideIcons.userRound, color: Colors.white, size: 30)),
+                    const SizedBox(width: 14),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.heading3.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 3),
+                      Text(email, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: .78))),
+                    ])),
+                  ]),
+                  const SizedBox(height: 18),
+                  Row(children: [
+                    _StatusPill(icon: LucideIcons.sparkles, label: 'Nexora Premium'),
+                    const SizedBox(width: 8),
+                    _StatusPill(icon: LucideIcons.shieldCheck, label: 'Protected'),
+                  ]),
+                ]),
               ],
             ),
           ),
-          AppSpacing.gapLG,
-          for (final item in items)
-            _SettingTile(icon: item.$1, title: item.$2, subtitle: item.$3),
-          AppSpacing.gapMD,
+          const SizedBox(height: 22),
+          Row(children: [
+            Expanded(child: _ProfileMetric(icon: LucideIcons.brainCircuit, value: 'AI', label: 'Intelligence')),
+            const SizedBox(width: 10),
+            Expanded(child: _ProfileMetric(icon: LucideIcons.shieldCheck, value: 'RLS', label: 'Security')),
+            const SizedBox(width: 10),
+            Expanded(child: _ProfileMetric(icon: LucideIcons.cloud, value: 'Sync', label: 'Cloud')),
+          ]),
+          const SizedBox(height: 24),
+          Text('Personalize', style: AppTypography.heading3.copyWith(fontSize: 18, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 10),
+          for (final item in items) _SettingTile(icon: item.$1, title: item.$2, subtitle: item.$3),
+          const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: _loggingOut ? null : _logout,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.danger,
-              side: const BorderSide(color: AppColors.danger),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXL),
-            ),
-            icon: _loggingOut
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(LucideIcons.logOut),
+            style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger, side: BorderSide(color: AppColors.danger.withValues(alpha: .55)), backgroundColor: AppColors.danger.withValues(alpha: .04), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXL)),
+            icon: _loggingOut ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(LucideIcons.logOut),
             label: Text(_loggingOut ? 'Logging out...' : 'Logout'),
           ),
         ],
@@ -168,48 +134,28 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+  @override
+  Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7), decoration: BoxDecoration(color: Colors.white.withValues(alpha: .11), borderRadius: BorderRadius.circular(999), border: Border.all(color: Colors.white.withValues(alpha: .14))), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 13, color: Colors.white), const SizedBox(width: 6), Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white))]));
+}
+
+class _ProfileMetric extends StatelessWidget {
+  const _ProfileMetric({required this.icon, required this.value, required this.label});
+  final IconData icon;
+  final String value;
+  final String label;
+  @override
+  Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(vertical: 14), decoration: BoxDecoration(color: AppColors.card.withValues(alpha: .8), borderRadius: AppRadius.radiusXL, border: Border.all(color: AppColors.border.withValues(alpha: .45))), child: Column(children: [Icon(icon, size: 18, color: AppColors.primaryLight), const SizedBox(height: 7), Text(value, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w900)), const SizedBox(height: 2), Text(label, style: AppTypography.overline)]));
+}
+
 class _SettingTile extends StatelessWidget {
-  const _SettingTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
+  const _SettingTile({required this.icon, required this.title, required this.subtitle});
   final IconData icon;
   final String title;
   final String subtitle;
-
   @override
-  Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: AppRadius.radiusXL,
-          border: Border.all(color: AppColors.border.withValues(alpha: .45)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: .14),
-                borderRadius: AppRadius.radiusLG,
-              ),
-              child: Icon(icon, color: AppColors.primaryLight, size: 21),
-            ),
-            AppSpacing.hGapMD,
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: AppTypography.labelLarge),
-                  Text(subtitle, style: AppTypography.caption),
-                ],
-              ),
-            ),
-            const Icon(LucideIcons.chevronRight, color: AppColors.textMuted),
-          ],
-        ),
-      );
+  Widget build(BuildContext context) => Container(margin: const EdgeInsets.only(bottom: 10), padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: AppColors.card.withValues(alpha: .72), borderRadius: AppRadius.radiusXL, border: Border.all(color: AppColors.border.withValues(alpha: .4))), child: Row(children: [Container(width: 43, height: 43, decoration: BoxDecoration(gradient: LinearGradient(colors: [AppColors.primary.withValues(alpha: .22), AppColors.primaryLight.withValues(alpha: .08)]), borderRadius: AppRadius.radiusLG), child: Icon(icon, color: AppColors.primaryLight, size: 20)), AppSpacing.hGapMD, Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)), const SizedBox(height: 2), Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption.copyWith(color: AppColors.textMuted))])), const Icon(LucideIcons.chevronRight, color: AppColors.textMuted, size: 19)]));
 }
