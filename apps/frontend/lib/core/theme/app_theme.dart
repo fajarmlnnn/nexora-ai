@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app_colors.dart';
-import 'app_gradients.dart';
 import 'app_radius.dart';
-import 'app_shadows.dart';
 import 'app_typography.dart';
 
 abstract final class AppTheme {
