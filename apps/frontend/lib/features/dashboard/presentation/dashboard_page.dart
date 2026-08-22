@@ -45,84 +45,90 @@ class DashboardPage extends ConsumerWidget {
     return PremiumScaffold(
       child: summaryAsync.when(
         loading: () => const _DashboardSkeleton(),
-        error: (error, stackTrace) => Padding(
-          padding: AppSpacing.screen,
-          child: _DashboardErrorState(
-            title: 'Dashboard belum dapat dimuat',
-            message: 'Terjadi kendala saat mengambil data keuanganmu.',
-            onRetry: () {
-              ref.invalidate(dashboardSummaryProvider);
-              ref.invalidate(recentTransactionsProvider);
-              ref.invalidate(budgetItemsProvider);
-            },
-          ),
+        error: (_, __) => _DashboardErrorState(
+          onRetry: () {
+            ref.invalidate(dashboardSummaryProvider);
+            ref.invalidate(recentTransactionsProvider);
+            ref.invalidate(budgetItemsProvider);
+          },
         ),
         data: (summary) => RefreshIndicator.adaptive(
           onRefresh: () => _refreshDashboard(ref),
           color: AppColors.primaryLight,
-          child: SingleChildScrollView(
+          backgroundColor: AppColors.card,
+          child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-            padding: AppSpacing.screen.copyWith(bottom: AppSpacing.bottomNav(context)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const PremiumEntrance(child: DashboardHeader()),
-                AppSpacing.gapMD,
-                PremiumEntrance(
-                  delay: const Duration(milliseconds: 50),
-                  child: BalanceCard(
-                    summary: summary,
-                    totalBalance: totalAssets,
-                    onTap: () => context.push('/financial-overview'),
-                  ),
-                ),
-                AppSpacing.gapMD,
-                _WalletStatusCard(
-                  walletCount: walletCount,
-                  totalAssets: totalAssets,
-                  onTap: () => context.go('/wallet'),
-                ),
-                AppSpacing.gapMD,
-                PremiumEntrance(
-                  delay: const Duration(milliseconds: 125),
-                  child: _CashflowSummaryCard(analytics: analytics),
-                ),
-                AppSpacing.gapMD,
-                PremiumEntrance(
-                  delay: const Duration(milliseconds: 150),
-                  child: AIInsightCard(insight: insight),
-                ),
-                AppSpacing.gapMD,
-                const PremiumEntrance(
-                  delay: Duration(milliseconds: 200),
-                  child: QuickActions(),
-                ),
-                AppSpacing.gapMD,
-                PremiumEntrance(
-                  delay: const Duration(milliseconds: 250),
-                  child: budgetAsync.when(
-                    loading: () => const ShimmerSkeleton(height: 180),
-                    error: (error, stackTrace) => _DashboardSectionError(
-                      title: 'Budget belum tersedia',
-                      onRetry: () => ref.invalidate(budgetItemsProvider),
+            slivers: [
+              SliverPadding(
+                padding: AppSpacing.screen.copyWith(bottom: AppSpacing.bottomNav(context)),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    const PremiumEntrance(child: DashboardHeader()),
+                    const SizedBox(height: 18),
+                    _SectionEyebrow(icon: LucideIcons.sparkles, label: 'FINANCIAL COMMAND CENTER'),
+                    const SizedBox(height: 8),
+                    PremiumEntrance(
+                      delay: const Duration(milliseconds: 40),
+                      child: BalanceCard(
+                        summary: summary,
+                        totalBalance: totalAssets,
+                        onTap: () => context.push('/financial-overview'),
+                      ),
                     ),
-                    data: (items) => BudgetSummaryCard(items: items),
-                  ),
-                ),
-                AppSpacing.gapMD,
-                PremiumEntrance(
-                  delay: const Duration(milliseconds: 300),
-                  child: transactionsAsync.when(
-                    loading: () => const ShimmerSkeleton(height: 205),
-                    error: (error, stackTrace) => _DashboardSectionError(
-                      title: 'Transaksi belum tersedia',
-                      onRetry: () => ref.invalidate(recentTransactionsProvider),
+                    const SizedBox(height: 12),
+                    PremiumEntrance(
+                      delay: const Duration(milliseconds: 80),
+                      child: _AssetStrip(walletCount: walletCount, totalAssets: totalAssets, onTap: () => context.go('/wallet')),
                     ),
-                    data: (transactions) => RecentTransactionCard(transactions: transactions),
-                  ),
+                    const SizedBox(height: 18),
+                    const _SectionEyebrow(icon: LucideIcons.activity, label: 'THIS MONTH'),
+                    const SizedBox(height: 8),
+                    PremiumEntrance(
+                      delay: const Duration(milliseconds: 120),
+                      child: _CashflowCard(analytics: analytics),
+                    ),
+                    const SizedBox(height: 18),
+                    PremiumEntrance(
+                      delay: const Duration(milliseconds: 160),
+                      child: AIInsightCard(insight: insight),
+                    ),
+                    const SizedBox(height: 18),
+                    const _SectionHeader(title: 'Quick actions', action: 'Fast & simple'),
+                    const SizedBox(height: 8),
+                    const PremiumEntrance(
+                      delay: Duration(milliseconds: 200),
+                      child: QuickActions(),
+                    ),
+                    const SizedBox(height: 18),
+                    const _SectionHeader(title: 'Budget', action: 'Your limits'),
+                    const SizedBox(height: 8),
+                    PremiumEntrance(
+                      delay: const Duration(milliseconds: 240),
+                      child: budgetAsync.when(
+                        loading: () => const ShimmerSkeleton(height: 180),
+                        error: (_, __) => _InlineError(onRetry: () => ref.invalidate(budgetItemsProvider)),
+                        data: (items) => BudgetSummaryCard(items: items),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    _SectionHeader(
+                      title: 'Recent transactions',
+                      action: 'View all',
+                      onTap: () => context.go('/transactions'),
+                    ),
+                    const SizedBox(height: 8),
+                    PremiumEntrance(
+                      delay: const Duration(milliseconds: 280),
+                      child: transactionsAsync.when(
+                        loading: () => const ShimmerSkeleton(height: 205),
+                        error: (_, __) => _InlineError(onRetry: () => ref.invalidate(recentTransactionsProvider)),
+                        data: (transactions) => RecentTransactionCard(transactions: transactions),
+                      ),
+                    ),
+                  ]),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -130,362 +136,191 @@ class DashboardPage extends ConsumerWidget {
   }
 }
 
-class _CashflowSummaryCard extends StatelessWidget {
-  const _CashflowSummaryCard({required this.analytics});
-
-  final FinancialAnalyticsSnapshot analytics;
-
-  @override
-  Widget build(BuildContext context) {
-    final net = analytics.netCashflow;
-    final isPositive = net >= 0;
-    final savingsRate = (analytics.savingsRate * 100).clamp(-999.0, 999.0);
-
-    return NCard(
-      showBorder: true,
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 13),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Cashflow bulan ini',
-                  style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-              Text(
-                '${analytics.transactionCount} transaksi',
-                style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _CashflowMetric(
-                  icon: LucideIcons.arrowDownToLine,
-                  label: 'Income',
-                  value: analytics.income,
-                  valueColor: AppColors.success,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _CashflowMetric(
-                  icon: LucideIcons.arrowUpFromLine,
-                  label: 'Expense',
-                  value: analytics.expense,
-                  valueColor: AppColors.danger,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: (isPositive ? AppColors.success : AppColors.danger).withValues(alpha: .08),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  isPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
-                  size: 17,
-                  color: isPositive ? AppColors.success : AppColors.danger,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Net cashflow',
-                    style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                  ),
-                ),
-                Text(
-                  rupiah(net),
-                  style: AppTypography.labelMedium.copyWith(
-                    color: isPositive ? AppColors.success : AppColors.danger,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(width: 7),
-                Text(
-                  '${savingsRate.toStringAsFixed(0)}%',
-                  style: AppTypography.caption.copyWith(
-                    color: isPositive ? AppColors.success : AppColors.danger,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CashflowMetric extends StatelessWidget {
-  const _CashflowMetric({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.valueColor,
-  });
-
+class _SectionEyebrow extends StatelessWidget {
+  const _SectionEyebrow({required this.icon, required this.label});
   final IconData icon;
   final String label;
-  final double value;
-  final Color valueColor;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(11),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
+  Widget build(BuildContext context) => Row(
         children: [
-          Icon(icon, size: 17, color: valueColor),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
-                const SizedBox(height: 2),
-                Text(
-                  rupiah(value),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.labelMedium.copyWith(
-                    color: valueColor,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          Icon(icon, size: 13, color: AppColors.primaryLight),
+          const SizedBox(width: 6),
+          Text(label, style: AppTypography.caption.copyWith(color: AppColors.textMuted, letterSpacing: 1.25, fontWeight: FontWeight.w800)),
         ],
-      ),
-    );
-  }
+      );
 }
 
-class _WalletStatusCard extends StatelessWidget {
-  const _WalletStatusCard({
-    required this.walletCount,
-    required this.totalAssets,
-    required this.onTap,
-  });
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, required this.action, this.onTap});
+  final String title;
+  final String action;
+  final VoidCallback? onTap;
 
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          Expanded(child: Text(title, style: AppTypography.heading4.copyWith(fontSize: 18, fontWeight: FontWeight.w800))),
+          if (onTap != null)
+            InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                child: Row(children: [Text(action, style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800)), const SizedBox(width: 3), const Icon(LucideIcons.chevronRight, size: 14, color: AppColors.primaryLight)]),
+              ),
+            )
+          else
+            Text(action, style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontWeight: FontWeight.w600)),
+        ],
+      );
+}
+
+class _AssetStrip extends StatelessWidget {
+  const _AssetStrip({required this.walletCount, required this.totalAssets, required this.onTap});
   final int walletCount;
   final double totalAssets;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final hasWallet = walletCount > 0;
-    return NCard(
-      showBorder: true,
-      padding: const EdgeInsets.fromLTRB(14, 13, 10, 13),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: (hasWallet ? AppColors.primaryLight : AppColors.warning).withValues(alpha: .10),
-              shape: BoxShape.circle,
+  Widget build(BuildContext context) => NCard(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+        showBorder: true,
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(shape: BoxShape.circle, gradient: const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFF22D3EE)]), boxShadow: [BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: .18), blurRadius: 16)]),
+              child: const Icon(LucideIcons.walletCards, color: Colors.white, size: 18),
             ),
-            child: Icon(
-              hasWallet ? LucideIcons.walletCards : LucideIcons.walletMinimal,
-              size: 19,
-              color: hasWallet ? AppColors.primaryLight : AppColors.warning,
-            ),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  hasWallet ? '$walletCount wallet aktif' : 'Belum ada wallet',
-                  style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800),
-                ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('$walletCount ${walletCount == 1 ? 'wallet' : 'wallets'} aktif', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 2),
-                Text(
-                  hasWallet
-                      ? 'Total aset ${rupiah(totalAssets)} • siap untuk transaksi.'
-                      : 'Buat wallet terlebih dahulu agar income dan expense bisa dicatat.',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary, height: 1.3),
-                ),
-              ],
+                Text('Total aset ${rupiah(totalAssets)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+              ]),
             ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            onPressed: onTap,
-            tooltip: 'Kelola wallet',
-            icon: const Icon(LucideIcons.chevronRight, size: 19),
-          ),
-        ],
-      ),
+            IconButton(onPressed: onTap, tooltip: 'Kelola wallet', icon: const Icon(LucideIcons.chevronRight, size: 18)),
+          ],
+        ),
+      );
+}
+
+class _CashflowCard extends StatelessWidget {
+  const _CashflowCard({required this.analytics});
+  final FinancialAnalyticsSnapshot analytics;
+
+  @override
+  Widget build(BuildContext context) {
+    final positive = analytics.netCashflow >= 0;
+    final accent = positive ? AppColors.success : AppColors.danger;
+    final rate = (analytics.savingsRate * 100).clamp(-999.0, 999.0);
+    return NCard(
+      padding: const EdgeInsets.all(14),
+      showBorder: true,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(child: Text('Cashflow overview', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800))),
+          _TinyPill(label: '${analytics.transactionCount} transaksi', color: AppColors.primaryLight),
+        ]),
+        const SizedBox(height: 13),
+        Row(children: [
+          Expanded(child: _Metric(icon: LucideIcons.arrowDownToLine, label: 'Income', value: analytics.income, color: AppColors.success)),
+          const SizedBox(width: 9),
+          Expanded(child: _Metric(icon: LucideIcons.arrowUpFromLine, label: 'Expense', value: analytics.expense, color: AppColors.danger)),
+        ]),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(color: accent.withValues(alpha: .07), borderRadius: BorderRadius.circular(14), border: Border.all(color: accent.withValues(alpha: .12))),
+          child: Row(children: [
+            Icon(positive ? LucideIcons.trendingUp : LucideIcons.trendingDown, size: 16, color: accent),
+            const SizedBox(width: 8),
+            Expanded(child: Text('Net cashflow', style: AppTypography.caption.copyWith(color: AppColors.textSecondary))),
+            Text(rupiah(analytics.netCashflow), style: AppTypography.labelMedium.copyWith(color: accent, fontWeight: FontWeight.w900)),
+            const SizedBox(width: 7),
+            Text('${rate.toStringAsFixed(0)}%', style: AppTypography.caption.copyWith(color: accent, fontWeight: FontWeight.w900)),
+          ]),
+        ),
+      ]),
     );
   }
+}
+
+class _Metric extends StatelessWidget {
+  const _Metric({required this.icon, required this.label, required this.value, required this.color});
+  final IconData icon;
+  final String label;
+  final double value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(11),
+        decoration: BoxDecoration(color: Colors.white.withValues(alpha: .025), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white.withValues(alpha: .045))),
+        child: Row(children: [
+          Container(width: 28, height: 28, decoration: BoxDecoration(color: color.withValues(alpha: .08), shape: BoxShape.circle), child: Icon(icon, size: 14, color: color)),
+          const SizedBox(width: 8),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+            const SizedBox(height: 2),
+            FittedBox(alignment: Alignment.centerLeft, fit: BoxFit.scaleDown, child: Text(rupiah(value), style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w900, color: Colors.white))),
+          ])),
+        ]),
+      );
+}
+
+class _TinyPill extends StatelessWidget {
+  const _TinyPill({required this.label, required this.color});
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5), decoration: BoxDecoration(color: color.withValues(alpha: .08), borderRadius: BorderRadius.circular(999), border: Border.all(color: color.withValues(alpha: .12))), child: Text(label, style: AppTypography.caption.copyWith(color: color, fontWeight: FontWeight.w700)));
+}
+
+class _InlineError extends StatelessWidget {
+  const _InlineError({required this.onRetry});
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => NCard(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13), child: Row(children: [const Icon(LucideIcons.triangleAlert, color: AppColors.warning, size: 18), const SizedBox(width: 9), Expanded(child: Text('Bagian ini belum dapat dimuat.', style: AppTypography.caption.copyWith(color: AppColors.textSecondary))), TextButton(onPressed: onRetry, child: const Text('Retry'))]));
 }
 
 class _DashboardErrorState extends StatelessWidget {
-  const _DashboardErrorState({
-    required this.title,
-    required this.message,
-    required this.onRetry,
-  });
-
-  final String title;
-  final String message;
+  const _DashboardErrorState({required this.onRetry});
   final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 48),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: AppColors.danger.withValues(alpha: .10),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                LucideIcons.triangleAlert,
-                color: AppColors.danger,
-                size: 24,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-                height: 1.35,
-              ),
-            ),
-            const SizedBox(height: 14),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(LucideIcons.refreshCw, size: 15),
-              label: const Text('Coba Lagi'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DashboardSectionError extends StatelessWidget {
-  const _DashboardSectionError({required this.title, required this.onRetry});
-
-  final String title;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: .055)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: AppColors.warning.withValues(alpha: .10),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              LucideIcons.triangleAlert,
-              color: AppColors.warning,
-              size: 16,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              title,
-              style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ),
-          TextButton(
-            onPressed: onRetry,
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(0, 0),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              'Coba Lagi',
-              style: AppTypography.caption.copyWith(
-                color: AppColors.primaryLight,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Center(child: Padding(padding: AppSpacing.screen, child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 64, height: 64, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.danger.withValues(alpha: .08)), child: const Icon(LucideIcons.triangleAlert, color: AppColors.danger, size: 28)),
+        const SizedBox(height: 14),
+        Text('Dashboard belum siap', style: AppTypography.heading4.copyWith(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 6),
+        Text('Ada kendala saat mengambil data keuanganmu. Coba muat ulang.', textAlign: TextAlign.center, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, height: 1.4)),
+        const SizedBox(height: 16),
+        FilledButton.icon(onPressed: onRetry, icon: const Icon(LucideIcons.refreshCw, size: 16), label: const Text('Coba Lagi')),
+      ])));
 }
 
 class _DashboardSkeleton extends StatelessWidget {
   const _DashboardSkeleton();
-
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: AppSpacing.screen.copyWith(bottom: AppSpacing.bottomNav(context)),
-        child: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            PremiumEntrance(child: ShimmerSkeleton(width: 150, height: 26)),
-            SizedBox(height: 18),
-            PremiumEntrance(delay: Duration(milliseconds: 50), child: ShimmerSkeleton(height: 270)),
-            SizedBox(height: 18),
-            PremiumEntrance(delay: Duration(milliseconds: 100), child: ShimmerSkeleton(height: 78)),
-            SizedBox(height: 18),
-            PremiumEntrance(delay: Duration(milliseconds: 125), child: ShimmerSkeleton(height: 175)),
-            SizedBox(height: 18),
-            PremiumEntrance(delay: Duration(milliseconds: 150), child: ShimmerSkeleton(height: 150)),
-            SizedBox(height: 18),
-            PremiumEntrance(delay: Duration(milliseconds: 200), child: ShimmerSkeleton(height: 110)),
-            SizedBox(height: 14),
-            PremiumEntrance(delay: Duration(milliseconds: 300), child: ShimmerSkeleton(height: 190)),
-          ],
-        ),
-      );
+  Widget build(BuildContext context) => SingleChildScrollView(padding: AppSpacing.screen.copyWith(bottom: AppSpacing.bottomNav(context)), child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        PremiumEntrance(child: ShimmerSkeleton(width: 160, height: 26)),
+        SizedBox(height: 18),
+        ShimmerSkeleton(height: 275),
+        SizedBox(height: 12),
+        ShimmerSkeleton(height: 66),
+        SizedBox(height: 18),
+        ShimmerSkeleton(height: 175),
+        SizedBox(height: 18),
+        ShimmerSkeleton(height: 150),
+        SizedBox(height: 18),
+        ShimmerSkeleton(height: 110),
+        SizedBox(height: 18),
+        ShimmerSkeleton(height: 190),
+      ]));
 }
