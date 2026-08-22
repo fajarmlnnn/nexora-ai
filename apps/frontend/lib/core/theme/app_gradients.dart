@@ -5,6 +5,46 @@ import 'app_colors.dart';
 abstract final class AppGradients {
   AppGradients._();
 
+  // Nexora 2.0 brand gradients.
+  static const LinearGradient aurora = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      AppColors.brandPrimaryBright,
+      AppColors.brandPrimary,
+      AppColors.brandPrimaryDeep,
+    ],
+    stops: [0.0, 0.48, 1.0],
+  );
+
+  static const LinearGradient auroraBlue = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [AppColors.brandCyan, AppColors.brandSecondary, AppColors.brandPrimary],
+    stops: [0.0, 0.45, 1.0],
+  );
+
+  static const LinearGradient cosmicBackground = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [AppColors.space950, AppColors.space900, Color(0xFF100A24)],
+    stops: [0.0, 0.58, 1.0],
+  );
+
+  static const LinearGradient glassSurface = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [AppColors.surfaceGlassStrong, AppColors.surfaceGlass],
+  );
+
+  static const LinearGradient aiAurora = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [AppColors.brandMagenta, AppColors.brandPrimary, AppColors.brandSecondary],
+    stops: [0.0, 0.52, 1.0],
+  );
+
+  // Legacy gradients kept for incremental migration.
   static const LinearGradient primary = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
