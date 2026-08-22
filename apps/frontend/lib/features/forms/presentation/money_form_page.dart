@@ -15,19 +15,16 @@ import '../../wallet/models/wallet_model.dart';
 
 class MoneyFormPage extends ConsumerStatefulWidget {
   const MoneyFormPage({super.key, required this.income, this.transaction});
-
   final bool income;
   final TransactionModel? transaction;
-
   bool get isEditing => transaction != null;
-
   @override
   ConsumerState<MoneyFormPage> createState() => _MoneyFormPageState();
 }
 
 class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
   late final TextEditingController _amountController;
-  final TextEditingController _titleController = TextEditingController();
+  final _titleController = TextEditingController();
   late TransactionCategory _category;
   String? _walletId;
   late DateTime _selectedDate;
@@ -36,71 +33,41 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
   @override
   void initState() {
     super.initState();
-    final transaction = widget.transaction;
-    _amountController = TextEditingController(
-      text: transaction == null ? '' : _formatAmount(transaction.amount),
-    );
-    _titleController.text = transaction?.title ??
-        (widget.income ? 'Pemasukan' : 'Pengeluaran');
-    _category = transaction?.category ??
-        (widget.income ? TransactionCategory.salary : TransactionCategory.food);
-    _walletId = transaction?.walletId;
-    _selectedDate = transaction?.date ?? DateTime.now();
+    final tx = widget.transaction;
+    _amountController = TextEditingController(text: tx == null ? '' : _formatAmount(tx.amount));
+    _titleController.text = tx?.title ?? (widget.income ? 'Pemasukan' : 'Pengeluaran');
+    _category = tx?.category ?? (widget.income ? TransactionCategory.salary : TransactionCategory.food);
+    _walletId = tx?.walletId;
+    _selectedDate = tx?.date ?? DateTime.now();
   }
 
-  String _formatAmount(double amount) {
-    if (amount == amount.roundToDouble()) return amount.toInt().toString();
-    return amount.toString();
-  }
+  String _formatAmount(double amount) => amount == amount.roundToDouble() ? amount.toInt().toString() : amount.toString();
 
   @override
-  void dispose() {
-    _amountController.dispose();
-    _titleController.dispose();
-    super.dispose();
-  }
+  void dispose() { _amountController.dispose(); _titleController.dispose(); super.dispose(); }
 
   Future<void> _save() async {
-    final amount = double.tryParse(
-      _amountController.text.replaceAll(RegExp(r'[^0-9.]'), ''),
-    );
-    if (amount == null || amount <= 0) {
-      _showError('Masukkan jumlah yang valid.');
-      return;
-    }
-
+    final amount = double.tryParse(_amountController.text.replaceAll(RegExp(r'[^0-9.]'), ''));
+    if (amount == null || amount <= 0) return _showError('Masukkan jumlah yang valid.');
     final wallets = ref.read(visibleWalletsProvider);
-    final selectedWalletId = _walletId ?? ref.read(primaryWalletProvider)?.id;
-    if (selectedWalletId == null || wallets.isEmpty) {
-      _showError('Pilih wallet terlebih dahulu.');
-      return;
-    }
-
+    final walletId = _walletId ?? ref.read(primaryWalletProvider)?.id;
+    if (walletId == null || wallets.isEmpty) return _showError('Pilih wallet terlebih dahulu.');
     setState(() => _saving = true);
     try {
       final previous = widget.transaction;
-      final transaction = TransactionModel(
+      final tx = TransactionModel(
         id: previous?.id ?? 'tx-${DateTime.now().microsecondsSinceEpoch}',
-        title: _titleController.text.trim().isEmpty
-            ? (widget.income ? 'Pemasukan' : 'Pengeluaran')
-            : _titleController.text.trim(),
+        title: _titleController.text.trim().isEmpty ? (widget.income ? 'Pemasukan' : 'Pengeluaran') : _titleController.text.trim(),
         amount: amount,
         type: widget.income ? TransactionType.income : TransactionType.expense,
         category: _category,
         date: DateUtils.dateOnly(_selectedDate),
-        walletId: selectedWalletId,
+        walletId: walletId,
         note: previous?.note,
       );
-
       final store = ref.read(financialTransactionStoreProvider.notifier);
-      if (previous == null) {
-        await store.add(transaction);
-      } else {
-        await store.replace(transaction);
-      }
-
-      if (!mounted) return;
-      Navigator.pop(context, transaction);
+      if (previous == null) { await store.add(tx); } else { await store.replace(tx); }
+      if (mounted) Navigator.pop(context, tx);
     } catch (error) {
       if (mounted) _showError('Gagal menyimpan transaksi: $error');
     } finally {
@@ -110,59 +77,26 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
 
   Future<void> _selectDate() async {
     final today = DateUtils.dateOnly(DateTime.now());
-    final firstDate = DateTime(2020, 1, 1);
-    final lastDate = DateTime(today.year + 10, 12, 31);
-    final current = DateUtils.dateOnly(_selectedDate);
-    final initialDate = current.isBefore(firstDate)
-        ? firstDate
-        : current.isAfter(lastDate)
-            ? lastDate
-            : current;
-
     final picked = await showDatePicker(
       context: context,
-      initialDate: initialDate,
-      firstDate: firstDate,
-      lastDate: lastDate,
-      helpText: widget.income
-          ? 'Pilih tanggal pemasukan'
-          : 'Pilih tanggal pengeluaran',
-      cancelText: 'Batal',
-      confirmText: 'Pilih',
-      barrierDismissible: true,
-      barrierColor: Colors.black54,
-      useRootNavigator: true,
-      builder: (dialogContext, child) {
-        if (child == null) return const SizedBox.shrink();
-        final baseTheme = Theme.of(dialogContext);
-        final scheme = baseTheme.colorScheme;
-        return Theme(
-          data: baseTheme.copyWith(
-            brightness: Brightness.dark,
-            colorScheme: scheme.copyWith(
-              brightness: Brightness.dark,
-              primary: AppColors.primaryLight,
-              onPrimary: Colors.white,
-              surface: AppColors.card,
-              onSurface: Colors.white,
-            ),
-            dialogTheme: baseTheme.dialogTheme.copyWith(
-              backgroundColor: AppColors.card,
-              surfaceTintColor: Colors.transparent,
-            ),
-          ),
-          child: child,
-        );
-      },
+      initialDate: DateUtils.dateOnly(_selectedDate),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(today.year + 10, 12, 31),
+      helpText: widget.income ? 'Pilih tanggal pemasukan' : 'Pilih tanggal pengeluaran',
+      cancelText: 'Batal', confirmText: 'Pilih',
+      builder: (dialogContext, child) => Theme(
+        data: Theme.of(dialogContext).copyWith(
+          brightness: Brightness.dark,
+          colorScheme: Theme.of(dialogContext).colorScheme.copyWith(primary: AppColors.primaryLight, surface: AppColors.card),
+          dialogTheme: const DialogThemeData(backgroundColor: AppColors.card, surfaceTintColor: Colors.transparent),
+        ),
+        child: child!,
+      ),
     );
-
-    if (!mounted || picked == null) return;
-    setState(() => _selectedDate = DateUtils.dateOnly(picked));
+    if (mounted && picked != null) setState(() => _selectedDate = DateUtils.dateOnly(picked));
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-  }
+  void _showError(String message) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 
   @override
   Widget build(BuildContext context) {
@@ -170,97 +104,34 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
     final walletsAsync = ref.watch(walletProvider);
     final wallets = ref.watch(visibleWalletsProvider);
     final selectedWallet = _selectedWallet(wallets);
-
+    final title = widget.isEditing ? (widget.income ? 'Edit Pemasukan' : 'Edit Pengeluaran') : (widget.income ? 'Tambah Pemasukan' : 'Tambah Pengeluaran');
     return PremiumScaffold(
       bottomPadding: false,
       child: ListView(
         padding: AppSpacing.screen,
         children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: BackButton(
-              color: Colors.white,
-              onPressed: () => Navigator.pop(context),
-            ),
+          Row(children: [IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(LucideIcons.arrowLeft)), const SizedBox(width: 4), Expanded(child: Text(title, style: AppTypography.heading2)), const _SecureBadge()]),
+          const SizedBox(height: 18),
+          PremiumCard(
+            borderRadius: AppRadius.radiusXXL,
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+            gradient: LinearGradient(colors: [accent.withValues(alpha: .20), AppColors.card.withValues(alpha: .88)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [Container(width: 44, height: 44, decoration: BoxDecoration(shape: BoxShape.circle, color: accent.withValues(alpha: .16)), child: Icon(widget.income ? LucideIcons.arrowUpRight : LucideIcons.arrowDownRight, color: accent)), const SizedBox(width: 12), Expanded(child: Text(widget.income ? 'Money in' : 'Money out', style: AppTypography.labelLarge))]),
+              const SizedBox(height: 18),
+              TextField(controller: _amountController, autofocus: !widget.isEditing, keyboardType: const TextInputType.numberWithOptions(decimal: true), style: AppTypography.display.copyWith(fontSize: 34, fontWeight: FontWeight.w800), decoration: const InputDecoration(prefixText: 'Rp ', hintText: '0', border: InputBorder.none, isDense: true)),
+              Text(widget.income ? 'Catat pemasukan secara konsisten.' : 'Pantau pengeluaran sebelum budget bocor.', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+            ]),
           ),
-          Icon(
-            widget.income
-                ? LucideIcons.arrowUpCircle
-                : LucideIcons.arrowDownCircle,
-            color: accent,
-            size: 92,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            widget.isEditing
-                ? (widget.income ? 'Edit Pemasukan' : 'Edit Pengeluaran')
-                : (widget.income ? 'Tambah Pemasukan' : 'Tambah Pengeluaran'),
-            textAlign: TextAlign.center,
-            style: AppTypography.heading1,
-          ),
-          Text(
-            widget.isEditing
-                ? 'Perbarui transaksi. Saldo dan ringkasan akan dihitung ulang.'
-                : widget.income
-                    ? 'Catat pemasukan agar cashflow selalu akurat.'
-                    : 'Catat pengeluaran sebelum budget bocor.',
-            textAlign: TextAlign.center,
-            style: AppTypography.bodySmall,
-          ),
-          AppSpacing.gapLG,
-          _InputCard(
-            label: 'Jumlah',
-            controller: _amountController,
-            hint: 'Contoh: 150000',
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            autofocus: !widget.isEditing,
-          ),
-          _InputCard(
-            label: 'Nama transaksi',
-            controller: _titleController,
-            hint: 'Contoh: Gaji / Makan siang',
-          ),
-          _SelectionCard(
-            label: 'Kategori',
-            value: _categoryLabel(_category),
-            onTap: _selectCategory,
-          ),
-          _SelectionCard(
-            label: 'Wallet',
-            value: walletsAsync.isLoading
-                ? 'Memuat wallet...'
-                : selectedWallet?.name ?? 'Pilih wallet',
-            onTap: wallets.isEmpty ? null : _selectWallet,
-          ),
-          _SelectionCard(
-            label: 'Tanggal',
-            value: DateFormat('dd MMM yyyy', 'id_ID').format(_selectedDate),
-            onTap: _selectDate,
-          ),
-          AppSpacing.gapMD,
-          FilledButton.icon(
-            onPressed: _saving ? null : _save,
-            icon: _saving
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(LucideIcons.save),
-            label: Text(
-              _saving
-                  ? 'Menyimpan...'
-                  : widget.isEditing
-                      ? 'Simpan Perubahan'
-                      : widget.income
-                          ? 'Simpan Pemasukan'
-                          : 'Simpan Pengeluaran',
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: accent,
-              padding: const EdgeInsets.all(18),
-              shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXL),
-            ),
-          ),
+          const SizedBox(height: 18),
+          _InputCard(label: 'Nama transaksi', controller: _titleController, hint: widget.income ? 'Contoh: Gaji' : 'Contoh: Makan siang'),
+          _SelectionCard(label: 'Kategori', value: _categoryLabel(_category), onTap: _selectCategory),
+          _SelectionCard(label: 'Wallet', value: walletsAsync.isLoading ? 'Memuat wallet...' : selectedWallet?.name ?? 'Pilih wallet', onTap: wallets.isEmpty ? null : _selectWallet),
+          _SelectionCard(label: 'Tanggal', value: DateFormat('dd MMM yyyy', 'id_ID').format(_selectedDate), onTap: _selectDate),
+          const SizedBox(height: 8),
+          FilledButton.icon(onPressed: _saving ? null : _save, icon: _saving ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(LucideIcons.check), label: Text(_saving ? 'Menyimpan...' : widget.isEditing ? 'Simpan Perubahan' : 'Simpan Transaksi'), style: FilledButton.styleFrom(backgroundColor: accent, padding: const EdgeInsets.all(18), shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXL))),
+          const SizedBox(height: 12),
+          Text('Transaksi akan memperbarui saldo dan ringkasan keuangan secara otomatis.', textAlign: TextAlign.center, style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
         ],
       ),
     );
@@ -268,157 +139,42 @@ class _MoneyFormPageState extends ConsumerState<MoneyFormPage> {
 
   WalletModel? _selectedWallet(List<WalletModel> wallets) {
     final id = _walletId ?? ref.read(primaryWalletProvider)?.id;
-    if (id == null) return null;
-    for (final wallet in wallets) {
-      if (wallet.id == id) return wallet;
-    }
+    for (final wallet in wallets) { if (wallet.id == id) return wallet; }
     return null;
   }
 
   Future<void> _selectWallet() async {
     final wallets = ref.read(visibleWalletsProvider);
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: AppColors.card,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.only(bottom: 16),
-          children: [
-            for (final wallet in wallets)
-              ListTile(
-                leading: Icon(wallet.icon, color: wallet.color),
-                title: Text(wallet.name),
-                subtitle: Text(wallet.maskedAccount),
-                trailing: wallet.id == (_walletId ?? ref.read(primaryWalletProvider)?.id)
-                    ? const Icon(LucideIcons.check, color: AppColors.primaryLight)
-                    : null,
-                onTap: () => Navigator.pop(context, wallet.id),
-              ),
-          ],
-        ),
-      ),
-    );
+    final selected = await showModalBottomSheet<String>(context: context, backgroundColor: AppColors.card, showDragHandle: true, builder: (context) => SafeArea(child: ListView(shrinkWrap: true, children: [for (final wallet in wallets) ListTile(leading: Icon(wallet.icon, color: wallet.color), title: Text(wallet.name), subtitle: Text(wallet.maskedAccount), trailing: wallet.id == (_walletId ?? ref.read(primaryWalletProvider)?.id) ? const Icon(LucideIcons.check, color: AppColors.primaryLight) : null, onTap: () => Navigator.pop(context, wallet.id))])));
     if (selected != null) setState(() => _walletId = selected);
   }
 
   Future<void> _selectCategory() async {
-    final selected = await showModalBottomSheet<TransactionCategory>(
-      context: context,
-      backgroundColor: AppColors.card,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.only(bottom: 16),
-          children: [
-            for (final category in TransactionCategory.values)
-              ListTile(
-                title: Text(_categoryLabel(category)),
-                trailing: category == _category
-                    ? const Icon(LucideIcons.check, color: AppColors.primaryLight)
-                    : null,
-                onTap: () => Navigator.pop(context, category),
-              ),
-          ],
-        ),
-      ),
-    );
+    final selected = await showModalBottomSheet<TransactionCategory>(context: context, backgroundColor: AppColors.card, showDragHandle: true, builder: (context) => SafeArea(child: ListView(shrinkWrap: true, children: [for (final category in TransactionCategory.values) ListTile(title: Text(_categoryLabel(category)), trailing: category == _category ? const Icon(LucideIcons.check, color: AppColors.primaryLight) : null, onTap: () => Navigator.pop(context, category))])));
     if (selected != null) setState(() => _category = selected);
   }
 
-  String _categoryLabel(TransactionCategory category) {
-    return switch (category) {
-      TransactionCategory.food => 'Makan & Minum',
-      TransactionCategory.transport => 'Transportasi',
-      TransactionCategory.shopping => 'Belanja',
-      TransactionCategory.salary => 'Gaji',
-      TransactionCategory.investment => 'Investasi',
-      TransactionCategory.bills => 'Tagihan',
-      TransactionCategory.entertainment => 'Hiburan',
-      TransactionCategory.health => 'Kesehatan',
-      TransactionCategory.education => 'Pendidikan',
-      TransactionCategory.other => 'Lainnya',
-    };
-  }
+  String _categoryLabel(TransactionCategory category) => switch (category) {
+    TransactionCategory.food => 'Makan & Minum', TransactionCategory.transport => 'Transportasi', TransactionCategory.shopping => 'Belanja', TransactionCategory.salary => 'Gaji', TransactionCategory.investment => 'Investasi', TransactionCategory.bills => 'Tagihan', TransactionCategory.entertainment => 'Hiburan', TransactionCategory.health => 'Kesehatan', TransactionCategory.education => 'Pendidikan', TransactionCategory.other => 'Lainnya',
+  };
+}
+
+class _SecureBadge extends StatelessWidget {
+  const _SecureBadge();
+  @override
+  Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6), decoration: BoxDecoration(color: AppColors.success.withValues(alpha: .10), borderRadius: BorderRadius.circular(999), border: Border.all(color: AppColors.success.withValues(alpha: .22))), child: const Row(mainAxisSize: MainAxisSize.min, children: [Icon(LucideIcons.shieldCheck, size: 13, color: AppColors.success), SizedBox(width: 5), Text('Secure', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700))]));
 }
 
 class _InputCard extends StatelessWidget {
-  const _InputCard({
-    required this.label,
-    required this.controller,
-    required this.hint,
-    this.keyboardType,
-    this.autofocus = false,
-  });
-
-  final String label;
-  final TextEditingController controller;
-  final String hint;
-  final TextInputType? keyboardType;
-  final bool autofocus;
-
+  const _InputCard({required this.label, required this.controller, required this.hint});
+  final String label; final TextEditingController controller; final String hint;
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: PremiumCard(
-        borderRadius: AppRadius.radiusXL,
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-        child: TextField(
-          controller: controller,
-          autofocus: autofocus,
-          keyboardType: keyboardType,
-          style: AppTypography.labelLarge,
-          decoration: InputDecoration(
-            labelText: label,
-            hintText: hint,
-            border: InputBorder.none,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Padding(padding: const EdgeInsets.only(bottom: 14), child: PremiumCard(borderRadius: AppRadius.radiusXL, padding: const EdgeInsets.fromLTRB(16, 10, 16, 4), child: TextField(controller: controller, style: AppTypography.labelLarge, decoration: InputDecoration(labelText: label, hintText: hint, border: InputBorder.none))));
 }
 
 class _SelectionCard extends StatelessWidget {
   const _SelectionCard({required this.label, required this.value, this.onTap});
-
-  final String label;
-  final String value;
-  final VoidCallback? onTap;
-
+  final String label; final String value; final VoidCallback? onTap;
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: AppRadius.radiusXL,
-          onTap: onTap,
-          child: PremiumCard(
-            borderRadius: AppRadius.radiusXL,
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(label, style: AppTypography.caption),
-                      const SizedBox(height: 4),
-                      Text(value, style: AppTypography.labelLarge),
-                    ],
-                  ),
-                ),
-                const Icon(LucideIcons.chevronDown, color: AppColors.textMuted),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Padding(padding: const EdgeInsets.only(bottom: 14), child: Material(color: Colors.transparent, child: InkWell(borderRadius: AppRadius.radiusXL, onTap: onTap, child: PremiumCard(borderRadius: AppRadius.radiusXL, padding: const EdgeInsets.all(16), child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: AppTypography.caption), const SizedBox(height: 4), Text(value, style: AppTypography.labelLarge)])), const Icon(LucideIcons.chevronDown, color: AppColors.textMuted)])))));
 }
