@@ -20,7 +20,7 @@ import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/onboarding/presentation/splash_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/report/presentation/report_page.dart';
-import '../features/transaction/presentation/transaction_page.dart';
+import '../features/transaction/presentation/transaction_page_v2.dart';
 import '../features/transfer/presentation/transfer_page.dart';
 import '../features/wallet/presentation/wallet_detail_page.dart';
 import '../features/wallet/presentation/wallet_page.dart';
@@ -44,7 +44,7 @@ final appRouter = GoRouter(
       builder: (context, state, navigationShell) => AppShell(navigationShell: navigationShell),
       branches: [
         StatefulShellBranch(routes: [GoRoute(path: '/', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const DashboardPage()))]),
-        StatefulShellBranch(routes: [GoRoute(path: '/transactions', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const TransactionPage()))]),
+        StatefulShellBranch(routes: [GoRoute(path: '/transactions', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const TransactionPageV2()))]),
         StatefulShellBranch(routes: [GoRoute(path: '/wallet', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const WalletPage()))]),
         StatefulShellBranch(routes: [GoRoute(path: '/goals', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const GoalsPage()))]),
       ],
