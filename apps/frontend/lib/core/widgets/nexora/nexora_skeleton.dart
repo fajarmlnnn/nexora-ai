@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 import '../../theme/app_motion.dart';
-import '../../theme/app_radius.dart';
 
 class NexoraSkeleton extends StatefulWidget {
   const NexoraSkeleton({super.key, this.width, this.height = 16, this.radius = 16, this.margin = EdgeInsets.zero});
@@ -17,7 +16,7 @@ class NexoraSkeleton extends StatefulWidget {
 }
 
 class _NexoraSkeletonState extends State<NexoraSkeleton> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat();
+  late final AnimationController _controller = AnimationController(vsync: this, duration: AppMotion.counter)..repeat();
 
   @override
   void dispose() {
@@ -58,8 +57,8 @@ class NexoraSkeletonRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: const [
+    return const Row(
+      children: [
         NexoraSkeleton(width: 40, height: 40, radius: 16),
         SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [NexoraSkeleton(width: 140, height: 14), SizedBox(height: 8), NexoraSkeleton(width: 90, height: 11)])),
