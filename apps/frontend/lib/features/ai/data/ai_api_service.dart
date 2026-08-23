@@ -37,7 +37,6 @@ class AiApiService {
 
   bool get isConfigured => _baseUrl.isNotEmpty;
 
-  /// Accept either the complete API root (`.../api/v1`) or the backend host.
   static String _normalizeBaseUrl(String raw) {
     final value = raw.trim().replaceFirst(RegExp(r'/+$'), '');
     if (value.isEmpty) return '';
@@ -132,7 +131,7 @@ class AiApiService {
     }
 
     try {
-      return await _send(session.accessToken, messages, analytics);
+      return await _send(session.accessToken, messages);
     } on ApiException catch (error) {
       if (error.statusCode != 401) rethrow;
 
@@ -146,32 +145,19 @@ class AiApiService {
         );
       }
 
-      return _send(session.accessToken, messages, analytics);
+      return _send(session.accessToken, messages);
     }
   }
 
   Future<String> _send(
     String accessToken,
     List<AiChatMessage> messages,
-    FinancialAnalyticsSnapshot analytics,
   ) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '$_baseUrl/ai/chat',
         data: {
           'messages': messages.map((message) => message.toJson()).toList(),
-          'financial_context': {
-            'income': analytics.income,
-            'expense': analytics.expense,
-            'net_cashflow': analytics.netCashflow,
-            'savings_rate': analytics.savingsRate,
-            if (analytics.topExpenseCategory != null)
-              'top_expense_category': analytics.topExpenseCategory!.key.name,
-            if (analytics.topExpenseCategory != null)
-              'top_expense_value': analytics.topExpenseCategory!.value,
-            'period_start': analytics.start.toIso8601String().split('T').first,
-            'period_end': analytics.endInclusive.toIso8601String().split('T').first,
-          },
         },
         options: Options(
           headers: {'Authorization': 'Bearer $accessToken'},
