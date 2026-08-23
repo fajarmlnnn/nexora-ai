@@ -48,7 +48,6 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
 flutter:
-
   uses-material-design: true
 
   assets:
@@ -60,16 +59,25 @@ flutter:
     - assets/mascot/
 
   fonts:
+    - family: Plus Jakarta Sans
+      fonts:
+        - asset: assets/fonts/Plus Jakarta Sans/PlusJakartaSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Plus Jakarta Sans/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Plus Jakarta Sans/PlusJakartaSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Plus Jakarta Sans/PlusJakartaSans-Bold.ttf
+          weight: 700
+
+    # Legacy font retained only for screens not yet migrated.
     - family: Poppins
       fonts:
         - asset: assets/fonts/poppins/Poppins-Regular.ttf
           weight: 400
-
         - asset: assets/fonts/poppins/Poppins-Medium.ttf
           weight: 500
-
         - asset: assets/fonts/poppins/Poppins-SemiBold.ttf
           weight: 600
-
         - asset: assets/fonts/poppins/Poppins-Bold.ttf
           weight: 700
