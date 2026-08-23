@@ -17,12 +17,8 @@ class TransactionApiTest extends TestCase
         Sanctum::actingAs($user);
 
         $this->getJson('/api/v1/transactions')->assertNotFound();
-        $this->postJson('/api/v1/transactions', [
-            'title' => 'Lunch',
-            'amount' => 10000,
-            'type' => 'expense',
-        ])->assertNotFound();
-        $this->putJson('/api/v1/transactions/1', ['title' => 'Lunch'])->assertNotFound();
+        $this->postJson('/api/v1/transactions')->assertNotFound();
+        $this->putJson('/api/v1/transactions/1')->assertNotFound();
         $this->deleteJson('/api/v1/transactions/1')->assertNotFound();
     }
 }
