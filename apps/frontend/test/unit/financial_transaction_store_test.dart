@@ -133,8 +133,8 @@ void main() {
       final store = FinancialTransactionStore(repository);
 
       for (final amount in [0.0, -1.0, double.infinity, double.nan]) {
-        expect(
-          () => store.add(_income(id: 'invalid-${repository.created.length}', amount: amount)),
+        await expectLater(
+          store.add(_income(id: 'invalid-${repository.created.length}', amount: amount)),
           throwsArgumentError,
         );
       }
@@ -176,14 +176,14 @@ void main() {
     });
 
     test('preserves known-good state when a refresh fails', () async {
-      final repository = _FailingRefreshRepository(
-        initial: _income(id: 'known-good', amount: 1_000),
-      );
+      final repository = _FailingRefreshRepository();
       final store = FinancialTransactionStore(repository);
+      final transaction = _income(id: 'known-good', amount: 1_000);
 
-      await store.add(repository.initial);
+      await store.add(transaction);
       expect(store.state, hasLength(1));
 
+      repository.failReads = true;
       await store.reload();
 
       expect(store.hasLoadError, isTrue);
@@ -194,9 +194,6 @@ void main() {
 }
 
 class _FailingRefreshRepository extends _FakeTransactionRepository {
-  _FailingRefreshRepository({required this.initial});
-
-  final TransactionModel initial;
   bool failReads = false;
 
   @override
@@ -221,18 +218,5 @@ class _FailingRefreshRepository extends _FakeTransactionRepository {
       limit: limit,
       offset: offset,
     );
-  }
-
-  @override
-  Future<TransactionModel> createTransaction(
-    TransactionModel transaction, {
-    String? idempotencyKey,
-  }) async {
-    final result = await super.createTransaction(
-      transaction,
-      idempotencyKey: idempotencyKey,
-    );
-    failReads = true;
-    return result;
   }
 }
