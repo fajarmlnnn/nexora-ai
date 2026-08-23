@@ -40,10 +40,10 @@ class NexoraSheet extends StatelessWidget {
       namesRoute: true,
       label: title,
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.canvasElevated,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border(top: BorderSide(color: AppColors.borderGlass)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: const Border(top: BorderSide(color: AppColors.borderGlass)),
           boxShadow: AppShadows.modal,
         ),
         child: SafeArea(
