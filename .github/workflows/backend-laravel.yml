@@ -11,6 +11,13 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   laravel:
     runs-on: ubuntu-latest
@@ -36,6 +43,7 @@ jobs:
         env:
           COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ github.token }}"}}'
         run: |
+          set -euo pipefail
           for attempt in 1 2 3 4; do
             echo "Composer install attempt ${attempt}/4"
             if composer install --no-interaction --prefer-dist --no-progress --no-scripts; then
@@ -50,11 +58,12 @@ jobs:
 
       - name: Prepare environment
         run: |
+          set -euo pipefail
           printf '%s\n' \
             'APP_NAME=Nexora' \
             'APP_ENV=testing' \
             'APP_KEY=' \
-            'APP_DEBUG=true' \
+            'APP_DEBUG=false' \
             'APP_URL=http://localhost' \
             'LOG_CHANNEL=stderr' \
             'DB_CONNECTION=sqlite' \
