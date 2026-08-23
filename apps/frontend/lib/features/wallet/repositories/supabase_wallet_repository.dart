@@ -53,9 +53,6 @@ class SupabaseWalletRepository implements WalletRepository {
 
   @override
   Future<WalletModel> createWallet(WalletModel wallet) async {
-    // Wallet IDs are UUIDs in Supabase. Older UI flows may provide a local
-    // timestamp-style ID, so let Postgres generate a UUID unless the supplied
-    // ID is already a valid UUID.
     final payload = <String, dynamic>{
       'user_id': _userId,
       'name': wallet.name.trim(),
@@ -125,8 +122,6 @@ class SupabaseWalletRepository implements WalletRepository {
       throw ArgumentError('ID wallet tidak valid untuk Supabase.');
     }
 
-    // Transactions deliberately use ON DELETE RESTRICT. Never silently erase
-    // financial history just because the user removes a wallet.
     final references = await _client
         .from('transactions')
         .select('id')
@@ -178,12 +173,19 @@ class SupabaseWalletRepository implements WalletRepository {
       case 'investment':
         return WalletType.investment;
       case 'cash':
-      default:
         return WalletType.cash;
+      default:
+        throw StateError('Tipe wallet tidak dikenali: $value');
     }
   }
 
-  double _number(dynamic value) => value is num ? value.toDouble() : 0;
+  double _number(dynamic value) {
+    final parsed = value is num ? value.toDouble() : double.tryParse(value?.toString() ?? '');
+    if (parsed == null || !parsed.isFinite || parsed < 0) {
+      throw StateError('Nilai saldo wallet tidak valid: $value');
+    }
+    return parsed;
+  }
 
   bool _isUuid(String value) {
     return RegExp(
