@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../theme/app_colors.dart';
+import '../../theme/app_motion.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_typography.dart';
 
@@ -46,7 +48,7 @@ class _NexoraCurrencyFieldState extends State<NexoraCurrencyField> {
     return Semantics(
       label: 'Jumlah, rupiah',
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+        duration: AppMotion.fast,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: color.withValues(alpha: .08),
@@ -73,9 +75,7 @@ class _NexoraCurrencyFieldState extends State<NexoraCurrencyField> {
                     style: AppTypography.heroAmount,
                     cursorColor: AppColors.brandPrimary,
                     decoration: const InputDecoration(border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero),
-                    inputFormatters: [
-                      _RupiahInputFormatter(),
-                    ],
+                    inputFormatters: const [_RupiahInputFormatter()],
                   ),
                 ),
               ],
@@ -92,7 +92,8 @@ class _NexoraCurrencyFieldState extends State<NexoraCurrencyField> {
 }
 
 class _RupiahInputFormatter extends TextInputFormatter {
-  final _formatter = NumberFormat.decimalPattern('id_ID');
+  const _RupiahInputFormatter();
+  static final _formatter = NumberFormat.decimalPattern('id_ID');
 
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
