@@ -18,7 +18,10 @@ Route::prefix('v1')->group(function (): void {
     });
 
     Route::prefix('auth')->group(function (): void {
-        Route::post('/register', [AuthController::class, 'register']);
+        // Registration creates a persistent user and token, so it must be
+        // throttled just like login to reduce automated account/token abuse.
+        Route::post('/register', [AuthController::class, 'register'])
+            ->middleware('throttle:5,1');
         Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
     });
 
