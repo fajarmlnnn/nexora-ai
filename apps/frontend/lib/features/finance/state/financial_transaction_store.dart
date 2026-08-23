@@ -68,11 +68,16 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
       all.addAll(batch);
 
       if (batch.length < _pageSize) {
-        break;
+        return List<TransactionModel>.unmodifiable(all);
       }
     }
 
-    return List<TransactionModel>.unmodifiable(all);
+    // Never silently present a partial financial history as complete.
+    // Until the store gains server-side aggregation/cursor pagination,
+    // reaching the safety cap is an explicit load failure.
+    throw StateError(
+      'Riwayat transaksi melebihi batas pemuatan lokal ($_maxPages halaman).',
+    );
   }
 
   Future<void> reload() => load();
