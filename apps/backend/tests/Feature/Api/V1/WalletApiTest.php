@@ -17,9 +17,9 @@ class WalletApiTest extends TestCase
         Sanctum::actingAs($user);
 
         $this->getJson('/api/v1/wallets')->assertNotFound();
-        $this->postJson('/api/v1/wallets', ['name' => 'Cash', 'type' => 'cash'])->assertNotFound();
+        $this->postJson('/api/v1/wallets')->assertNotFound();
         $this->getJson('/api/v1/wallets/1')->assertNotFound();
-        $this->patchJson('/api/v1/wallets/1', ['name' => 'Cash'])->assertNotFound();
+        $this->patchJson('/api/v1/wallets/1')->assertNotFound();
         $this->deleteJson('/api/v1/wallets/1')->assertNotFound();
     }
 }
