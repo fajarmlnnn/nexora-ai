@@ -1,39 +1,35 @@
 # Supabase Financial E2E
 
-The frontend contains a live integration test at:
+Financial E2E coverage is intentionally **not stored as a runnable fixture in this repository**.
 
-`apps/frontend/test/integration/supabase_financial_e2e_test.dart`
+Nexora must not commit synthetic wallets, transactions, balances, goals, or other financial records. A live financial E2E run belongs in an isolated Supabase test environment provisioned outside the repository.
 
-The test is skipped unless all four values are provided:
+## Required isolated environment
+
+Provide these values only at runtime through the test runner or CI secret store:
 
 - `NEXORA_SUPABASE_URL`
 - `NEXORA_SUPABASE_PUBLISHABLE_KEY`
 - `NEXORA_E2E_EMAIL`
 - `NEXORA_E2E_PASSWORD`
 
-Run it from `apps/frontend`:
+The account must belong to a dedicated non-production Supabase project. Never use a production account containing real financial data.
 
-```bash
-flutter test test/integration/supabase_financial_e2e_test.dart \
-  --dart-define=NEXORA_SUPABASE_URL=https://YOUR_PROJECT.supabase.co \
-  --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY \
-  --dart-define=NEXORA_E2E_EMAIL=YOUR_TEST_USER_EMAIL \
-  --dart-define=NEXORA_E2E_PASSWORD=YOUR_TEST_USER_PASSWORD
-```
+## Required verification scope
 
-Use a dedicated test account. Do not use a production account with real financial data.
+The external E2E harness must verify, against the real Supabase schema and policies:
 
-The flow verifies:
+1. authenticated current-user isolation;
+2. wallet balance cannot be written directly by the client;
+3. income, expense, and transfer balance invariants;
+4. minimum-balance enforcement;
+5. update/delete balance reversal correctness;
+6. transfer atomicity and deterministic wallet locking;
+7. idempotency under retry and concurrent requests;
+8. RLS ownership boundaries;
+9. goal contribution ledger linkage and rollback, when that ledger is enabled;
+10. wallet/transaction reconciliation after every mutation.
 
-1. authenticated access;
-2. wallet creation starts at zero even when the client model contains a fake balance;
-3. income increases the wallet balance;
-4. expense decreases it;
-5. transfer atomically moves funds between wallets;
-6. deleting a transaction restores its previous balance effect;
-7. updating a transfer reverses the old effect before applying the new amount;
-8. idempotent retry does not double-apply the income;
-9. cleanup removes the test transactions and wallets;
-10. the test signs out at the end.
+Tests must create only ephemeral records in the isolated test project at runtime, use generated identifiers, and remove their records during teardown. No financial fixture, seed record, fake account, or hard-coded financial state belongs in Git.
 
-The live test intentionally is not enabled in the normal CI test command because CI does not need production Supabase credentials. Configure a dedicated CI secret/account later if continuous remote E2E coverage is required.
+Until that isolated runtime harness is provisioned and executed, financial runtime verification remains explicitly **unverified**. Do not replace the missing verification with mocks or placeholder data.
