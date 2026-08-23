@@ -7,6 +7,7 @@ export 'nexora_icon_button.dart';
 export 'nexora_input.dart';
 export 'nexora_list_tile.dart';
 export 'nexora_metric.dart';
+export 'nexora_nav.dart';
 export 'nexora_section_header.dart';
 export 'nexora_sheet.dart';
 export 'nexora_skeleton.dart';
