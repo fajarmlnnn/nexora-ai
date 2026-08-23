@@ -182,9 +182,9 @@ class _TotalCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF241647), Color(0xFF151126), Color(0xFF0C101A)],
+          colors: [AppColors.surface, AppColors.surface, AppColors.canvasElevated],
         ),
-        border: Border.all(color: const Color(0xFFB98AFF).withValues(alpha: .20)),
+        border: Border.all(color: AppColors.brandBright.withValues(alpha: .20)),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withValues(alpha: .18),
@@ -225,7 +225,7 @@ class _TotalCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text('Gabungan saldo dari seluruh wallet aktif', style: AppTypography.caption),
           const SizedBox(height: 15),
-          const Divider(color: Color(0x182FFFFFF)),
+          const Divider(color: AppColors.surface),
           const SizedBox(height: 5),
           Row(
             children: [
@@ -259,9 +259,10 @@ class _Distribution extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <_DistributionData>[
-      _DistributionData('Bank', _amount(WalletType.bank), const Color(0xFFA66BFF)),
-      _DistributionData('E-Wallet', _amount(WalletType.ewallet), const Color(0xFF22D3EE)),
-      _DistributionData('Cash', _amount(WalletType.cash), const Color(0xFFFBBF24)),
+      _DistributionData('Bank', _amount(WalletType.bank), AppColors.brand),
+      _DistributionData('E-Wallet', _amount(WalletType.ewallet), AppColors.info),
+      _DistributionData('Tunai', _amount(WalletType.cash), AppColors.warning),
+      _DistributionData('Investasi', _amount(WalletType.investment), AppColors.success),
     ];
 
     return Container(
@@ -278,9 +279,7 @@ class _Distribution extends StatelessWidget {
             children: [
               const Icon(LucideIcons.chartNoAxesCombined, size: 16, color: AppColors.primaryLight),
               const SizedBox(width: 7),
-              Text('Asset distribution', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800)),
-              const Spacer(),
-              Text('LIVE', style: AppTypography.overline.copyWith(color: AppColors.success)),
+              Text('Distribusi aset', style: AppTypography.labelMedium),
             ],
           ),
           const SizedBox(height: 12),
@@ -324,7 +323,7 @@ class _DistributionItem extends StatelessWidget {
         Text(data.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.overline),
         const SizedBox(height: 6),
         ClipRRect(
-          borderRadius: BorderRadius.circular(99),
+          borderRadius: AppRadius.radiusPill,
           child: LinearProgressIndicator(
             value: ratio,
             minHeight: 5,
@@ -394,7 +393,6 @@ class _WalletTile extends StatelessWidget {
                           const Text(
                             'PRIMARY',
                             style: TextStyle(
-                              fontSize: 8,
                               fontWeight: FontWeight.w900,
                               color: AppColors.primaryLight,
                             ),

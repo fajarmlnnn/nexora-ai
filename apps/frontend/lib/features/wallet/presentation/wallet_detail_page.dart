@@ -208,7 +208,7 @@ class _AiCard extends StatelessWidget {
         : topSpending == null
             ? (positive ? 'Cashflow bulan ini positif berdasarkan transaksi yang tersedia.' : 'Cashflow bulan ini negatif berdasarkan transaksi yang tersedia.')
             : 'Pengeluaran terbesar bulan ini: ${_categoryLabel(topSpending!.key)} (${rupiah(topSpending!.value)}).';
-    return Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF17131F), Color(0xFF0D0D14)]), borderRadius: AppRadius.radiusXL, border: Border.all(color: minimumWarning ? AppColors.warning.withValues(alpha: .35) : AppColors.primary.withValues(alpha: .24))), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.surface, AppColors.canvasElevated]), borderRadius: AppRadius.radiusXL, border: Border.all(color: minimumWarning ? AppColors.warning.withValues(alpha: .35) : AppColors.primary.withValues(alpha: .24))), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Container(width: 38, height: 38, decoration: BoxDecoration(color: (minimumWarning ? AppColors.warning : AppColors.primary).withValues(alpha: .14), borderRadius: AppRadius.radiusLG), child: Icon(minimumWarning ? LucideIcons.triangleAlert : LucideIcons.sparkles, color: minimumWarning ? AppColors.warning : AppColors.primaryLight, size: 19)),
       const SizedBox(width: 11),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -317,7 +317,7 @@ class _TopSpendingCard extends StatelessWidget {
         return Padding(padding: const EdgeInsets.only(bottom: 12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [Expanded(child: Text(_categoryLabel(entry.key), style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700))), Text('${(percentage * 100).round()}%', style: AppTypography.caption.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800))]),
           const SizedBox(height: 5),
-          ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: percentage, minHeight: 5, backgroundColor: AppColors.border, valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight))),
+          ClipRRect(borderRadius: AppRadius.radius8, child: LinearProgressIndicator(value: percentage, minHeight: 5, backgroundColor: AppColors.border, valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight))),
           const SizedBox(height: 5),
           Row(children: [Expanded(child: Text('${rupiah(entry.value)} • $count transaksi', style: AppTypography.caption)), if (entry == spending.first) const _StatusChip(label: 'TERBESAR', color: AppColors.primaryLight)]),
         ]));
@@ -376,7 +376,7 @@ class _StatusChip extends StatelessWidget {
   final String label;
   final Color color;
   @override
-  Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4), decoration: BoxDecoration(color: color.withValues(alpha: .11), borderRadius: BorderRadius.circular(8)), child: Text(label, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.w900)));
+  Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4), decoration: BoxDecoration(color: color.withValues(alpha: .11), borderRadius: AppRadius.radius8), child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w900)));
 }
 
 String _categoryLabel(TransactionCategory category) {

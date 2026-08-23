@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/auth_state_provider.dart';
 import '../../finance/state/financial_transaction_store.dart';
 import '../../dashboard/models/transaction_model.dart';
 import '../models/wallet_model.dart';
@@ -20,6 +21,7 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
 
   @override
   Future<List<WalletModel>> build() async {
+    ref.watch(currentUserProvider);
     ref.listen<List<TransactionModel>>(
       financialTransactionStoreProvider,
       (previous, next) {
@@ -117,6 +119,7 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
     required String destinationWalletId,
     required double amount,
     String? note,
+    String? idempotencyKey,
   }) async {
     if (sourceWalletId == destinationWalletId || amount <= 0 || !amount.isFinite) {
       return false;
@@ -137,6 +140,7 @@ class WalletController extends AsyncNotifier<List<WalletModel>> {
         destinationWalletId: destinationWalletId,
         amount: amount,
         note: note,
+        idempotencyKey: idempotencyKey,
       );
       await refreshWallets();
       return true;

@@ -13,6 +13,32 @@ enum TransactionCategory {
   other,
 }
 
+extension TransactionTypeLabel on TransactionType {
+  String get labelId => switch (this) {
+        TransactionType.income => 'Pemasukan',
+        TransactionType.expense => 'Pengeluaran',
+        TransactionType.transfer => 'Transfer',
+      };
+}
+
+extension TransactionCategoryLabel on TransactionCategory {
+  String get labelId => switch (this) {
+        TransactionCategory.food => 'Makan & Minum',
+        TransactionCategory.transport => 'Transportasi',
+        TransactionCategory.shopping => 'Belanja',
+        TransactionCategory.salary => 'Gaji',
+        TransactionCategory.investment => 'Investasi',
+        TransactionCategory.bills => 'Tagihan',
+        TransactionCategory.entertainment => 'Hiburan',
+        TransactionCategory.health => 'Kesehatan',
+        TransactionCategory.education => 'Pendidikan',
+        TransactionCategory.other => 'Lainnya',
+      };
+
+  bool get isExpenseCategory =>
+      this != TransactionCategory.salary && this != TransactionCategory.investment;
+}
+
 class TransactionModel {
   const TransactionModel({
     required this.id,

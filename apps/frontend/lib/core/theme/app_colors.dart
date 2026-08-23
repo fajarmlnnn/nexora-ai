@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Nexora 2.0 color system.
 ///
-/// Canonical tokens are listed first. Legacy tokens remain temporarily for
-/// incremental screen migration and must not be used by new 2.0 components.
+/// Canonical tokens are listed first. One brand purple only.
 abstract final class AppColors {
   AppColors._();
 
@@ -19,9 +18,19 @@ abstract final class AppColors {
   static const brandPrimaryBright = Color(0xFFA78BFA);
   static const brandPrimaryDeep = Color(0xFF5B21B6);
 
-  static const surfaceGlass = Color(0x14FFFFFF);
-  static const surfaceGlassStrong = Color(0x1FFFFFFF);
-  static const borderGlass = Color(0x24FFFFFF);
+  static const brand = brandPrimary;
+  static const brandBright = brandPrimaryBright;
+  static const brandDeep = brandPrimaryDeep;
+
+  static const surface = space850;
+  static const surfaceElevated = space800;
+  static const glass = Color(0x14FFFFFF);
+  static const glassStrong = Color(0x1FFFFFFF);
+  static const surfaceGlass = glass;
+  static const surfaceGlassStrong = glassStrong;
+
+  static const border = Color(0x24FFFFFF);
+  static const borderGlass = border;
   static const borderFocus = Color(0x668B5CF6);
 
   static const textPrimary = Colors.white;
@@ -33,82 +42,84 @@ abstract final class AppColors {
   static const warning = Color(0xFFFFB648);
   static const danger = Color(0xFFFF5A5A);
   static const info = Color(0xFF38BDF8);
+  static const ai = Color(0xFFC084FC);
+  static const scrim = Color(0xCC05040C);
 
   static const brandSecondary = info;
   static const brandCyan = Color(0xFF67E8F9);
-  static const brandMagenta = Color(0xFFC084FC);
-  static const chartPurple = brandPrimary;
-  static const chartBlue = Color(0xFF4F8CFF);
-  static const chartGreen = success;
-  static const chartOrange = warning;
-  static const chartRed = danger;
+  static const brandMagenta = ai;
+  static const chart1 = brandPrimary;
+  static const chart2 = Color(0xFF4F8CFF);
+  static const chart3 = success;
+  static const chart4 = warning;
+  static const chart5 = danger;
+  static const chartPurple = chart1;
+  static const chartBlue = chart2;
+  static const chartGreen = chart3;
+  static const chartOrange = chart4;
+  static const chartRed = chart5;
 
-  // ============================================================
-  // Legacy / feature tokens — migrate screen by screen.
-  // ============================================================
-  static const primary = Color(0xFF4D25B1);
-  static const primaryLight = Color(0xFFAD90F5);
-  static const primaryDark = Color(0xFF351D83);
-  static const aiAccent = Color(0xFF8E5FF6);
+  // One brand purple. Legacy names now resolve to the canonical brand.
+  static const primary = brandPrimary;
+  static const primaryLight = brandPrimaryBright;
+  static const primaryDark = brandPrimaryDeep;
+  static const aiAccent = ai;
 
   static const space950 = canvas;
   static const space900 = canvasElevated;
-  static const nexoraBackgroundEdge = Color(0xFF00010A);
-  static const background = Color(0xFF0A0A1F);
-  static const surface = Color(0xFF0D0B20);
-  static const surfaceVariant = Color(0xFF130B38);
-  static const card = Color(0xFF0D0C19);
-  static const cardSecondary = Color(0xFF110947);
-  static const cardMuted = Color(0xFF19142E);
-  static const heroCard = Color(0xFF170F48);
-  static const heroSubCard = Color(0xFF211B3E);
-  static const heroIconBox = Color(0xFF200B58);
-  static const aiPowered = Color(0xFF090630);
-  static const featureTile1 = Color(0xFF050715);
-  static const featureIcon1 = Color(0xFF170D3D);
-  static const featureTile2 = Color(0xFF130B38);
-  static const featureIcon2 = Color(0xFF351D83);
-  static const featureTile3 = Color(0xFF040615);
-  static const featureIcon3 = Color(0xFF19142E);
-  static const arrowButton = Color(0xFF4D25B1);
-  static const chatBubble = Color(0xFF0D0C19);
-  static const chatAvatar = Color(0xFF6632D9);
-  static const userBubble = Color(0xFF111022);
-  static const quickActionCard = Color(0xFF0A091D);
-  static const suggestion1 = Color(0xFF734ECA);
-  static const suggestion2 = Color(0xFF110947);
-  static const suggestion3 = Color(0xFF0D0B31);
-  static const suggestion4 = Color(0xFF8E5FF6);
-  static const inputBar = Color(0xFF0A091D);
-  static const sendButton = Color(0xFF4D25B1);
-  static const micCta = Color(0xFFAD90F5);
-  static const headerButton = Color(0xFF080A17);
-  static const goalsBackgroundEdge = Color(0xFF000000);
-  static const goalsBackgroundCenter = Color(0xFF0A0A12);
-  static const goalsSummaryCard = Color(0xFF120F22);
-  static const goalsTrack = Color(0xFF1A1830);
-  static const goalsPurple = Color(0xFF6A3BD7);
-  static const goalsPurpleBright = Color(0xFF9567FD);
-  static const goalsTotalBadge = Color(0xFF1B1435);
-  static const goalsProgressTrack = Color(0xFF1D1B30);
-  static const goalsCard = Color(0xFF12121E);
-  static const goalsCardAlt = Color(0xFF10101A);
-  static const goalsSavingIconOuter = Color(0xFF6B54A2);
-  static const goalsSavingIconInner = Color(0xFF261D48);
-  static const goalsWishlistIcon = Color(0xFF2E1E3B);
+  static const nexoraBackgroundEdge = canvas;
+  static const background = canvas;
+  static const surfaceVariant = space800;
+  static const card = space850;
+  static const cardSecondary = space800;
+  static const cardMuted = space800;
+  static const heroCard = space850;
+  static const heroSubCard = space800;
+  static const heroIconBox = space800;
+  static const aiPowered = canvasElevated;
+  static const featureTile1 = canvasElevated;
+  static const featureIcon1 = space800;
+  static const featureTile2 = space850;
+  static const featureIcon2 = brandDeep;
+  static const featureTile3 = canvasElevated;
+  static const featureIcon3 = space800;
+  static const arrowButton = brandPrimary;
+  static const chatBubble = space850;
+  static const chatAvatar = brandPrimary;
+  static const userBubble = space800;
+  static const quickActionCard = canvasElevated;
+  static const suggestion1 = brandPrimary;
+  static const suggestion2 = space800;
+  static const suggestion3 = space850;
+  static const suggestion4 = brandBright;
+  static const inputBar = canvasElevated;
+  static const sendButton = brandPrimary;
+  static const micCta = brandBright;
+  static const headerButton = canvasElevated;
+  static const goalsBackgroundEdge = canvas;
+  static const goalsBackgroundCenter = canvasElevated;
+  static const goalsSummaryCard = space850;
+  static const goalsTrack = space800;
+  static const goalsPurple = brandPrimary;
+  static const goalsPurpleBright = brandBright;
+  static const goalsTotalBadge = space800;
+  static const goalsProgressTrack = space800;
+  static const goalsCard = space850;
+  static const goalsCardAlt = canvasElevated;
+  static const goalsSavingIconOuter = brandPrimary;
+  static const goalsSavingIconInner = space800;
+  static const goalsWishlistIcon = space800;
   static const goalsWishlistAccent = Color(0xFFD65B9E);
   static const goalsWishlistText = Color(0xFFF472B6);
-  static const goalsTravelIcon = Color(0xFF1F1F37);
-  static const goalsPromo = Color(0xFF0C0C18);
-  static const goalsPromoAvatar = Color(0xFF07040B);
-  static const goalsNav = Color(0xFF0D111C);
-  static const border = Color(0xFF292448);
-  static const divider = Color(0xFF23213A);
-  static const overlay = Color(0x88000000);
-  static const glass = surfaceGlass;
-  static const elevated = Color(0xFF20203A);
-  static const hover = Color(0xFF252044);
-  static const pressed = Color(0xFF2B2450);
+  static const goalsTravelIcon = space800;
+  static const goalsPromo = canvasElevated;
+  static const goalsPromoAvatar = canvas;
+  static const goalsNav = canvasElevated;
+  static const divider = border;
+  static const overlay = scrim;
+  static const elevated = space800;
+  static const hover = space800;
+  static const pressed = space800;
 
   static const white = Colors.white;
   static const black = Colors.black;

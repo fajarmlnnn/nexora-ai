@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../core/auth/auth_state_provider.dart';
 import '../../../core/supabase/supabase_client.dart';
+import '../../../core/utils/nexora_id.dart';
 import '../../finance/state/financial_transaction_store.dart';
 import '../../wallet/controllers/wallet_controller.dart';
 
@@ -17,6 +19,7 @@ class FinancialGoalSnapshot {
     this.deadline,
     this.priority = 'normal',
     this.status = 'active',
+    this.note,
   });
 
   final String id;
@@ -28,6 +31,7 @@ class FinancialGoalSnapshot {
   final DateTime? deadline;
   final String priority;
   final String status;
+  final String? note;
 
   double get progress => target <= 0 ? 0 : (saved / target).clamp(0.0, 1.0);
   bool get isCompleted => status == 'completed' || (target > 0 && saved >= target);
@@ -50,6 +54,7 @@ class FinancialGoalSnapshot {
     DateTime? deadline,
     String? priority,
     String? status,
+    String? note,
   }) => FinancialGoalSnapshot(
         id: id,
         title: title ?? this.title,
@@ -60,6 +65,7 @@ class FinancialGoalSnapshot {
         deadline: deadline ?? this.deadline,
         priority: priority ?? this.priority,
         status: status ?? this.status,
+        note: note ?? this.note,
       );
 
   static FinancialGoalSnapshot fromMap(Map<String, dynamic> row) {
@@ -74,6 +80,7 @@ class FinancialGoalSnapshot {
       deadline: row['deadline'] == null ? null : DateTime.tryParse(row['deadline'] as String),
       priority: row['priority'] as String? ?? 'normal',
       status: row['status'] as String? ?? 'active',
+      note: row['note'] as String?,
     );
   }
 }
@@ -89,8 +96,8 @@ String _dbType(String type) {
 String _displayType(String type) {
   switch (type.toLowerCase()) {
     case 'wishlist': return 'Wishlist';
-    case 'debt': return 'Debt';
-    default: return 'Saving';
+    case 'debt': return 'Utang';
+    default: return 'Tabungan';
   }
 }
 
@@ -102,26 +109,15 @@ IconData _iconForType(String type) {
   }
 }
 
-final financialGoalsProvider = NotifierProvider<SupabaseFinancialGoalsController, List<FinancialGoalSnapshot>>(
+final financialGoalsProvider = AsyncNotifierProvider<SupabaseFinancialGoalsController, List<FinancialGoalSnapshot>>(
   SupabaseFinancialGoalsController.new,
 );
 
-class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapshot>> {
+class SupabaseFinancialGoalsController extends AsyncNotifier<List<FinancialGoalSnapshot>> {
   @override
-  List<FinancialGoalSnapshot> build() {
-    _bindAuthLifecycle();
-    _load();
-    return const [];
-  }
-
-  void _bindAuthLifecycle() {
-    if (!NexoraSupabase.isInitialized) return;
-    final subscription = NexoraSupabase.client.auth.onAuthStateChange.listen((_) {
-      // Never retain financial goals across users or a signed-out session.
-      state = const [];
-      _load();
-    });
-    ref.onDispose(subscription.cancel);
+  Future<List<FinancialGoalSnapshot>> build() async {
+    ref.watch(currentUserProvider);
+    return _fetch();
   }
 
   String get _userId {
@@ -132,28 +128,28 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
 
   String? get _primaryWalletId => ref.read(primaryWalletProvider)?.id;
 
-  Future<void> _load() async {
-    if (!NexoraSupabase.isInitialized) return;
-    try {
-      final userId = _userId;
-      final rows = await NexoraSupabase.client
-          .from('goals')
-          .select()
-          .eq('user_id', userId)
-          .order('created_at', ascending: false);
-      state = List.unmodifiable(
-        (rows as List)
-            .map((row) => FinancialGoalSnapshot.fromMap(Map<String, dynamic>.from(row as Map)))
-            .where((goal) => goal.id.isNotEmpty && goal.title.isNotEmpty)
-            .toList(growable: false),
-      );
-    } catch (_) {
-      // Keep the current UI on transient network failures, but never reuse a
-      // previous user's state because auth lifecycle clears it before reload.
-    }
+  Future<List<FinancialGoalSnapshot>> _fetch() async {
+    if (!NexoraSupabase.isInitialized) return const [];
+    final userId = _userId;
+    final rows = await NexoraSupabase.client
+        .from('goals')
+        .select()
+        .eq('user_id', userId)
+        .order('created_at', ascending: false);
+    return List.unmodifiable(
+      (rows as List)
+          .map((row) => FinancialGoalSnapshot.fromMap(Map<String, dynamic>.from(row as Map)))
+          .where((goal) => goal.id.isNotEmpty && goal.title.isNotEmpty)
+          .toList(growable: false),
+    );
   }
 
-  Future<void> reload() => _load();
+  Future<void> reload() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(_fetch);
+  }
+
+  List<FinancialGoalSnapshot> get _current => state.valueOrNull ?? const [];
 
   Future<void> addGoal(FinancialGoalSnapshot goal) async {
     if (goal.title.trim().isEmpty || goal.target <= 0 || goal.saved < 0) {
@@ -174,6 +170,7 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
       'deadline': goal.deadline?.toIso8601String().split('T').first,
       'priority': goal.priority,
       'status': 'active',
+      if (goal.note != null && goal.note!.trim().isNotEmpty) 'note': goal.note!.trim(),
     }).select().single();
 
     var created = FinancialGoalSnapshot.fromMap(Map<String, dynamic>.from(row));
@@ -188,11 +185,11 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
       rethrow;
     }
 
-    state = List.unmodifiable([created, ...state]);
+    state = AsyncData(List.unmodifiable([created, ..._current]));
     await _refreshFinancialState();
   }
 
-  Future<bool> contribute(String id, double amount, {String? note, String? walletId}) async {
+  Future<bool> contribute(String id, double amount, {String? note, String? walletId, String? idempotencyKey}) async {
     if (amount <= 0 || !amount.isFinite) {
       throw StateError('Nominal kontribusi tidak valid.');
     }
@@ -202,7 +199,13 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
     }
 
     try {
-      final updated = await _contributeRemote(id, amount, walletId: fundingWalletId, note: note);
+      final updated = await _contributeRemote(
+        id,
+        amount,
+        walletId: fundingWalletId,
+        note: note,
+        idempotencyKey: idempotencyKey,
+      );
       _replace(updated);
       await _refreshFinancialState();
       return true;
@@ -234,14 +237,20 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
     return message.length > 180 ? 'Kontribusi gagal disimpan. Coba lagi.' : message;
   }
 
-  Future<FinancialGoalSnapshot> _contributeRemote(String id, double amount, {required String walletId, String? note}) async {
-    final idempotencyKey = '${id}_${DateTime.now().microsecondsSinceEpoch}';
+  Future<FinancialGoalSnapshot> _contributeRemote(
+    String id,
+    double amount, {
+    required String walletId,
+    String? note,
+    String? idempotencyKey,
+  }) async {
+    final key = (idempotencyKey ?? nexoraUuidV4()).trim();
     final result = await NexoraSupabase.client.rpc('nexora_contribute_to_goal_from_wallet', params: {
       'p_goal_id': id,
       'p_wallet_id': walletId,
       'p_amount': amount,
       'p_note': note,
-      'p_idempotency_key': idempotencyKey,
+      'p_idempotency_key': key,
     });
     return FinancialGoalSnapshot.fromMap(Map<String, dynamic>.from(result as Map));
   }
@@ -277,10 +286,7 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
   Future<void> removeGoal(String id) async {
     try {
       await NexoraSupabase.client.rpc('nexora_delete_goal', params: {'p_goal_id': id});
-      // The database is the source of truth. Re-read it after deletion instead
-      // of relying on an optimistic local removal that could reappear after
-      // an app restart if the server state differs.
-      await _load();
+      await reload();
       await _refreshFinancialState();
     } catch (error) {
       throw StateError('Gagal menghapus goal dan mengembalikan dananya: ${_friendlyGoalDeleteError(error)}');
@@ -297,18 +303,31 @@ class SupabaseFinancialGoalsController extends Notifier<List<FinancialGoalSnapsh
   }
 
   void _replace(FinancialGoalSnapshot updated) {
-    final index = state.indexWhere((goal) => goal.id == updated.id);
+    final current = _current;
+    final index = current.indexWhere((goal) => goal.id == updated.id);
     if (index < 0) {
-      state = List.unmodifiable([updated, ...state]);
+      state = AsyncData(List.unmodifiable([updated, ...current]));
       return;
     }
-    final next = [...state];
+    final next = [...current];
     next[index] = updated;
-    state = List.unmodifiable(next);
+    state = AsyncData(List.unmodifiable(next));
   }
 }
 
-final totalGoalSavedProvider = Provider<double>((ref) => ref.watch(financialGoalsProvider).fold<double>(0, (sum, goal) => sum + goal.saved));
-final totalGoalTargetProvider = Provider<double>((ref) => ref.watch(financialGoalsProvider).fold<double>(0, (sum, goal) => sum + goal.target));
-final totalGoalRemainingProvider = Provider<double>((ref) => ref.watch(financialGoalsProvider).fold<double>(0, (sum, goal) => sum + goal.remaining));
-final completedGoalsProvider = Provider<int>((ref) => ref.watch(financialGoalsProvider).where((goal) => goal.isCompleted).length);
+final totalGoalSavedProvider = Provider<double>((ref) {
+  final goals = ref.watch(financialGoalsProvider).valueOrNull ?? const [];
+  return goals.fold<double>(0, (sum, goal) => sum + goal.saved);
+});
+final totalGoalTargetProvider = Provider<double>((ref) {
+  final goals = ref.watch(financialGoalsProvider).valueOrNull ?? const [];
+  return goals.fold<double>(0, (sum, goal) => sum + goal.target);
+});
+final totalGoalRemainingProvider = Provider<double>((ref) {
+  final goals = ref.watch(financialGoalsProvider).valueOrNull ?? const [];
+  return goals.fold<double>(0, (sum, goal) => sum + goal.remaining);
+});
+final completedGoalsProvider = Provider<int>((ref) {
+  final goals = ref.watch(financialGoalsProvider).valueOrNull ?? const [];
+  return goals.where((goal) => goal.isCompleted).length;
+});

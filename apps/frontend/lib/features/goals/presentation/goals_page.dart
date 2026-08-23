@@ -10,6 +10,8 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../controllers/supabase_goals_controller.dart';
 import 'add_goal_sheet.dart';
+import '../../../core/theme/app_motion.dart';
+import '../../../core/theme/app_radius.dart';
 
 class GoalsPage extends ConsumerStatefulWidget {
   const GoalsPage({super.key});
@@ -19,17 +21,34 @@ class GoalsPage extends ConsumerStatefulWidget {
 }
 
 class _GoalsPageState extends ConsumerState<GoalsPage> {
-  static const _tabs = ['Semua', 'Wishlist', 'Saving', 'Debt'];
+  static const _tabs = ['Semua', 'Wishlist', 'Tabungan', 'Utang'];
   int _selectedTab = 0;
   bool _sortByProgress = false;
 
   @override
   Widget build(BuildContext context) {
-    final allGoals = ref.watch(financialGoalsProvider);
+    final goalsAsync = ref.watch(financialGoalsProvider);
+    if (goalsAsync.isLoading && !goalsAsync.hasValue) {
+      return const PremiumScaffold(child: Center(child: CircularProgressIndicator()));
+    }
+    if (goalsAsync.hasError && !goalsAsync.hasValue) {
+      return PremiumScaffold(
+        child: Center(
+          child: EmptyStateCard(
+            icon: LucideIcons.triangleAlert,
+            title: 'Goals belum dapat dimuat',
+            message: 'Coba muat ulang untuk melihat tujuan finansialmu.',
+            action: 'Coba lagi',
+            onPressed: () => ref.read(financialGoalsProvider.notifier).reload(),
+          ),
+        ),
+      );
+    }
+    final allGoals = goalsAsync.valueOrNull ?? const <FinancialGoalSnapshot>[];
     final goals = switch (_selectedTab) {
       1 => allGoals.where((goal) => goal.type == 'Wishlist').toList(),
-      2 => allGoals.where((goal) => goal.type == 'Saving').toList(),
-      3 => allGoals.where((goal) => goal.type == 'Debt').toList(),
+      2 => allGoals.where((goal) => goal.type == 'Tabungan').toList(),
+      3 => allGoals.where((goal) => goal.type == 'Utang').toList(),
       _ => [...allGoals],
     };
     if (_sortByProgress) {
@@ -132,7 +151,6 @@ class _Header extends StatelessWidget {
               Text(
                 'Goals',
                 style: AppTypography.heading1.copyWith(
-                  fontSize: 30,
                   height: 1.05,
                   fontWeight: FontWeight.w800,
                 ),
@@ -164,7 +182,7 @@ class _GlowIconButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadius.radiusPill,
         child: Ink(
           width: 40,
           height: 40,
@@ -209,8 +227,8 @@ class _Overview extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.goalsSummaryCard,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF5E4A8D).withValues(alpha: .25)),
+        borderRadius: AppRadius.radiusXL,
+        border: Border.all(color: AppColors.brandDeep.withValues(alpha: .25)),
         boxShadow: [
           BoxShadow(
             color: AppColors.goalsPurple.withValues(alpha: .12),
@@ -340,7 +358,7 @@ class _ProgressDonut extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: value),
-      duration: const Duration(milliseconds: 750),
+      duration: AppMotion.counter,
       curve: Curves.easeOutCubic,
       builder: (context, animatedValue, _) {
         return SizedBox(
@@ -352,7 +370,6 @@ class _ProgressDonut extends StatelessWidget {
               child: Text(
                 '${(value * 100).round()}%',
                 style: AppTypography.labelLarge.copyWith(
-                  fontSize: 17,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -406,7 +423,7 @@ class _TotalGoalsBadge extends StatelessWidget {
       height: 55,
       decoration: BoxDecoration(
         color: AppColors.goalsTotalBadge,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadius.radiusMD,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -414,7 +431,7 @@ class _TotalGoalsBadge extends StatelessWidget {
           const Icon(LucideIcons.flag, size: 15, color: AppColors.goalsPurpleBright),
           const SizedBox(height: 2),
           Text('$count', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
-          Text('Total', style: AppTypography.overline.copyWith(fontSize: 7)),
+          Text('Total', style: AppTypography.overline.copyWith()),
         ],
       ),
     );
@@ -432,7 +449,7 @@ class _GradientProgressBar extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth * value.clamp(0.0, 1.0);
         return ClipRRect(
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: AppRadius.radiusPill,
           child: SizedBox(
             height: height,
             child: Stack(
@@ -471,7 +488,7 @@ class _Tabs extends StatelessWidget {
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: AppColors.goalsCardAlt.withValues(alpha: .72),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadius.radiusPill,
         border: Border.all(color: Colors.white.withValues(alpha: .05)),
       ),
       child: Row(
@@ -482,13 +499,13 @@ class _Tabs extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               onTap: () => onSelected(index),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 240),
+                duration: AppMotion.normal,
                 curve: Curves.easeOutCubic,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: AppRadius.radiusPill,
                   gradient: active
-                      ? const LinearGradient(colors: [AppColors.goalsPurple, Color(0xFF8B5CF6)])
+                      ? const LinearGradient(colors: [AppColors.goalsPurple, AppColors.brand])
                       : null,
                 ),
                 child: Text(
@@ -496,7 +513,7 @@ class _Tabs extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.bodySmall.copyWith(
-                    color: active ? Colors.white : const Color(0xFFA3AEC4),
+                    color: active ? Colors.white : AppColors.textSecondary,
                     fontWeight: active ? FontWeight.w800 : FontWeight.w700,
                   ),
                 ),
@@ -556,7 +573,7 @@ class _GoalCard extends StatelessWidget {
 
   Color get accent {
     if (goal.type == 'Wishlist') return AppColors.goalsWishlistText;
-    if (goal.type == 'Debt') return const Color(0xFFFF6B7A);
+    if (goal.type == 'Debt') return AppColors.danger;
     return AppColors.goalsPurpleBright;
   }
 
@@ -566,21 +583,21 @@ class _GoalCard extends StatelessWidget {
     final iconBackground = goal.type == 'Wishlist'
         ? AppColors.goalsWishlistIcon
         : goal.type == 'Debt'
-            ? const Color(0xFF251B2D)
+            ? AppColors.surface
             : AppColors.goalsSavingIconInner;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.radiusLG,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 100),
           child: Ink(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: AppColors.goalsCard,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: AppRadius.radiusLG,
               border: Border.all(color: accent.withValues(alpha: .11)),
               boxShadow: [
                 BoxShadow(
@@ -659,7 +676,7 @@ class _GoalMain extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               decoration: BoxDecoration(
                 color: accent.withValues(alpha: .14),
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: AppRadius.radiusPill,
               ),
               child: Text(
                 goal.type,
@@ -668,7 +685,6 @@ class _GoalMain extends StatelessWidget {
                 style: AppTypography.overline.copyWith(
                   color: accent,
                   fontWeight: FontWeight.w800,
-                  fontSize: 8,
                 ),
               ),
             ),
@@ -681,7 +697,6 @@ class _GoalMain extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: AppTypography.caption.copyWith(
             color: AppColors.textSecondary,
-            fontSize: 10.5,
           ),
         ),
         const SizedBox(height: 8),
@@ -693,7 +708,6 @@ class _GoalMain extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: AppTypography.overline.copyWith(
             color: AppColors.textSecondary,
-            fontSize: 8.5,
           ),
         ),
       ],
@@ -750,7 +764,6 @@ class _GoalSide extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.overline.copyWith(
                   color: AppColors.textSecondary,
-                  fontSize: 7.5,
                 ),
               ),
             ),
@@ -776,13 +789,13 @@ class _AIRecommendation extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => context.push('/ai'),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: AppRadius.radiusXL,
         child: Ink(
           height: 95,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: AppColors.goalsPromo,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: AppRadius.radiusXL,
             border: Border.all(color: AppColors.goalsPurpleBright.withValues(alpha: .20)),
             boxShadow: [
               BoxShadow(
@@ -837,13 +850,12 @@ class _AIRecommendation extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: AppColors.goalsPurple.withValues(alpha: .20),
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: AppRadius.radiusPill,
                           ),
                           child: Text(
                             'AI',
                             style: AppTypography.overline.copyWith(
                               color: AppColors.goalsPurpleBright,
-                              fontSize: 8,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -863,7 +875,6 @@ class _AIRecommendation extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.overline.copyWith(
                         color: AppColors.textSecondary,
-                        fontSize: 8.5,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -895,7 +906,7 @@ class _EmptyGoals extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppColors.goalsCard,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.radiusLG,
         border: Border.all(color: Colors.white.withValues(alpha: .06)),
       ),
       child: Column(

@@ -3,26 +3,28 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_motion.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/widgets/card/n_card.dart';
+import '../../../core/widgets/nexora/nexora.dart';
 
 class QuickActions extends StatelessWidget {
   const QuickActions({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return NCard(
-      padding: const EdgeInsets.fromLTRB(13, 11, 13, 10),
+    return NexoraSurface(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Quick Actions', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 10),
+          Text('Aksi cepat', style: AppTypography.labelLarge),
+          const SizedBox(height: AppSpacing.md),
           Row(
             children: [
               Expanded(child: _ActionItem(icon: LucideIcons.arrowDownToLine, label: 'Pemasukan', color: AppColors.success, onTap: () => context.push('/add-income'))),
               Expanded(child: _ActionItem(icon: LucideIcons.arrowUpFromLine, label: 'Pengeluaran', color: AppColors.danger, onTap: () => context.push('/add-expense'))),
-              Expanded(child: _ActionItem(icon: LucideIcons.walletMinimal, label: 'Wallet', color: AppColors.primaryLight, onTap: () => context.go('/wallet'))),
+              Expanded(child: _ActionItem(icon: LucideIcons.walletMinimal, label: 'Wallet', color: AppColors.brandBright, onTap: () => context.go('/wallet'))),
               Expanded(child: _ActionItem(icon: LucideIcons.arrowLeftRight, label: 'Transfer', color: AppColors.info, onTap: () => context.push('/transfer'))),
             ],
           ),
@@ -46,39 +48,38 @@ class _ActionItem extends StatefulWidget {
 class _ActionItemState extends State<_ActionItem> {
   bool _pressed = false;
 
-  void _setPressed(bool value) {
-    if (!mounted) return;
-    setState(() => _pressed = value);
-  }
-
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: widget.onTap,
-      onTapDown: (_) => _setPressed(true),
-      onTapUp: (_) => _setPressed(false),
-      onTapCancel: () => _setPressed(false),
-      child: AnimatedScale(
-        duration: const Duration(milliseconds: 140),
-        curve: Curves.easeOutCubic,
-        scale: _pressed ? .94 : 1,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 43,
-              height: 43,
-              decoration: BoxDecoration(
-                color: widget.color.withValues(alpha: .075),
-                shape: BoxShape.circle,
-                border: Border.all(color: widget.color.withValues(alpha: .13)),
+    return Semantics(
+      button: true,
+      label: widget.label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
+        child: AnimatedScale(
+          duration: AppMotion.fast,
+          curve: AppMotion.standard,
+          scale: _pressed ? AppMotion.pressedScale : 1,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: widget.color.withValues(alpha: .10),
+                  borderRadius: AppRadius.radiusMD,
+                  border: Border.all(color: widget.color.withValues(alpha: .16)),
+                ),
+                child: Icon(widget.icon, color: widget.color, size: 20),
               ),
-              child: Icon(widget.icon, color: widget.color.withValues(alpha: .88), size: 19),
-            ),
-            const SizedBox(height: 6),
-            Text(widget.label, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
-          ],
+              const SizedBox(height: AppSpacing.xs),
+              Text(widget.label, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: AppTypography.caption),
+            ],
+          ),
         ),
       ),
     );

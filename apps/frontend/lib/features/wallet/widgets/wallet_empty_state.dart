@@ -159,7 +159,7 @@ class _AddWalletButton extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.primary, Color(0xFF6D5DF5)],
+              colors: [AppColors.primary, AppColors.brand],
             ),
             borderRadius: AppRadius.radiusLG,
             boxShadow: AppShadows.button,

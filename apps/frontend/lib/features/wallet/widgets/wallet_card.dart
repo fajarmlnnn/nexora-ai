@@ -6,6 +6,8 @@ import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../models/wallet_model.dart';
+import '../../../core/theme/app_motion.dart';
+import '../../../core/theme/app_colors.dart';
 
 class WalletCard extends StatelessWidget {
   const WalletCard({super.key, required this.wallet, this.onTap});
@@ -32,7 +34,7 @@ class WalletCard extends StatelessWidget {
                 colors: [
                   wallet.color,
                   Color.lerp(wallet.color, Colors.black, .45) ?? wallet.color,
-                  const Color(0xFF111827),
+                  AppColors.surface,
                 ],
                 stops: const [0, .55, 1],
               ),
@@ -173,7 +175,7 @@ class _PrimaryBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: .12),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.radiusLG,
         border: Border.all(color: Colors.white.withValues(alpha: .08)),
       ),
       child: Row(
@@ -203,7 +205,7 @@ class _AnimatedBalance extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: amount),
-      duration: const Duration(milliseconds: 900),
+      duration: AppMotion.counter,
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
         return Text(

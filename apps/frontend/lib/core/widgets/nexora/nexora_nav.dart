@@ -1,7 +1,6 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../theme/app_colors.dart';
@@ -37,8 +36,8 @@ class NexoraNav extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  _NavItem(index: 0, currentIndex: currentIndex, icon: LucideIcons.house, label: 'Home', onTap: onTap),
-                  _NavItem(index: 1, currentIndex: currentIndex, icon: LucideIcons.arrowLeftRight, label: 'Transactions', onTap: onTap),
+                  _NavItem(index: 0, currentIndex: currentIndex, icon: LucideIcons.house, label: 'Beranda', onTap: onTap),
+                  _NavItem(index: 1, currentIndex: currentIndex, icon: LucideIcons.arrowLeftRight, label: 'Transaksi', onTap: onTap),
                   Expanded(child: Center(child: _AddButton(onTap: onAdd))),
                   _NavItem(index: 2, currentIndex: currentIndex, icon: LucideIcons.walletMinimal, label: 'Wallet', onTap: onTap),
                   _NavItem(index: 3, currentIndex: currentIndex, icon: LucideIcons.target, label: 'Goals', onTap: onTap),
@@ -151,8 +150,20 @@ class _AddButtonState extends State<_AddButton> {
 }
 
 class NexoraCreateSheet extends StatelessWidget {
-  const NexoraCreateSheet({super.key, required this.parentContext});
-  final BuildContext parentContext;
+  const NexoraCreateSheet({
+    super.key,
+    required this.onAddIncome,
+    required this.onAddExpense,
+    required this.onAddWallet,
+    required this.onAddGoal,
+    required this.onAskAi,
+  });
+
+  final VoidCallback onAddIncome;
+  final VoidCallback onAddExpense;
+  final VoidCallback onAddWallet;
+  final VoidCallback onAddGoal;
+  final VoidCallback onAskAi;
 
   @override
   Widget build(BuildContext context) {
@@ -167,19 +178,14 @@ class NexoraCreateSheet extends StatelessWidget {
           const SizedBox(height: 20),
           Align(alignment: Alignment.centerLeft, child: Text('Tambah', style: AppTypography.heading2)),
           const SizedBox(height: 12),
-          _Action(icon: LucideIcons.arrowDownLeft, title: 'Add Income', onTap: () => _go('/add-income', context)),
-          _Action(icon: LucideIcons.arrowUpRight, title: 'Add Expense', onTap: () => _go('/add-expense', context)),
-          _Action(icon: LucideIcons.walletMinimal, title: 'Add Wallet', onTap: () => _go('/wallet', context)),
-          _Action(icon: LucideIcons.target, title: 'Add Goal', onTap: () => _go('/goals', context)),
-          _Action(icon: LucideIcons.sparkles, title: 'Ask Nexora AI', onTap: () => _go('/ai', context)),
+          _Action(icon: LucideIcons.arrowDownLeft, title: 'Tambah Pemasukan', onTap: onAddIncome),
+          _Action(icon: LucideIcons.arrowUpRight, title: 'Tambah Pengeluaran', onTap: onAddExpense),
+          _Action(icon: LucideIcons.walletMinimal, title: 'Tambah Wallet', onTap: onAddWallet),
+          _Action(icon: LucideIcons.target, title: 'Tambah Goal', onTap: onAddGoal),
+          _Action(icon: LucideIcons.sparkles, title: 'Tanya Nexora AI', onTap: onAskAi),
         ]),
       ),
     );
-  }
-
-  void _go(String route, BuildContext sheetContext) {
-    Navigator.of(sheetContext).pop();
-    parentContext.push(route);
   }
 }
 

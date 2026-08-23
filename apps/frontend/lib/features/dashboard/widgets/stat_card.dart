@@ -5,6 +5,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_motion.dart';
 
 class StatCard extends StatelessWidget {
   const StatCard({
@@ -31,7 +32,7 @@ class StatCard extends StatelessWidget {
             borderRadius: AppRadius.radiusXL,
             onTap: () {},
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
+              duration: AppMotion.normal,
               curve: Curves.easeOutCubic,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -47,7 +48,7 @@ class StatCard extends StatelessWidget {
                     height: 46,
                     decoration: BoxDecoration(
                       color: iconColor.withValues(alpha: .14),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: AppRadius.radiusMD,
                       boxShadow: [
                         BoxShadow(
                           color: iconColor.withValues(alpha: .18),
@@ -84,7 +85,7 @@ class StatCard extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: iconColor.withValues(alpha: .12),
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: AppRadius.radiusLG,
                               ),
                               child: Icon(
                                 Icons.trending_up_rounded,

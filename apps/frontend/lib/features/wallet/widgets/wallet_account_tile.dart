@@ -92,7 +92,7 @@ class WalletAccountTile extends StatelessWidget {
 
                   InkWell(
                     onTap: onMoreTap,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: AppRadius.radiusLG,
                     child: const Padding(
                       padding: EdgeInsets.all(4),
                       child: Icon(

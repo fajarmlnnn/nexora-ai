@@ -7,6 +7,8 @@ import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/money_input.dart';
+import '../../../core/utils/nexora_id.dart';
 import '../../dashboard/models/transaction_model.dart';
 import '../../finance/state/financial_transaction_store.dart';
 import '../controllers/wallet_controller.dart';
@@ -39,6 +41,7 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
   WalletType _type = WalletType.bank;
   bool _isPrimary = false;
   bool _saving = false;
+  late final String _openingId = nexoraUuidV4();
 
   @override
   void dispose() {
@@ -78,9 +81,7 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
   Future<void> _save() async {
     if (_saving || !_formKey.currentState!.validate()) return;
 
-    final balance = double.tryParse(
-      _balanceController.text.replaceAll('.', '').replaceAll(',', ''),
-    );
+    final balance = parseRupiahInput(_balanceController.text, allowZero: true);
     if (balance == null || balance < 0) {
       _showError('Saldo awal tidak valid.');
       return;
@@ -118,7 +119,7 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
       if (balance > 0) {
         await ref.read(financialTransactionStoreProvider.notifier).add(
           TransactionModel(
-            id: 'opening-${DateTime.now().microsecondsSinceEpoch}',
+            id: _openingId,
             title: 'Saldo awal ${created.name}',
             amount: balance,
             type: TransactionType.income,

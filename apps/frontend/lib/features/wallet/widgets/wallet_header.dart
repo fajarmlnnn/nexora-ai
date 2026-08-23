@@ -6,6 +6,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_motion.dart';
 
 class WalletHeader extends StatelessWidget {
   const WalletHeader({
@@ -71,7 +72,7 @@ class WalletHeader extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF202A3B), Color(0xFF161E2C), Color(0xFF101722)],
+              colors: [AppColors.surfaceElevated, AppColors.surfaceElevated, AppColors.canvasElevated],
             ),
             borderRadius: AppRadius.radiusXXL,
             border: Border.all(color: Colors.white.withValues(alpha: .07)),
@@ -115,7 +116,7 @@ class WalletHeader extends StatelessWidget {
                   const SizedBox(height: 7),
 
                   AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
+                    duration: AppMotion.normal,
                     transitionBuilder: (child, animation) {
                       return FadeTransition(opacity: animation, child: child);
                     },
@@ -145,7 +146,7 @@ class WalletHeader extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.success.withValues(alpha: .12),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: AppRadius.radiusLG,
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
@@ -160,7 +161,6 @@ class WalletHeader extends StatelessWidget {
                               '+4.8%',
                               style: TextStyle(
                                 color: AppColors.success,
-                                fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),

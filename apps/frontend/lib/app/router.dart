@@ -101,7 +101,7 @@ class _NexoraErrorPage extends StatelessWidget {
                 children: [
                   Container(width: 88, height: 88, decoration: BoxDecoration(shape: BoxShape.circle, gradient: AppGradients.aiAurora, boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: .28), blurRadius: 30)]), child: const Icon(LucideIcons.sparkles, color: Colors.white, size: 38)),
                   const SizedBox(height: 24),
-                  Text('Something went off track', textAlign: TextAlign.center, style: AppTypography.heading1.copyWith(fontWeight: FontWeight.w800)),
+                  Text('Halaman tidak ditemukan', textAlign: TextAlign.center, style: AppTypography.heading1),
                   const SizedBox(height: 10),
                   Text('Nexora tidak menemukan halaman yang kamu cari. Kita bisa kembali ke pusat finansialmu.', textAlign: TextAlign.center, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, height: 1.5)),
                   const SizedBox(height: 20),

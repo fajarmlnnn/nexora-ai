@@ -61,7 +61,7 @@ class BalanceCard extends ConsumerWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF171525), Color(0xFF12121C), Color(0xFF0D0E15)],
+            colors: [AppColors.surface, AppColors.surfaceElevated, AppColors.canvasElevated],
           ),
           showBorder: true,
           padding: const EdgeInsets.all(14),
@@ -96,7 +96,7 @@ class BalanceCard extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Total Balance',
+                'Aset likuid',
                 style: AppTypography.caption.copyWith(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w600,
@@ -125,7 +125,7 @@ class BalanceCard extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: _FinanceBubble(
-                      title: 'Income',
+                      title: 'Pemasukan',
                       value: rupiah(summary.monthlyIncome),
                       trendText: _formatPercent(monthlyIncomeChange),
                       trendColor: monthlyIncomeChange >= 0
@@ -138,7 +138,7 @@ class BalanceCard extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _FinanceBubble(
-                      title: 'Expense',
+                      title: 'Pengeluaran',
                       value: rupiah(summary.monthlyExpense),
                       trendText: _formatPercent(monthlyExpenseChange),
                       trendColor: monthlyExpenseChange >= 0
@@ -200,7 +200,7 @@ class _BalanceHeader extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            'Financial Overview',
+            'Ringkasan keuangan',
             style: AppTypography.bodySmall.copyWith(
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w600,

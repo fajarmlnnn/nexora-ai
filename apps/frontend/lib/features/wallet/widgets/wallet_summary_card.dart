@@ -7,6 +7,7 @@ import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../models/wallet_model.dart';
+import '../../../core/theme/app_motion.dart';
 
 class WalletSummaryCard extends StatelessWidget {
   const WalletSummaryCard({
@@ -209,7 +210,7 @@ class _SummaryItem extends StatelessWidget {
                     const SizedBox(height: 3),
                     TweenAnimationBuilder<double>(
                       tween: Tween(begin: 0, end: balance),
-                      duration: const Duration(milliseconds: 700),
+                      duration: AppMotion.counter,
                       curve: Curves.easeOutCubic,
                       builder: (context, value, child) {
                         return Text(

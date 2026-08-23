@@ -7,6 +7,8 @@ import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/money_input.dart';
+import '../../../core/utils/nexora_id.dart';
 import '../../dashboard/models/budget_item.dart';
 import '../../dashboard/models/transaction_model.dart';
 import '../controllers/budget_controller.dart';
@@ -43,7 +45,7 @@ class _AddBudgetSheetState extends ConsumerState<_AddBudgetSheet> {
   }
 
   double? _parseAmount(String value) {
-    return double.tryParse(value.replaceAll('.', '').replaceAll(',', '').trim());
+    return parseRupiahInput(value);
   }
 
   Future<void> _save() async {
@@ -68,7 +70,7 @@ class _AddBudgetSheetState extends ConsumerState<_AddBudgetSheet> {
     setState(() => _saving = true);
     final budget = BudgetItem(
       // Identity is intentionally independent from the financial category.
-      id: 'budget-${DateTime.now().microsecondsSinceEpoch}',
+      id: nexoraUuidV4(),
       name: name,
       category: _category,
       spent: 0,

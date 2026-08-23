@@ -6,6 +6,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/money_input.dart';
+import '../../../core/utils/nexora_id.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../../finance/state/financial_transaction_store.dart';
 import '../../wallet/controllers/wallet_controller.dart';
@@ -24,6 +26,7 @@ class _TransferPageState extends ConsumerState<TransferPage> {
   String? _sourceId;
   String? _destinationId;
   bool _saving = false;
+  late final String _submitId = nexoraUuidV4();
 
   @override
   void dispose() {
@@ -33,9 +36,7 @@ class _TransferPageState extends ConsumerState<TransferPage> {
   }
 
   Future<void> _submit() async {
-    final amount = double.tryParse(
-      _amountController.text.replaceAll(RegExp(r'[^0-9.]'), ''),
-    );
+    final amount = parseRupiahInput(_amountController.text);
     if (amount == null || amount <= 0) {
       _showError('Masukkan nominal transfer yang valid.');
       return;
@@ -71,6 +72,7 @@ class _TransferPageState extends ConsumerState<TransferPage> {
             destinationWalletId: destinationId,
             amount: amount,
             note: _noteController.text,
+            idempotencyKey: _submitId,
           );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

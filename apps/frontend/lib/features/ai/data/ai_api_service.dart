@@ -4,32 +4,110 @@ import 'package:supabase_flutter/supabase_flutter.dart' show Supabase, SupabaseC
 import '../../../core/network/api_exception.dart';
 import '../../finance/state/financial_analytics_provider.dart';
 
+class AiGatewayHealth {
+  const AiGatewayHealth({
+    required this.configured,
+    required this.reachable,
+    required this.message,
+  });
+
+  final bool configured;
+  final bool reachable;
+  final String message;
+
+  bool get ready => configured && reachable;
+}
+
 class AiApiService {
   AiApiService({
     SupabaseClient? supabase,
     Dio? dio,
     String? baseUrl,
-  })  : _supabase = supabase ?? Supabase.instance.client,
+  })  : _supabaseOverride = supabase,
         _dio = dio ?? Dio(),
         _baseUrl = _normalizeBaseUrl(
           baseUrl ?? const String.fromEnvironment('NEXORA_API_BASE_URL'),
         );
 
-  final SupabaseClient _supabase;
+  final SupabaseClient? _supabaseOverride;
   final Dio _dio;
   final String _baseUrl;
 
+  SupabaseClient get _supabase => _supabaseOverride ?? Supabase.instance.client;
+
+  bool get isConfigured => _baseUrl.isNotEmpty;
+
   /// Accept either the complete API root (`.../api/v1`) or the backend host.
-  ///
-  /// This prevents a production build from silently calling `/ai/chat` when
-  /// the configured value only contains the backend host. The Laravel route
-  /// is registered under `/api/v1/ai/chat`.
   static String _normalizeBaseUrl(String raw) {
     final value = raw.trim().replaceFirst(RegExp(r'/+$'), '');
     if (value.isEmpty) return '';
     if (value.endsWith('/api/v1')) return value;
     if (value.endsWith('/api')) return '$value/v1';
     return '$value/api/v1';
+  }
+
+  Future<AiGatewayHealth> health() async {
+    if (_baseUrl.isEmpty) {
+      return const AiGatewayHealth(
+        configured: false,
+        reachable: false,
+        message: 'Server AI belum dikonfigurasi',
+      );
+    }
+
+    final session = _supabase.auth.currentSession;
+    if (session == null) {
+      return const AiGatewayHealth(
+        configured: true,
+        reachable: false,
+        message: 'Sesi login tidak ditemukan. Silakan masuk kembali.',
+      );
+    }
+
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '$_baseUrl/ai/health',
+        options: Options(
+          headers: {'Authorization': 'Bearer ${session.accessToken}'},
+          responseType: ResponseType.json,
+          sendTimeout: const Duration(seconds: 8),
+          receiveTimeout: const Duration(seconds: 8),
+        ),
+      );
+      final success = response.data?['success'] == true;
+      if (success) {
+        return const AiGatewayHealth(
+          configured: true,
+          reachable: true,
+          message: 'Gateway AI siap',
+        );
+      }
+      return const AiGatewayHealth(
+        configured: true,
+        reachable: false,
+        message: 'Gateway AI belum siap',
+      );
+    } on DioException catch (error) {
+      final status = error.response?.statusCode;
+      if (status == 503) {
+        return const AiGatewayHealth(
+          configured: true,
+          reachable: false,
+          message: 'Penyedia AI belum tersedia',
+        );
+      }
+      return const AiGatewayHealth(
+        configured: true,
+        reachable: false,
+        message: 'Tidak bisa terhubung ke server AI',
+      );
+    } catch (_) {
+      return const AiGatewayHealth(
+        configured: true,
+        reachable: false,
+        message: 'Tidak bisa terhubung ke server AI',
+      );
+    }
   }
 
   Future<String> chat({
@@ -92,8 +170,6 @@ class AiApiService {
             if (analytics.topExpenseCategory != null)
               'top_expense_value': analytics.topExpenseCategory!.value,
             'period_start': analytics.start.toIso8601String().split('T').first,
-            // Analytics uses [start, end), but users need an inclusive
-            // calendar date in the AI's natural-language summary.
             'period_end': analytics.endInclusive.toIso8601String().split('T').first,
           },
         },

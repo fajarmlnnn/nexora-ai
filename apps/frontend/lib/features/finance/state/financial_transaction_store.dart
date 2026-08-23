@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/auth_state_provider.dart';
+import '../../../core/utils/nexora_id.dart';
 import '../../dashboard/models/transaction_model.dart';
 import '../repositories/supabase_transaction_repository.dart';
 import '../repositories/transaction_repository.dart';
@@ -10,7 +12,10 @@ final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
 
 final financialTransactionStoreProvider =
     StateNotifierProvider<FinancialTransactionStore, List<TransactionModel>>(
-  (ref) => FinancialTransactionStore(ref.read(transactionRepositoryProvider))..load(),
+  (ref) {
+    ref.watch(currentUserProvider);
+    return FinancialTransactionStore(ref.read(transactionRepositoryProvider))..load();
+  },
 );
 
 class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
@@ -96,6 +101,7 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
     required double amount,
     String title = 'Transfer antar wallet',
     String? note,
+    String? idempotencyKey,
   }) async {
     if (sourceWalletId == destinationWalletId) {
       throw ArgumentError('Wallet sumber dan tujuan harus berbeda.');
@@ -108,7 +114,7 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
     }
 
     final transaction = TransactionModel(
-      id: 'transfer-${DateTime.now().microsecondsSinceEpoch}',
+      id: (idempotencyKey ?? nexoraUuidV4()).trim(),
       title: title.trim().isEmpty ? 'Transfer antar wallet' : title.trim(),
       amount: amount,
       type: TransactionType.transfer,
@@ -151,7 +157,7 @@ class FinancialTransactionStore extends StateNotifier<List<TransactionModel>> {
 
   /// Reloads the remote source. This intentionally does not delete remote
   /// financial data; clearing a local cache must never erase real finances.
-  Future<void> clearAndRestoreDemoData() async {
+  Future<void> refreshFromServer() async {
     await load();
   }
 

@@ -78,8 +78,8 @@ final aiInsightProvider = Provider<AIInsight>((ref) {
 
   if (analytics.transactionCount == 0 && previous.transactionCount == 0) {
     return const AIInsight(
-      title: 'Nexora AI Insight',
-      message: 'Belum ada transaksi. Tambahkan transaksi untuk mendapatkan insight berdasarkan data keuanganmu.',
+      title: 'Ringkasan',
+      message: 'Belum ada transaksi. Tambahkan transaksi untuk mendapatkan ringkasan berdasarkan data keuanganmu.',
       level: InsightLevel.positive,
     );
   }
@@ -88,7 +88,7 @@ final aiInsightProvider = Provider<AIInsight>((ref) {
     final change = ((analytics.expense - previous.expense) / previous.expense) * 100;
     final direction = change >= 0 ? 'naik' : 'turun';
     return AIInsight(
-      title: 'Nexora AI Insight',
+      title: 'Pola transaksi',
       message: 'Pengeluaran bulan ini $direction ${change.abs().toStringAsFixed(1)}% dibanding bulan lalu berdasarkan transaksi yang tercatat.',
       level: change > 0 ? InsightLevel.warning : InsightLevel.positive,
     );
@@ -96,15 +96,15 @@ final aiInsightProvider = Provider<AIInsight>((ref) {
 
   if (analytics.income > 0 && analytics.expense == 0) {
     return const AIInsight(
-      title: 'Nexora AI Insight',
-      message: 'Belum ada pengeluaran bulan ini. Insight perbandingan akan tersedia setelah data pengeluaran tercatat.',
+      title: 'Ringkasan',
+      message: 'Belum ada pengeluaran bulan ini. Perbandingan akan tersedia setelah data pengeluaran tercatat.',
       level: InsightLevel.positive,
     );
   }
 
   return const AIInsight(
-    title: 'Nexora AI Insight',
-    message: 'Belum cukup data historis untuk membuat perbandingan. Lanjutkan pencatatan transaksi agar insight semakin akurat.',
+    title: 'Analisis',
+    message: 'Belum cukup data historis untuk membuat perbandingan. Lanjutkan pencatatan transaksi agar ringkasan semakin akurat.',
     level: InsightLevel.positive,
   );
 });

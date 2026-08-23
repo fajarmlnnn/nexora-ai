@@ -17,7 +17,11 @@ class GoalDetailPageV2 extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final goals = ref.watch(financialGoalsProvider);
+    final goalsAsync = ref.watch(financialGoalsProvider);
+    if (goalsAsync.isLoading && !goalsAsync.hasValue) {
+      return const PremiumScaffold(child: Center(child: CircularProgressIndicator()));
+    }
+    final goals = goalsAsync.valueOrNull ?? const <FinancialGoalSnapshot>[];
     FinancialGoalSnapshot? goal;
     for (final item in goals) {
       if (item.id == goalId) {
@@ -342,7 +346,7 @@ class _GoalHero extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF241744), Color(0xFF16162C), Color(0xFF101A2D)],
+          colors: [AppColors.surface, AppColors.surfaceElevated, AppColors.canvasElevated],
         ),
         borderRadius: AppRadius.radiusXL,
         border: Border.all(color: AppColors.primary.withValues(alpha: .25)),
@@ -397,7 +401,7 @@ class _GoalHero extends StatelessWidget {
           const SizedBox(height: 24),
           Text(
             rupiah(goal.saved),
-            style: AppTypography.display.copyWith(fontSize: 34, fontWeight: FontWeight.w900),
+            style: AppTypography.display.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 4),
           Text(
@@ -406,7 +410,7 @@ class _GoalHero extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           ClipRRect(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppRadius.radiusPill,
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 9,
@@ -483,7 +487,7 @@ class _AIPlan extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Color(0xFF20173B), Color(0xFF171B32)]),
+        gradient: const LinearGradient(colors: [AppColors.surface, AppColors.surfaceElevated]),
         borderRadius: AppRadius.radiusXL,
         border: Border.all(color: AppColors.primary.withValues(alpha: .2)),
       ),

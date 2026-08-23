@@ -1,11 +1,11 @@
 {
-    "name": "frontend",
-    "short_name": "frontend",
+    "name": "Nexora",
+    "short_name": "Nexora",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#05040C",
+    "theme_color": "#8B5CF6",
+    "description": "Nexora — asisten keuangan personal",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

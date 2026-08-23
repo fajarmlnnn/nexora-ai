@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/auth_state_provider.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../dashboard/models/budget_item.dart';
 import '../../dashboard/models/transaction_model.dart';
 import '../../finance/state/financial_analytics_provider.dart';
@@ -20,9 +22,19 @@ class BudgetController extends AsyncNotifier<List<BudgetItem>> {
 
   @override
   Future<List<BudgetItem>> build() async {
+    ref.watch(currentUserProvider);
     final budgets = await _repository.getBudgets();
     final transactions = ref.watch(financialTransactionStoreProvider);
     return _applyTransactions(budgets, transactions);
+  }
+
+  Future<void> retry() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final budgets = await _repository.getBudgets();
+      final transactions = ref.read(financialTransactionStoreProvider);
+      return _applyTransactions(budgets, transactions);
+    });
   }
 
   Future<bool> addBudget(BudgetItem budget) async {
@@ -126,20 +138,20 @@ final budgetUsageProvider = Provider<double>((ref) {
 Color budgetColorForCategory(String category) {
   switch (category) {
     case 'food':
-      return const Color(0xFF35D07F);
+      return AppColors.success;
     case 'transport':
-      return const Color(0xFFFFB84D);
+      return AppColors.warning;
     case 'shopping':
-      return const Color(0xFFFF5D6C);
+      return AppColors.danger;
     case 'bills':
-      return const Color(0xFF7C8CFF);
+      return AppColors.info;
     case 'entertainment':
-      return const Color(0xFFB77CFF);
+      return AppColors.ai;
     case 'health':
-      return const Color(0xFFFF6FAE);
+      return AppColors.chart2;
     case 'education':
-      return const Color(0xFF55C8FF);
+      return AppColors.chart2;
     default:
-      return const Color(0xFF9A72FF);
+      return AppColors.brand;
   }
 }

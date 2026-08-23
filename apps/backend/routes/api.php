@@ -2,8 +2,6 @@
 
 use App\Http\Controllers\Api\V1\AiController;
 use App\Http\Controllers\Api\V1\AuthController;
-use App\Http\Controllers\Api\V1\TransactionController;
-use App\Http\Controllers\Api\V1\WalletController;
 use App\Http\Middleware\AiRateLimit;
 use App\Http\Middleware\AuthenticateSupabaseUser;
 use Illuminate\Support\Facades\Route;
@@ -28,8 +26,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
 
-        Route::apiResource('wallets', WalletController::class);
-        Route::apiResource('transactions', TransactionController::class);
+        // Legacy Laravel wallets/transactions are unmounted.
+        // Flutter uses Supabase as the financial source of truth.
     });
 
     // Supabase Auth remains the Flutter identity provider. These routes verify

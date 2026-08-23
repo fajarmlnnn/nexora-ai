@@ -3,12 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/money_input.dart';
 import '../../../core/widgets/context_ai_insight.dart';
-import '../../../core/widgets/card/n_card.dart';
+import '../../../core/widgets/nexora/nexora.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../../finance/state/financial_analytics_provider.dart';
-import '../../wallet/controllers/wallet_controller.dart';
 import '../controllers/financial_overview_controller.dart';
 
 class FinancialOverviewRealtimePage extends ConsumerWidget {
@@ -16,121 +17,124 @@ class FinancialOverviewRealtimePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final assets = ref.watch(totalWalletBalanceProvider);
-    final goalSaved = ref.watch(totalGoalSavedProvider);
-    final goalTarget = ref.watch(totalGoalTargetProvider);
-    final debt = ref.watch(totalInstallmentRemainingProvider);
-    final due = ref.watch(installmentDueThisPeriodProvider);
-    final installments = ref.watch(installmentsProvider);
+    final snapshot = ref.watch(financialStateSnapshotProvider);
     final analytics = ref.watch(financialAnalyticsProvider);
 
-    final income = analytics.income;
-    final expense = analytics.expense;
-    final cashflow = analytics.netCashflow;
-    final netWorth = assets - debt;
-    final goalProgress = goalTarget <= 0 ? 0.0 : (goalSaved / goalTarget).clamp(0.0, 1.0);
-    final available = assets - goalSaved - due;
-
-    return PremiumScaffold(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
+    return NexoraScaffold(
+      appBar: const NexoraAppBar(title: 'Ringkasan keuangan', subtitle: 'Aset likuid dan tujuan'),
+      body: ListView(
+        padding: AppSpacing.screen,
         children: [
-          Row(children: [
-            IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(LucideIcons.arrowLeft, size: 20)),
-            const SizedBox(width: 4),
-            Expanded(child: Text('Financial Overview', style: AppTypography.heading2)),
-          ]),
-          const SizedBox(height: 10),
-          NCard(
-            gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF171525), Color(0xFF12121C), Color(0xFF0D0E15)]),
-            showBorder: true,
-            padding: const EdgeInsets.all(18),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Net Worth', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-              const SizedBox(height: 6),
-              FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(rupiah(netWorth), style: AppTypography.heading1.copyWith(color: Colors.white, fontWeight: FontWeight.w800))),
-              const SizedBox(height: 6),
-              Text('Total aset dikurangi seluruh kewajiban tercatat.', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
-            ]),
+          NexoraSurface(
+            variant: NexoraSurfaceVariant.hero,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Aset likuid', style: AppTypography.bodySmall),
+                const SizedBox(height: AppSpacing.xs),
+                Semantics(
+                  label: spokenRupiah(snapshot.liquidAssets),
+                  child: NexoraAmount(amount: snapshot.liquidAssets, role: NexoraAmountRole.hero),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text('Saldo wallet yang dapat digunakan. Tabungan tujuan dicatat terpisah.', style: AppTypography.caption),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          Row(children: [
-            Expanded(child: _Metric(label: 'Total Aset', value: rupiah(assets), icon: LucideIcons.wallet, accent: AppColors.primaryLight)),
-            const SizedBox(width: 8),
-            Expanded(child: _Metric(label: 'Kewajiban', value: rupiah(debt), icon: LucideIcons.creditCard, accent: AppColors.danger)),
-          ]),
-          const SizedBox(height: 8),
-          Row(children: [
-            Expanded(child: _Metric(label: 'Goal', value: rupiah(goalSaved), icon: LucideIcons.target, accent: AppColors.primaryLight)),
-            const SizedBox(width: 8),
-            Expanded(child: _Metric(label: 'Jatuh Tempo', value: rupiah(due), icon: LucideIcons.calendarClock, accent: AppColors.warning)),
-          ]),
-          const SizedBox(height: 12),
-          _Section(title: 'Goals', trailing: '${(goalProgress * 100).round()}%', child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            ClipRRect(borderRadius: BorderRadius.circular(99), child: LinearProgressIndicator(value: goalProgress, minHeight: 7, backgroundColor: AppColors.border.withValues(alpha: .35), valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight))),
-            const SizedBox(height: 7),
-            Text('${rupiah(goalSaved)} dari ${rupiah(goalTarget)} target', style: AppTypography.bodySmall),
-          ])),
-          const SizedBox(height: 8),
-          _Section(title: 'Cicilan & Kewajiban', trailing: rupiah(debt), child: Column(children: [
-            for (final item in installments)
-              Padding(padding: const EdgeInsets.only(bottom: 7), child: Row(children: [
-                Expanded(child: Text(item.title, style: AppTypography.bodySmall)),
-                Text(rupiah(item.monthlyAmount), style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700)),
-                const SizedBox(width: 8),
-                Text(item.isPaid ? 'Lunas' : '${item.dueInDays} hari', style: AppTypography.caption.copyWith(color: item.isPaid ? AppColors.success : AppColors.warning)),
-              ])),
-            Align(alignment: Alignment.centerLeft, child: Text('Jatuh tempo periode ini: ${rupiah(due)}', style: AppTypography.caption.copyWith(color: AppColors.textSecondary))),
-          ])),
-          const SizedBox(height: 8),
-          _Section(title: 'Available', trailing: rupiah(available), child: Text(available < 0 ? 'Defisit setelah alokasi goal dan kewajiban periode ini.' : 'Estimasi dana setelah alokasi goal dan kewajiban periode ini.', style: AppTypography.bodySmall)),
-          const SizedBox(height: 8),
-          _Section(title: 'Cashflow', trailing: _signed(cashflow), child: Text('Income ${rupiah(income)} • Expense ${rupiah(expense)}', style: AppTypography.bodySmall)),
-          const SizedBox(height: 12),
-          ContextAIInsight(title: 'Financial Overview', message: _ai(assets: assets, debt: debt, cashflow: cashflow, available: available)),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(child: _Metric(label: 'Total aset', value: snapshot.totalAssets, icon: LucideIcons.wallet, accent: AppColors.brandBright)),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(child: _Metric(label: 'Tabungan tujuan', value: snapshot.goalSaved, icon: LucideIcons.target, accent: AppColors.ai)),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Row(
+            children: [
+              Expanded(child: _Metric(label: 'Kekayaan bersih', value: snapshot.netWorth, icon: LucideIcons.scale, accent: AppColors.success)),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(child: _Metric(label: 'Kewajiban', value: snapshot.liabilities, icon: LucideIcons.creditCard, accent: AppColors.textMuted)),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          NexoraSurface(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                NexoraSectionHeader(title: 'Tujuan', actionLabel: '${(snapshot.goalProgress * 100).round()}%'),
+                const SizedBox(height: AppSpacing.sm),
+                NexoraProgress(value: snapshot.goalProgress),
+                const SizedBox(height: AppSpacing.xs),
+                Text('${rupiah(snapshot.goalSaved)} dari ${rupiah(snapshot.goalTarget)} target', style: AppTypography.bodySmall),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          const NexoraBanner(
+            title: 'Cicilan',
+            message: 'Kewajiban cicilan belum tercatat di buku besar, jadi tidak memengaruhi kekayaan bersih.',
+            tone: NexoraBannerTone.info,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          NexoraSurface(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const NexoraSectionHeader(title: 'Arus kas'),
+                const SizedBox(height: AppSpacing.xs),
+                Text('Pemasukan ${rupiah(analytics.income)} • Pengeluaran ${rupiah(analytics.expense)}', style: AppTypography.bodySmall),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ContextAIInsight(
+            title: 'Analisis',
+            message: _summary(snapshot: snapshot, cashflow: analytics.netCashflow),
+          ),
         ],
       ),
     );
   }
 
-  static String _signed(double value) => value == 0 ? rupiah(0) : value > 0 ? '+${rupiah(value)}' : '-${rupiah(value.abs())}';
-
-  static String _ai({required double assets, required double debt, required double cashflow, required double available}) {
-    if (assets == 0) return 'Belum ada saldo wallet yang terbaca. Tambahkan wallet agar Nexora bisa menganalisis kondisi keuanganmu.';
-    if (available < 0) return 'Kewajiban periode ini lebih besar daripada dana yang tersedia setelah alokasi goal. Prioritaskan cicilan sebelum pengeluaran non-esensial.';
-    if (cashflow < 0) return 'Cashflow periode ini negatif. Pengeluaran lebih besar daripada pemasukan yang tercatat.';
-    if (debt > assets) return 'Total kewajiban lebih besar daripada saldo wallet saat ini. Jaga likuiditas dan hindari menambah cicilan baru dulu.';
-    return 'Kondisi keuangan saat ini cukup terkendali. Cashflow positif dan kewajiban masih berada di bawah total aset yang terbaca.';
+  static String _summary({required FinancialStateSnapshot snapshot, required double cashflow}) {
+    if (snapshot.liquidAssets == 0) {
+      return 'Belum ada saldo wallet yang terbaca. Tambahkan wallet agar ringkasan keuangan bisa dihitung.';
+    }
+    if (cashflow < 0) {
+      return 'Arus kas periode ini negatif. Pengeluaran lebih besar daripada pemasukan yang tercatat.';
+    }
+    return 'Aset likuid berasal dari saldo wallet. Tabungan tujuan tetap dihitung sebagai aset, tetapi tidak likuid.';
   }
 }
 
 class _Metric extends StatelessWidget {
   const _Metric({required this.label, required this.value, required this.icon, required this.accent});
   final String label;
-  final String value;
+  final double value;
   final IconData icon;
   final Color accent;
 
   @override
-  Widget build(BuildContext context) => NCard(showBorder: true, padding: const EdgeInsets.all(13), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Container(width: 30, height: 30, decoration: BoxDecoration(color: accent.withValues(alpha: .10), shape: BoxShape.circle), child: Icon(icon, size: 15, color: accent)),
-    const SizedBox(height: 8),
-    Text(label, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
-    const SizedBox(height: 3),
-    FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(value, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800))),
-  ]));
-}
-
-class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.trailing, required this.child});
-  final String title;
-  final String trailing;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => NCard(showBorder: true, padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Row(children: [Expanded(child: Text(title, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700))), Flexible(child: Text(trailing, textAlign: TextAlign.end, overflow: TextOverflow.ellipsis, style: AppTypography.labelMedium.copyWith(color: AppColors.primaryLight, fontWeight: FontWeight.w800)))]),
-    const SizedBox(height: 10),
-    child,
-  ]));
+  Widget build(BuildContext context) {
+    return NexoraSurface(
+      compact: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: accent),
+          const SizedBox(height: AppSpacing.xs),
+          Text(label, style: AppTypography.caption),
+          Semantics(
+            label: spokenRupiah(value),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(rupiah(value), style: AppTypography.labelLarge),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

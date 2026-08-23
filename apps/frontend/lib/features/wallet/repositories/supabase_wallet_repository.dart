@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/supabase/supabase_client.dart';
 import '../models/wallet_model.dart';
 import 'wallet_repository.dart';
+import '../../../core/theme/app_colors.dart';
 
 class SupabaseWalletRepository implements WalletRepository {
   SupabaseWalletRepository({SupabaseClient? client})
@@ -193,11 +194,11 @@ class SupabaseWalletRepository implements WalletRepository {
   Color _colorFromDb(dynamic value) {
     if (value is int) return Color(value);
     final raw = value?.toString().trim() ?? '';
-    if (raw.isEmpty) return const Color(0xFF2563EB);
+    if (raw.isEmpty) return AppColors.info;
     final normalized = raw.replaceFirst('#', '');
     final hex = normalized.length == 6 ? 'FF$normalized' : normalized;
     final parsed = int.tryParse(hex, radix: 16);
-    return parsed == null ? const Color(0xFF2563EB) : Color(parsed);
+    return parsed == null ? AppColors.info : Color(parsed);
   }
 
   String _colorToHex(Color color) =>

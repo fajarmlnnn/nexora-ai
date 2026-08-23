@@ -5,14 +5,13 @@ import 'app_colors.dart';
 abstract final class AppGradients {
   AppGradients._();
 
-  // Nexora 2.0 brand gradients.
   static const LinearGradient aurora = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      AppColors.brandPrimaryBright,
-      AppColors.brandPrimary,
-      AppColors.brandPrimaryDeep,
+      AppColors.brandBright,
+      AppColors.brand,
+      AppColors.brandDeep,
     ],
     stops: [0.0, 0.48, 1.0],
   );
@@ -20,106 +19,56 @@ abstract final class AppGradients {
   static const LinearGradient auroraBlue = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [AppColors.brandCyan, AppColors.brandSecondary, AppColors.brandPrimary],
+    colors: [AppColors.brandCyan, AppColors.info, AppColors.brand],
     stops: [0.0, 0.45, 1.0],
   );
 
   static const LinearGradient cosmicBackground = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [AppColors.space950, AppColors.space900, Color(0xFF100A24)],
+    colors: [AppColors.canvas, AppColors.canvasElevated, AppColors.space800],
     stops: [0.0, 0.58, 1.0],
   );
 
   static const LinearGradient glassSurface = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [AppColors.surfaceGlassStrong, AppColors.surfaceGlass],
+    colors: [AppColors.glassStrong, AppColors.glass],
   );
 
   static const LinearGradient aiAurora = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [AppColors.brandMagenta, AppColors.brandPrimary, AppColors.brandSecondary],
+    colors: [AppColors.ai, AppColors.brand, AppColors.info],
     stops: [0.0, 0.52, 1.0],
   );
 
-  // Legacy gradients kept for incremental migration.
-  static const LinearGradient primary = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [AppColors.primaryLight, AppColors.primary, AppColors.primaryDark],
-    stops: [0.0, .55, 1],
-  );
-
-  static const LinearGradient heroCard = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF170F48), Color(0xFF120C35), Color(0xFF09091C)],
-    stops: [0.0, .56, 1.0],
-  );
-
-  static const LinearGradient nexoraBackground = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [AppColors.nexoraBackgroundEdge, AppColors.background, Color(0xFF07071A)],
-    stops: [0.0, .52, 1.0],
-  );
-
-  static const LinearGradient background = nexoraBackground;
-
-  static const LinearGradient balanceCard = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF9B7BFF), AppColors.primary, Color(0xFF351D83)],
-    stops: [0, .45, 1],
-  );
-
-  static const LinearGradient aiCard = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF8E5FF6), Color(0xFF4D25B1), Color(0xFF21105B)],
-  );
-
-  static const LinearGradient button = LinearGradient(
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
-    colors: [AppColors.sendButton, AppColors.aiAccent],
-  );
-
-  static const LinearGradient surface = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [AppColors.card, AppColors.cardSecondary],
-  );
+  static const LinearGradient primary = aurora;
+  static const LinearGradient heroCard = cosmicBackground;
+  static const LinearGradient nexoraBackground = cosmicBackground;
+  static const LinearGradient background = cosmicBackground;
+  static const LinearGradient balanceCard = aurora;
+  static const LinearGradient aiCard = aiAurora;
+  static const LinearGradient button = aurora;
+  static const LinearGradient surface = glassSurface;
+  static const LinearGradient glass = glassSurface;
+  static const LinearGradient premiumDark = cosmicBackground;
 
   static const LinearGradient success = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF54E38E), AppColors.success],
+    colors: [AppColors.success, AppColors.chart3],
   );
 
   static const LinearGradient warning = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFFFD06A), AppColors.warning],
+    colors: [AppColors.warning, AppColors.chart4],
   );
 
   static const LinearGradient danger = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFFF7A7A), AppColors.danger],
-  );
-
-  static const LinearGradient glass = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0x18FFFFFF), Color(0x08FFFFFF)],
-  );
-
-  static const LinearGradient premiumDark = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0xFF00010A), Color(0xFF0A0A1F)],
+    colors: [AppColors.danger, AppColors.chart5],
   );
 }

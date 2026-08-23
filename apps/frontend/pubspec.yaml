@@ -1,5 +1,5 @@
 name: frontend
-description: Nexora AI - Personal Finance with AI
+description: Nexora — asisten keuangan personal
 publish_to: "none"
 
 version: 1.0.0+1
@@ -12,39 +12,20 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-
-  # State Management
   flutter_riverpod: ^2.6.1
-
-  # Routing
   go_router: ^16.0.0
-
-  # Networking
   dio: ^5.9.0
   supabase_flutter: ^2.9.1
   supabase: ^2.16.0
-
-  # UI
   flutter_svg: ^2.2.0
-  lottie: ^3.3.1
-  flutter_animate: ^4.5.2
-  animations: ^2.0.11
   fl_chart: ^1.1.1
-
-  # Icons
   lucide_icons_flutter: ^3.0.6
-
-  # Local Storage
   shared_preferences: ^2.5.3
-  flutter_secure_storage: ^10.3.1
-
-  # Utils
   intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^6.0.0
 
 flutter:
@@ -54,7 +35,6 @@ flutter:
     - assets/icons/
     - assets/images/
     - assets/logo/
-    - assets/lottie/
     - assets/svg/
     - assets/mascot/
 
@@ -69,15 +49,5 @@ flutter:
           weight: 600
         - asset: assets/fonts/Plus Jakarta Sans/PlusJakartaSans-Bold.ttf
           weight: 700
-
-    # Legacy font retained only for screens not yet migrated.
-    - family: Poppins
-      fonts:
-        - asset: assets/fonts/poppins/Poppins-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/poppins/Poppins-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/poppins/Poppins-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/poppins/Poppins-Bold.ttf
-          weight: 700
+        - asset: assets/fonts/Plus Jakarta Sans/PlusJakartaSans-ExtraBold.ttf
+          weight: 800
