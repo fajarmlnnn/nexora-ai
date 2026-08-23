@@ -273,8 +273,9 @@ class SupabaseTransactionRepository implements TransactionRepository {
       case 'transfer':
         return TransactionType.transfer;
       case 'expense':
-      default:
         return TransactionType.expense;
+      default:
+        throw StateError('Tipe transaksi tidak dikenali: $value');
     }
   }
 
@@ -282,12 +283,16 @@ class SupabaseTransactionRepository implements TransactionRepository {
     for (final category in TransactionCategory.values) {
       if (category.name == value) return category;
     }
-    return TransactionCategory.other;
+    throw StateError('Kategori transaksi tidak dikenali: $value');
   }
 
   DateTime _parseDate(dynamic value) {
-    final parsed = DateTime.tryParse(value?.toString() ?? '');
-    return (parsed ?? DateTime.now().toUtc()).toLocal();
+    final raw = value?.toString().trim() ?? '';
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) {
+      throw StateError('Tanggal transaksi tidak valid: $raw');
+    }
+    return parsed.toLocal();
   }
 
   DateTime? _parseOptionalDate(dynamic value) {
@@ -295,8 +300,13 @@ class SupabaseTransactionRepository implements TransactionRepository {
     return DateTime.tryParse(value.toString())?.toLocal();
   }
 
-  double _number(dynamic value) =>
-      value is num ? value.toDouble() : double.parse(value.toString());
+  double _number(dynamic value) {
+    final parsed = value is num ? value.toDouble() : double.tryParse(value.toString());
+    if (parsed == null || !parsed.isFinite) {
+      throw StateError('Nominal transaksi tidak valid: $value');
+    }
+    return parsed;
+  }
 
   String _defaultTitle(String? type) {
     switch (type) {
@@ -304,8 +314,10 @@ class SupabaseTransactionRepository implements TransactionRepository {
         return 'Pemasukan';
       case 'transfer':
         return 'Transfer antar wallet';
-      default:
+      case 'expense':
         return 'Pengeluaran';
+      default:
+        throw StateError('Tipe transaksi tidak dikenali: $type');
     }
   }
 
