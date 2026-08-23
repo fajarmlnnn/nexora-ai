@@ -29,7 +29,7 @@ class NexoraSheet extends StatelessWidget {
       isScrollControlled: isScrollControlled,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: .55),
-      builder: (context) => NexoraSheet(child: child, title: title, overline: overline, actions: actions),
+      builder: (context) => NexoraSheet(title: title, overline: overline, actions: actions, child: child),
     );
   }
 
