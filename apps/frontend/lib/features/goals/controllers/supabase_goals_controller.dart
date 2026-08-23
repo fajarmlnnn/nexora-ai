@@ -86,10 +86,17 @@ class FinancialGoalSnapshot {
 }
 
 String _dbType(String type) {
-  switch (type.toLowerCase()) {
-    case 'wishlist': return 'wishlist';
-    case 'debt': return 'debt';
-    default: return 'saving';
+  switch (type.trim().toLowerCase()) {
+    case 'wishlist':
+      return 'wishlist';
+    case 'debt':
+    case 'utang':
+      return 'debt';
+    case 'saving':
+    case 'savings':
+    case 'tabungan':
+    default:
+      return 'saving';
   }
 }
 
