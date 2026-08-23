@@ -108,13 +108,23 @@ class SupabaseFinancialContextService
 
             if ($type === 'income') {
                 $income += $value;
+                if (! is_finite($income)) {
+                    return [];
+                }
             } elseif ($type === 'expense') {
                 $expense += $value;
+                if (! is_finite($expense)) {
+                    return [];
+                }
+
                 $category = is_string($row['category'] ?? null) && trim($row['category']) !== ''
                     ? trim($row['category'])
                     : null;
                 if ($category !== null) {
                     $expenseByCategory[$category] = ($expenseByCategory[$category] ?? 0.0) + $value;
+                    if (! is_finite($expenseByCategory[$category])) {
+                        return [];
+                    }
                 }
             } elseif ($type !== 'transfer') {
                 return [];
@@ -124,7 +134,14 @@ class SupabaseFinancialContextService
         arsort($expenseByCategory, SORT_NUMERIC);
         $topExpenseCategory = array_key_first($expenseByCategory);
         $netCashflow = $income - $expense;
+        if (! is_finite($netCashflow)) {
+            return [];
+        }
+
         $savingsRate = $income > 0 ? round(($netCashflow / $income) * 100, 1) : null;
+        if ($savingsRate !== null && ! is_finite($savingsRate)) {
+            return [];
+        }
 
         return [
             'period' => now()->format('Y-m'),
