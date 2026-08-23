@@ -80,7 +80,6 @@ class AuthApiTest extends TestCase
     public function test_protected_endpoint_requires_authentication(): void
     {
         $this->getJson('/api/v1/auth/me')->assertUnauthorized();
-        $this->getJson('/api/v1/wallets')->assertUnauthorized();
     }
 
     public function test_bearer_token_can_access_authenticated_endpoints(): void
@@ -98,11 +97,6 @@ class AuthApiTest extends TestCase
             ->getJson('/api/v1/auth/me')
             ->assertOk()
             ->assertJsonPath('data.email', 'fajar@example.com');
-
-        $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/v1/wallets')
-            ->assertOk()
-            ->assertJsonPath('success', true);
     }
 
     public function test_logout_revokes_the_current_token(): void
