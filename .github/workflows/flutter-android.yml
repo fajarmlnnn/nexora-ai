@@ -65,50 +65,36 @@ jobs:
             echo "No test directory found. Skipping tests."
           fi
 
-      - name: Run Supabase integration tests when credentials are available
+      - name: Run authenticated Supabase E2E tests when explicitly configured
         env:
           NEXORA_E2E_EMAIL: ${{ secrets.NEXORA_E2E_EMAIL }}
           NEXORA_E2E_PASSWORD: ${{ secrets.NEXORA_E2E_PASSWORD }}
         run: |
           set -euo pipefail
-          if [ -n "$NEXORA_SUPABASE_URL" ] && \
-             [ -n "$NEXORA_SUPABASE_PUBLISHABLE_KEY" ] && \
-             [ -n "$NEXORA_E2E_EMAIL" ] && \
-             [ -n "$NEXORA_E2E_PASSWORD" ]; then
-            echo "Running authenticated Supabase frontend integration tests."
 
-            flutter test test/integration/supabase_financial_e2e_test.dart \
-              --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
-              --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY" \
-              --dart-define=NEXORA_E2E_EMAIL="$NEXORA_E2E_EMAIL" \
-              --dart-define=NEXORA_E2E_PASSWORD="$NEXORA_E2E_PASSWORD"
-
-            flutter test test/integration/supabase_security_e2e_test.dart \
-              --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
-              --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY" \
-              --dart-define=NEXORA_E2E_EMAIL="$NEXORA_E2E_EMAIL" \
-              --dart-define=NEXORA_E2E_PASSWORD="$NEXORA_E2E_PASSWORD"
-
-            flutter test test/integration/supabase_goal_lifecycle_e2e_test.dart \
-              --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
-              --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY" \
-              --dart-define=NEXORA_E2E_EMAIL="$NEXORA_E2E_EMAIL" \
-              --dart-define=NEXORA_E2E_PASSWORD="$NEXORA_E2E_PASSWORD"
-
-            flutter test test/integration/supabase_financial_invariants_e2e_test.dart \
-              --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
-              --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY" \
-              --dart-define=NEXORA_E2E_EMAIL="$NEXORA_E2E_EMAIL" \
-              --dart-define=NEXORA_E2E_PASSWORD="$NEXORA_E2E_PASSWORD"
-
-            flutter test test/integration/supabase_budget_lifecycle_e2e_test.dart \
-              --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
-              --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY" \
-              --dart-define=NEXORA_E2E_EMAIL="$NEXORA_E2E_EMAIL" \
-              --dart-define=NEXORA_E2E_PASSWORD="$NEXORA_E2E_PASSWORD"
-          else
-            echo "::notice::Supabase E2E credentials are not configured; skipping live integration tests."
+          if [ -z "$NEXORA_SUPABASE_URL" ] || \
+             [ -z "$NEXORA_SUPABASE_PUBLISHABLE_KEY" ] || \
+             [ -z "$NEXORA_E2E_EMAIL" ] || \
+             [ -z "$NEXORA_E2E_PASSWORD" ]; then
+            echo "::notice::Supabase E2E credentials are not configured; live integration tests remain UNVERIFIED."
+            exit 0
           fi
+
+          mapfile -t e2e_tests < <(find test/integration -maxdepth 1 -type f -name 'supabase_*_e2e_test.dart' -print 2>/dev/null | sort)
+
+          if [ "${#e2e_tests[@]}" -eq 0 ]; then
+            echo "::notice::No Supabase E2E test files are present; live financial/security invariants remain UNVERIFIED."
+            exit 0
+          fi
+
+          for test_file in "${e2e_tests[@]}"; do
+            echo "Running isolated Supabase E2E test: ${test_file}"
+            flutter test "$test_file" \
+              --dart-define=NEXORA_SUPABASE_URL="$NEXORA_SUPABASE_URL" \
+              --dart-define=NEXORA_SUPABASE_PUBLISHABLE_KEY="$NEXORA_SUPABASE_PUBLISHABLE_KEY" \
+              --dart-define=NEXORA_E2E_EMAIL="$NEXORA_E2E_EMAIL" \
+              --dart-define=NEXORA_E2E_PASSWORD="$NEXORA_E2E_PASSWORD"
+          done
 
       - name: Build Release APK
         run: |
