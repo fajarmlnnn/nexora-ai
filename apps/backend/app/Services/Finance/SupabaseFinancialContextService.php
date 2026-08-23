@@ -37,15 +37,13 @@ class SupabaseFinancialContextService
                     ->withHeaders([
                         'apikey' => $publishableKey,
                         'Authorization' => 'Bearer '.$accessToken,
-                        'Prefer' => 'count=exact',
                     ])
                     ->connectTimeout(3)
                     ->timeout(5)
                     ->get($baseUrl.'/rest/v1/transactions', [
                         'select' => 'type,amount,category,occurred_at',
                         'user_id' => 'eq.'.$userId,
-                        'occurred_at' => 'gte.'.$from,
-                        'occurred_at' => 'lte.'.$to,
+                        'and' => '(occurred_at.gte.'.$from.',occurred_at.lte.'.$to.')',
                         'order' => 'occurred_at.desc',
                         'limit' => self::PAGE_SIZE,
                         'offset' => $offset,
