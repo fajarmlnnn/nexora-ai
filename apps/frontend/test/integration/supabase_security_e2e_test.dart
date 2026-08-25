@@ -130,51 +130,29 @@ void main() {
             .single();
         expect(ownership['user_id'], user.id);
 
-        // Transactions are independently protected: ownership cannot be
-        // reassigned and a transaction cannot be moved onto an arbitrary
-        // wallet UUID. This closes the second path to corrupting balances.
-        final transaction = await client
-            .from('transactions')
-            .insert({
-              'id': transactionId,
-              'user_id': user.id,
-              'wallet_id': walletId,
-              'type': 'income',
-              'amount': '1000.00',
-              'category': 'other',
-              'description': 'E2E ownership transaction',
-              'occurred_at': DateTime.now().toUtc().toIso8601String(),
-              'idempotency_key': transactionId,
-            })
-            .select('id, user_id, wallet_id')
-            .single();
-
-        expect(transaction['user_id'], user.id);
-        expect(transaction['wallet_id'], walletId);
-
+        // Transaction writes are RPC-only. The authenticated table API must
+        // reject even a transaction that otherwise belongs to the current user.
+        // This protects the server-owned balance and transaction invariants.
         await expectLater(
-          client
-              .from('transactions')
-              .update({'user_id': _uuid()})
-              .eq('id', transactionId),
-          throwsA(isA<PostgrestException>()),
+          client.from('transactions').insert({
+            'id': transactionId,
+            'user_id': user.id,
+            'wallet_id': walletId,
+            'type': 'income',
+            'amount': '1000.00',
+            'category': 'other',
+            'description': 'E2E ownership transaction',
+            'occurred_at': DateTime.now().toUtc().toIso8601String(),
+            'idempotency_key': transactionId,
+          }),
+          throwsA(
+            isA<PostgrestException>().having(
+              (error) => error.code,
+              'code',
+              '42501',
+            ),
+          ),
         );
-
-        await expectLater(
-          client
-              .from('transactions')
-              .update({'wallet_id': _uuid()})
-              .eq('id', transactionId),
-          throwsA(isA<PostgrestException>()),
-        );
-
-        final transactionUnchanged = await client
-            .from('transactions')
-            .select('user_id, wallet_id')
-            .eq('id', transactionId)
-            .single();
-        expect(transactionUnchanged['user_id'], user.id);
-        expect(transactionUnchanged['wallet_id'], walletId);
       } finally {
         try {
           await client.from('transactions').delete().eq('id', transactionId);
