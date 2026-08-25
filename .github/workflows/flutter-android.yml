@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - codex/supabase-first-hardening
       - feat/financial-engine-v1
       - redesign/nexora-visual-overhaul
 

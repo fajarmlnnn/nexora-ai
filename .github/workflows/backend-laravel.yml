@@ -4,12 +4,16 @@ on:
   push:
     branches:
       - main
+      - codex/supabase-first-hardening
       - feat/backend-ci-v1
       - fix/backend-api-routing
   pull_request:
     branches:
       - main
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   laravel:
@@ -47,6 +51,9 @@ jobs:
           done
           echo "Composer install failed after 4 attempts"
           exit 1
+
+      - name: Audit Composer dependencies
+        run: composer audit --locked --no-interaction --format=plain
 
       - name: Prepare environment
         run: |

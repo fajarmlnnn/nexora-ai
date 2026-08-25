@@ -4,10 +4,10 @@ import 'package:supabase_flutter/supabase_flutter.dart' show Supabase, SupabaseC
 import '../../../core/network/api_exception.dart';
 import '../../finance/state/financial_analytics_provider.dart';
 
-/// AI client sends only the requested period. Monetary aggregates are derived
-/// server-side from Supabase under the caller's RLS/auth context.
-class AiApiService {
-  AiApiService({
+/// AI client that sends only the requested period, never client-computed
+/// financial aggregates. The backend derives monetary context from Supabase.
+class AuthoritativeAiApiService {
+  AuthoritativeAiApiService({
     SupabaseClient? supabase,
     Dio? dio,
     String? baseUrl,

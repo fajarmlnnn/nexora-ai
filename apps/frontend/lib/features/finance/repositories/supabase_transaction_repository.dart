@@ -98,12 +98,27 @@ class SupabaseTransactionRepository implements TransactionRepository {
           transaction.isTransfer ? transaction.destinationAccount : null,
     };
 
-    final row = await _client
-        .rpc('nexora_create_transaction', params: payload)
-        .select()
-        .single();
+    try {
+      final row = await _client
+          .rpc('nexora_create_transaction', params: payload)
+          .select()
+          .single();
 
-    return _fromRow(Map<String, dynamic>.from(row));
+      return _fromRow(Map<String, dynamic>.from(row));
+    } on PostgrestException catch (error) {
+      // The RPC deliberately rejects reuse of an idempotency key with a
+      // different transaction. Keep the database error boundary intact while
+      // exposing the repository contract expected by the Flutter domain layer.
+      if (error.code == 'P0001' &&
+          error.message.contains(
+            'Idempotency key already belongs to a different transaction',
+          )) {
+        throw StateError(
+          'Idempotency key sudah digunakan untuk transaksi yang berbeda.',
+        );
+      }
+      rethrow;
+    }
   }
 
   @override

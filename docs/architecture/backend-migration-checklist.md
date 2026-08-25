@@ -32,6 +32,8 @@ This checklist is the gate for removing the legacy Laravel financial/auth founda
 - [ ] Supabase E2E/security tests are green against the target project after the RPC migration.
 - [x] No production code imports the legacy Flutter Laravel auth/network layer.
 - [ ] No undocumented second source of truth remains.
+- [ ] Composer dependency audit is a CI gate and the locked dependency set is vulnerability-free.
+- [x] Filesystem vulnerability/secret/misconfiguration scanning is configured for HIGH/CRITICAL findings.
 
 ## Current migration step completed
 
@@ -39,6 +41,7 @@ This checklist is the gate for removing the legacy Laravel financial/auth founda
 - Transaction mutations now use `nexora_create_transaction`, `nexora_update_transaction`, and `nexora_delete_transaction`.
 - Anonymous clients have no direct privileges on Nexora's public user-owned financial tables.
 - SECURITY DEFINER transaction RPCs explicitly revoke implicit PUBLIC/anon execution and grant only `authenticated`.
+- AI financial context is derived server-side from Supabase using the authenticated user's identity instead of accepting client-provided financial aggregates.
 
 ## Removal gate
 
