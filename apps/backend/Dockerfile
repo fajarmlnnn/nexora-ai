@@ -61,12 +61,17 @@ RUN set -eu; \
 # Copy the Laravel application.
 COPY . .
 
-# Laravel needs these writable at runtime.
-RUN mkdir -p storage/framework/cache \
-           storage/framework/sessions \
-           storage/framework/views \
-           storage/logs \
-           bootstrap/cache \
+# Run the application as an unprivileged user. Laravel's runtime directories
+# remain writable without granting the application user ownership of the whole
+# source tree.
+RUN addgroup -S -g 1000 nexora \
+    && adduser -S -D -H -u 1000 -G nexora nexora \
+    && mkdir -p storage/framework/cache \
+               storage/framework/sessions \
+               storage/framework/views \
+               storage/logs \
+               bootstrap/cache \
+    && chown -R nexora:nexora storage bootstrap/cache \
     && chmod -R ug+rwx storage bootstrap/cache \
     && composer dump-autoload --optimize --no-dev
 
@@ -75,4 +80,6 @@ EXPOSE 10000
 # Database schema changes are applied explicitly by Backend CI/deployment
 # tooling. Production startup must not run the full migration history against
 # an already-provisioned Supabase schema.
+USER nexora
+
 CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"]
