@@ -32,8 +32,7 @@ This checklist is the gate for removing the legacy Laravel financial/auth founda
 - [ ] Supabase E2E/security tests are green against the target project after the RPC migration.
 - [x] No production code imports the legacy Flutter Laravel auth/network layer.
 - [ ] No undocumented second source of truth remains.
-- [x] Composer dependency audit is a CI gate.
-- [x] CodeQL PHP analysis is configured for the backend.
+- [ ] Composer dependency audit is a CI gate and the locked dependency set is vulnerability-free.
 - [x] Filesystem vulnerability/secret/misconfiguration scanning is configured for HIGH/CRITICAL findings.
 
 ## Current migration step completed
