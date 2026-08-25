@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - codex/supabase-first-hardening
       - feat/backend-ci-v1
       - fix/backend-api-routing
   pull_request:
