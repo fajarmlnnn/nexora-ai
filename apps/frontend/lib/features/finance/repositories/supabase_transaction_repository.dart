@@ -80,75 +80,29 @@ class SupabaseTransactionRepository implements TransactionRepository {
     if (key.isEmpty) throw ArgumentError('Idempotency key transaksi wajib diisi.');
 
     final payload = <String, dynamic>{
-      'id': _transactionIdForInsert(transaction.id),
-      'user_id': _userId,
-      'type': transaction.type.name,
-      'amount': transaction.amount.toStringAsFixed(2),
-      'category': transaction.category.name,
-      'description': transaction.title.trim(),
-      'occurred_at': transaction.date.toUtc().toIso8601String(),
-      'idempotency_key': key,
-      'metadata': {
+      'p_id': _transactionIdForInsert(transaction.id),
+      'p_type': transaction.type.name,
+      'p_amount': transaction.amount.toStringAsFixed(2),
+      'p_category': transaction.category.name,
+      'p_description': transaction.title.trim(),
+      'p_occurred_at': transaction.date.toUtc().toIso8601String(),
+      'p_idempotency_key': key,
+      'p_metadata': {
         if (transaction.note != null && transaction.note!.trim().isNotEmpty)
           'note': transaction.note!.trim(),
       },
+      'p_wallet_id': transaction.isTransfer ? null : transaction.walletId,
+      'p_source_wallet_id':
+          transaction.isTransfer ? transaction.sourceAccount : null,
+      'p_destination_wallet_id':
+          transaction.isTransfer ? transaction.destinationAccount : null,
     };
 
-    if (transaction.isTransfer) {
-      payload['source_wallet_id'] = transaction.sourceAccount;
-      payload['destination_wallet_id'] = transaction.destinationAccount;
-    } else {
-      payload['wallet_id'] = transaction.walletId;
-    }
-
-    final existing = await _findByIdempotencyKey(key);
-    if (existing != null) {
-      _assertSameIdempotentRequest(existing, transaction);
-      return existing;
-    }
-
-    try {
-      final row = await _client
-          .from('transactions')
-          .insert(payload)
-          .select()
-          .single();
-      return _fromRow(Map<String, dynamic>.from(row));
-    } on PostgrestException catch (error) {
-      if (_isUniqueViolation(error)) {
-        final existingAfterConflict = await _findByIdempotencyKey(key) ??
-            (_isUuid(transaction.id)
-                ? await _findById(transaction.id.trim())
-                : null);
-        if (existingAfterConflict != null) {
-          _assertSameIdempotentRequest(existingAfterConflict, transaction);
-          return existingAfterConflict;
-        }
-      }
-      rethrow;
-    }
-  }
-
-  Future<TransactionModel?> _findByIdempotencyKey(String key) async {
     final row = await _client
-        .from('transactions')
+        .rpc('nexora_create_transaction', params: payload)
         .select()
-        .eq('user_id', _userId)
-        .eq('idempotency_key', key)
-        .maybeSingle();
-    if (row == null) return null;
-    return _fromRow(Map<String, dynamic>.from(row));
-  }
+        .single();
 
-  Future<TransactionModel?> _findById(String id) async {
-    if (!_isUuid(id)) return null;
-    final row = await _client
-        .from('transactions')
-        .select()
-        .eq('user_id', _userId)
-        .eq('id', id)
-        .maybeSingle();
-    if (row == null) return null;
     return _fromRow(Map<String, dynamic>.from(row));
   }
 
@@ -165,33 +119,28 @@ class SupabaseTransactionRepository implements TransactionRepository {
     }
 
     final payload = <String, dynamic>{
-      'type': transaction.type.name,
-      'amount': transaction.amount.toStringAsFixed(2),
-      'category': transaction.category.name,
-      'description': transaction.title.trim(),
-      'occurred_at': transaction.date.toUtc().toIso8601String(),
-      'metadata': {
+      'p_transaction_id': transaction.id,
+      'p_type': transaction.type.name,
+      'p_amount': transaction.amount.toStringAsFixed(2),
+      'p_category': transaction.category.name,
+      'p_description': transaction.title.trim(),
+      'p_occurred_at': transaction.date.toUtc().toIso8601String(),
+      'p_metadata': {
         if (transaction.note != null && transaction.note!.trim().isNotEmpty)
           'note': transaction.note!.trim(),
       },
-      'wallet_id': transaction.isTransfer ? null : transaction.walletId,
-      'source_wallet_id':
+      'p_wallet_id': transaction.isTransfer ? null : transaction.walletId,
+      'p_source_wallet_id':
           transaction.isTransfer ? transaction.sourceAccount : null,
-      'destination_wallet_id':
+      'p_destination_wallet_id':
           transaction.isTransfer ? transaction.destinationAccount : null,
     };
 
     final row = await _client
-        .from('transactions')
-        .update(payload)
-        .eq('id', transaction.id)
-        .eq('user_id', _userId)
+        .rpc('nexora_update_transaction', params: payload)
         .select()
-        .maybeSingle();
+        .single();
 
-    if (row == null) {
-      throw StateError('Transaksi dengan id "${transaction.id}" tidak ditemukan.');
-    }
     return _fromRow(Map<String, dynamic>.from(row));
   }
 
@@ -205,42 +154,10 @@ class SupabaseTransactionRepository implements TransactionRepository {
       throw ArgumentError('ID transaksi tidak valid untuk Supabase.');
     }
 
-    await _client
-        .from('transactions')
-        .delete()
-        .eq('id', trimmed)
-        .eq('user_id', _userId);
-  }
-
-  void _assertSameIdempotentRequest(
-    TransactionModel existing,
-    TransactionModel requested,
-  ) {
-    final sameAmount = existing.amount == requested.amount;
-    final sameType = existing.type == requested.type;
-    final sameCategory = existing.category == requested.category;
-    final sameTitle = existing.title.trim() == requested.title.trim();
-    final sameNote = (existing.note ?? '').trim() == (requested.note ?? '').trim();
-    final sameWallet = existing.walletId == requested.walletId;
-    final sameSource = existing.sourceAccount == requested.sourceAccount;
-    final sameDestination =
-        existing.destinationAccount == requested.destinationAccount;
-    final sameDate = existing.date.toUtc().difference(requested.date.toUtc()).abs() <=
-        const Duration(seconds: 1);
-
-    if (!sameAmount ||
-        !sameType ||
-        !sameCategory ||
-        !sameTitle ||
-        !sameNote ||
-        !sameWallet ||
-        !sameSource ||
-        !sameDestination ||
-        !sameDate) {
-      throw StateError(
-        'Idempotency key sudah digunakan untuk transaksi dengan payload berbeda.',
-      );
-    }
+    await _client.rpc(
+      'nexora_delete_transaction',
+      params: {'p_transaction_id': trimmed},
+    );
   }
 
   TransactionModel _fromRow(Map<String, dynamic> row) {
@@ -314,11 +231,6 @@ class SupabaseTransactionRepository implements TransactionRepository {
         .replaceAll(r'\', r'\\')
         .replaceAll('%', r'\%')
         .replaceAll('_', r'\_');
-  }
-
-  bool _isUniqueViolation(PostgrestException error) {
-    return error.code == '23505' ||
-        error.message.toLowerCase().contains('unique');
   }
 
   bool _isUuid(String value) {
