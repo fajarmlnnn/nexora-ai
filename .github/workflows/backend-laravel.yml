@@ -11,6 +11,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   laravel:
     runs-on: ubuntu-latest
@@ -47,6 +50,9 @@ jobs:
           done
           echo "Composer install failed after 4 attempts"
           exit 1
+
+      - name: Audit Composer dependencies
+        run: composer audit --locked --no-interaction --format=plain
 
       - name: Prepare environment
         run: |
