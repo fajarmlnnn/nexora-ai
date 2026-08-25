@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\V1\AiController;
+use App\Http\Controllers\Api\V1\AuthoritativeAiController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\TransactionController;
 use App\Http\Controllers\Api\V1\WalletController;
@@ -35,13 +35,8 @@ Route::prefix('v1')->group(function (): void {
     // Supabase Auth remains the Flutter identity provider. These routes verify
     // the Supabase access token before entering the server-side AI gateway.
     Route::middleware(AuthenticateSupabaseUser::class)->group(function (): void {
-        // Health diagnostics should test authentication + provider connectivity
-        // without depending on the application's request-rate cache.
-        Route::get('/ai/health', [AiController::class, 'health']);
-
-        // Chat remains rate limited, but the limiter uses its own configurable
-        // cache store so a missing database cache table cannot break AI access.
-        Route::post('/ai/chat', [AiController::class, 'chat'])
+        Route::get('/ai/health', [AuthoritativeAiController::class, 'health']);
+        Route::post('/ai/chat', [AuthoritativeAiController::class, 'chat'])
             ->middleware(AiRateLimit::class);
     });
 });
