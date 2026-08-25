@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart' show Supabase, SupabaseC
 import '../../../core/network/api_exception.dart';
 import '../../finance/state/financial_analytics_provider.dart';
 
+/// AI client sends only the requested period. Monetary aggregates are derived
+/// server-side from Supabase under the caller's RLS/auth context.
 class AiApiService {
   AiApiService({
     SupabaseClient? supabase,
@@ -19,11 +21,6 @@ class AiApiService {
   final Dio _dio;
   final String _baseUrl;
 
-  /// Accept either the complete API root (`.../api/v1`) or the backend host.
-  ///
-  /// This prevents a production build from silently calling `/ai/chat` when
-  /// the configured value only contains the backend host. The Laravel route
-  /// is registered under `/api/v1/ai/chat`.
   static String _normalizeBaseUrl(String raw) {
     final value = raw.trim().replaceFirst(RegExp(r'/+$'), '');
     if (value.isEmpty) return '';
@@ -82,20 +79,8 @@ class AiApiService {
         '$_baseUrl/ai/chat',
         data: {
           'messages': messages.map((message) => message.toJson()).toList(),
-          'financial_context': {
-            'income': analytics.income,
-            'expense': analytics.expense,
-            'net_cashflow': analytics.netCashflow,
-            'savings_rate': analytics.savingsRate,
-            if (analytics.topExpenseCategory != null)
-              'top_expense_category': analytics.topExpenseCategory!.key.name,
-            if (analytics.topExpenseCategory != null)
-              'top_expense_value': analytics.topExpenseCategory!.value,
-            'period_start': analytics.start.toIso8601String().split('T').first,
-            // Analytics uses [start, end), but users need an inclusive
-            // calendar date in the AI's natural-language summary.
-            'period_end': analytics.endInclusive.toIso8601String().split('T').first,
-          },
+          'period_start': analytics.start.toIso8601String().split('T').first,
+          'period_end': analytics.endInclusive.toIso8601String().split('T').first,
         },
         options: Options(
           headers: {'Authorization': 'Bearer $accessToken'},
@@ -106,8 +91,7 @@ class AiApiService {
         ),
       );
 
-      final data = response.data;
-      final content = data?['data']?['message']?['content'];
+      final content = response.data?['data']?['message']?['content'];
       if (content is! String || content.trim().isEmpty) {
         throw const ApiException(
           statusCode: 502,
@@ -123,68 +107,29 @@ class AiApiService {
       final serverMessage = gatewayError?['message'] as String?;
 
       if (status == 401) {
-        throw ApiException(
-          statusCode: 401,
-          code: serverCode ?? 'UNAUTHENTICATED',
-          message: serverMessage ?? 'Sesi login perlu diperbarui.',
-        );
+        throw ApiException(statusCode: 401, code: serverCode ?? 'UNAUTHENTICATED', message: serverMessage ?? 'Sesi login perlu diperbarui.');
       }
       if (status == 403) {
-        throw ApiException(
-          statusCode: 403,
-          code: serverCode ?? 'FORBIDDEN',
-          message: serverMessage ?? 'Akses ke server Nexora ditolak.',
-        );
-      }
-      if (status == 404) {
-        throw ApiException(
-          statusCode: 404,
-          code: serverCode ?? 'API_ENDPOINT_NOT_FOUND',
-          message: serverMessage ?? 'Endpoint server Nexora tidak ditemukan. Periksa konfigurasi API.',
-        );
+        throw ApiException(statusCode: 403, code: serverCode ?? 'FORBIDDEN', message: serverMessage ?? 'Akses ke server Nexora ditolak.');
       }
       if (status == 422) {
-        throw ApiException(
-          statusCode: 422,
-          code: serverCode ?? 'INVALID_REQUEST',
-          message: serverMessage ?? 'Data permintaan AI tidak valid.',
-        );
+        throw ApiException(statusCode: 422, code: serverCode ?? 'INVALID_REQUEST', message: serverMessage ?? 'Data permintaan AI tidak valid.');
       }
       if (status == 429) {
-        throw ApiException(
-          statusCode: 429,
-          code: serverCode ?? 'RATE_LIMITED',
-          message: serverMessage ?? 'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.',
-        );
+        throw ApiException(statusCode: 429, code: serverCode ?? 'RATE_LIMITED', message: serverMessage ?? 'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.');
       }
       if (status == 503) {
-        throw ApiException(
-          statusCode: 503,
-          code: serverCode ?? 'AI_UNAVAILABLE',
-          message: serverMessage ?? 'Nexora AI sedang tidak tersedia. Coba lagi sebentar.',
-        );
+        throw ApiException(statusCode: 503, code: serverCode ?? 'AI_UNAVAILABLE', message: serverMessage ?? 'Nexora AI sedang tidak tersedia. Coba lagi sebentar.');
       }
       if (status != null && status >= 500) {
-        throw ApiException(
-          statusCode: status,
-          code: serverCode ?? 'SERVER_ERROR',
-          message: serverMessage ?? 'Server Nexora mengalami masalah. Coba lagi sebentar.',
-        );
+        throw ApiException(statusCode: status, code: serverCode ?? 'SERVER_ERROR', message: serverMessage ?? 'Server Nexora mengalami masalah. Coba lagi sebentar.');
       }
       if (error.type == DioExceptionType.connectionTimeout ||
           error.type == DioExceptionType.sendTimeout ||
           error.type == DioExceptionType.receiveTimeout) {
-        throw const ApiException(
-          statusCode: 0,
-          code: 'AI_TIMEOUT',
-          message: 'Respons AI terlalu lama. Periksa koneksi lalu coba lagi.',
-        );
+        throw const ApiException(statusCode: 0, code: 'AI_TIMEOUT', message: 'Respons AI terlalu lama. Periksa koneksi lalu coba lagi.');
       }
-      throw const ApiException(
-        statusCode: 0,
-        code: 'NETWORK_ERROR',
-        message: 'Tidak bisa terhubung ke server Nexora.',
-      );
+      throw const ApiException(statusCode: 0, code: 'NETWORK_ERROR', message: 'Tidak bisa terhubung ke server Nexora.');
     }
   }
 
@@ -202,8 +147,5 @@ class AiChatMessage {
   final String role;
   final String content;
 
-  Map<String, String> toJson() => {
-        'role': role,
-        'content': content,
-      };
+  Map<String, String> toJson() => {'role': role, 'content': content};
 }
