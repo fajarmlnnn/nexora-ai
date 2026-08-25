@@ -107,16 +107,37 @@ class _SplashPageState extends State<SplashPage>
               ),
             ),
             Positioned(
-              left: 0,
-              right: 0,
-              bottom: 34,
-              child: Text(
-                'NEXORA AI',
-                textAlign: TextAlign.center,
-                style: AppTypography.caption.copyWith(
-                  letterSpacing: 2.4,
-                  color: Colors.white.withValues(alpha: .34),
-                ),
+              left: 32,
+              right: 32,
+              bottom: 58,
+              child: Column(
+                children: [
+                  Text(
+                    'Preparing your Nexora space',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.caption.copyWith(
+                      color: Colors.white.withValues(alpha: .48),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(99),
+                    child: LinearProgressIndicator(
+                      minHeight: 3,
+                      value: _controller.value,
+                      backgroundColor: Colors.white.withValues(alpha: .08),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'NEXORA AI',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.caption.copyWith(
+                      letterSpacing: 2.4,
+                      color: Colors.white.withValues(alpha: .28),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

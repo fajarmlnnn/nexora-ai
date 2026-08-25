@@ -59,6 +59,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
   }
 
+  void _next() {
+    if (_index == _pages.length - 1) {
+      _finish();
+      return;
+    }
+    _pageController.nextPage(
+      duration: AppMotion.page,
+      curve: AppMotion.standard,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return PremiumScaffold(
@@ -122,8 +133,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ),
                 ),
                 Text(
-                  '${_index + 1}/${_pages.length}',
-                  style: AppTypography.caption,
+                  '${(_index + 1).toString().padLeft(2, '0')} / ${_pages.length.toString().padLeft(2, '0')}',
+                  style: AppTypography.caption.copyWith(
+                    letterSpacing: 1.2,
+                    color: Colors.white.withValues(alpha: .52),
+                  ),
                 ),
               ],
             ),
@@ -132,23 +146,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
               width: double.infinity,
               height: 58,
               child: FilledButton(
-                onPressed: () {
-                  if (_index == _pages.length - 1) {
-                    _finish();
-                  } else {
-                    _pageController.nextPage(
-                      duration: AppMotion.page,
-                      curve: AppMotion.standard,
-                    );
-                  }
-                },
+                onPressed: _next,
                 style: FilledButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: AppRadius.radiusXL,
                   ),
                 ),
                 child: Text(
-                  _index == _pages.length - 1 ? 'Mulai bersama Nexora' : 'Lanjut',
+                  _index == _pages.length - 1
+                      ? 'Mulai bersama Nexora'
+                      : 'Lanjut',
                 ),
               ),
             ),
