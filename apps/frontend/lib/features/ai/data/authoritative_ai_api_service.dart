@@ -1,0 +1,151 @@
+import 'package:dio/dio.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show Supabase, SupabaseClient;
+
+import '../../../core/network/api_exception.dart';
+import '../../finance/state/financial_analytics_provider.dart';
+
+/// AI client that sends only the requested period, never client-computed
+/// financial aggregates. The backend derives monetary context from Supabase.
+class AuthoritativeAiApiService {
+  AuthoritativeAiApiService({
+    SupabaseClient? supabase,
+    Dio? dio,
+    String? baseUrl,
+  })  : _supabase = supabase ?? Supabase.instance.client,
+        _dio = dio ?? Dio(),
+        _baseUrl = _normalizeBaseUrl(
+          baseUrl ?? const String.fromEnvironment('NEXORA_API_BASE_URL'),
+        );
+
+  final SupabaseClient _supabase;
+  final Dio _dio;
+  final String _baseUrl;
+
+  static String _normalizeBaseUrl(String raw) {
+    final value = raw.trim().replaceFirst(RegExp(r'/+$'), '');
+    if (value.isEmpty) return '';
+    if (value.endsWith('/api/v1')) return value;
+    if (value.endsWith('/api')) return '$value/v1';
+    return '$value/api/v1';
+  }
+
+  Future<String> chat({
+    required List<AiChatMessage> messages,
+    required FinancialAnalyticsSnapshot analytics,
+  }) async {
+    if (_baseUrl.isEmpty) {
+      throw const ApiException(
+        statusCode: 0,
+        code: 'API_BASE_URL_MISSING',
+        message: 'Server AI belum dikonfigurasi pada aplikasi ini.',
+      );
+    }
+
+    var session = _supabase.auth.currentSession;
+    if (session == null) {
+      throw const ApiException(
+        statusCode: 401,
+        code: 'UNAUTHENTICATED',
+        message: 'Sesi login tidak ditemukan. Silakan login kembali.',
+      );
+    }
+
+    try {
+      return await _send(session.accessToken, messages, analytics);
+    } on ApiException catch (error) {
+      if (error.statusCode != 401) rethrow;
+
+      final refreshed = await _supabase.auth.refreshSession();
+      session = refreshed.session;
+      if (session == null) {
+        throw const ApiException(
+          statusCode: 401,
+          code: 'UNAUTHENTICATED',
+          message: 'Sesi login sudah kedaluwarsa. Silakan login kembali.',
+        );
+      }
+
+      return _send(session.accessToken, messages, analytics);
+    }
+  }
+
+  Future<String> _send(
+    String accessToken,
+    List<AiChatMessage> messages,
+    FinancialAnalyticsSnapshot analytics,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '$_baseUrl/ai/chat',
+        data: {
+          'messages': messages.map((message) => message.toJson()).toList(),
+          'period_start': analytics.start.toIso8601String().split('T').first,
+          'period_end': analytics.endInclusive.toIso8601String().split('T').first,
+        },
+        options: Options(
+          headers: {'Authorization': 'Bearer $accessToken'},
+          contentType: Headers.jsonContentType,
+          responseType: ResponseType.json,
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 25),
+        ),
+      );
+
+      final content = response.data?['data']?['message']?['content'];
+      if (content is! String || content.trim().isEmpty) {
+        throw const ApiException(
+          statusCode: 502,
+          code: 'AI_INVALID_RESPONSE',
+          message: 'AI mengirim respons yang tidak valid.',
+        );
+      }
+      return content.trim();
+    } on DioException catch (error) {
+      final status = error.response?.statusCode;
+      final gatewayError = _gatewayError(error.response?.data);
+      final serverCode = gatewayError?['code'] as String?;
+      final serverMessage = gatewayError?['message'] as String?;
+
+      if (status == 401) {
+        throw ApiException(statusCode: 401, code: serverCode ?? 'UNAUTHENTICATED', message: serverMessage ?? 'Sesi login perlu diperbarui.');
+      }
+      if (status == 403) {
+        throw ApiException(statusCode: 403, code: serverCode ?? 'FORBIDDEN', message: serverMessage ?? 'Akses ke server Nexora ditolak.');
+      }
+      if (status == 422) {
+        throw ApiException(statusCode: 422, code: serverCode ?? 'INVALID_REQUEST', message: serverMessage ?? 'Data permintaan AI tidak valid.');
+      }
+      if (status == 429) {
+        throw ApiException(statusCode: 429, code: serverCode ?? 'RATE_LIMITED', message: serverMessage ?? 'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.');
+      }
+      if (status == 503) {
+        throw ApiException(statusCode: 503, code: serverCode ?? 'AI_UNAVAILABLE', message: serverMessage ?? 'Nexora AI sedang tidak tersedia. Coba lagi sebentar.');
+      }
+      if (status != null && status >= 500) {
+        throw ApiException(statusCode: status, code: serverCode ?? 'SERVER_ERROR', message: serverMessage ?? 'Server Nexora mengalami masalah. Coba lagi sebentar.');
+      }
+      if (error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.sendTimeout ||
+          error.type == DioExceptionType.receiveTimeout) {
+        throw const ApiException(statusCode: 0, code: 'AI_TIMEOUT', message: 'Respons AI terlalu lama. Periksa koneksi lalu coba lagi.');
+      }
+      throw const ApiException(statusCode: 0, code: 'NETWORK_ERROR', message: 'Tidak bisa terhubung ke server Nexora.');
+    }
+  }
+
+  Map<String, dynamic>? _gatewayError(dynamic payload) {
+    if (payload is! Map) return null;
+    final error = payload['error'];
+    if (error is! Map) return null;
+    return Map<String, dynamic>.from(error);
+  }
+}
+
+class AiChatMessage {
+  const AiChatMessage({required this.role, required this.content});
+
+  final String role;
+  final String content;
+
+  Map<String, String> toJson() => {'role': role, 'content': content};
+}
