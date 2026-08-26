@@ -5,10 +5,19 @@ import 'supabase_config.dart';
 class NexoraSupabase {
   const NexoraSupabase._();
 
+  static bool _sdkInitialized = false;
+
   static SupabaseClient get client => Supabase.instance.client;
 
-  static bool get isInitialized =>
-      Supabase.instance.client.auth.currentSession != null;
+  /// True once `Supabase.initialize()` has completed successfully.
+  /// This does NOT mean the user is logged in — use [hasSession] for that.
+  static bool get isSdkInitialized => _sdkInitialized;
+
+  /// True only when the SDK is initialized AND a user session currently
+  /// exists. Safe to call even before [initialize]/[initializeIfConfigured]
+  /// have run.
+  static bool get hasSession =>
+      _sdkInitialized && Supabase.instance.client.auth.currentSession != null;
 
   static Future<bool> initializeIfConfigured() async {
     if (!SupabaseConfig.isConfigured) return false;
@@ -21,6 +30,7 @@ class NexoraSupabase {
         detectSessionInUri: false,
       ),
     );
+    _sdkInitialized = true;
     return true;
   }
 
@@ -34,5 +44,6 @@ class NexoraSupabase {
         detectSessionInUri: false,
       ),
     );
+    _sdkInitialized = true;
   }
 }
