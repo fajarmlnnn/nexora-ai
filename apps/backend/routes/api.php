@@ -20,16 +20,27 @@ Route::prefix('v1')->group(function (): void {
     });
 
     Route::prefix('auth')->group(function (): void {
-        Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
+        // Registration is intentionally IP-throttled because there is no
+        // authenticated user identity yet. This limits account-creation abuse
+        // without introducing a second identity system or touching Supabase Auth.
+        Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:3,1');
         Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
     });
 
+    // Legacy Sanctum endpoints remain isolated from the Supabase-first Flutter
+    // identity path. They are rate-limited as defense-in-depth while migration
+    // work continues; they must not be used as a bypass around Supabase RLS/RPC.
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
 
-        Route::apiResource('wallets', WalletController::class);
-        Route::apiResource('transactions', TransactionController::class);
+        Route::middleware('throttle:60,1')->group(function (): void {
+            Route::apiResource('wallets', WalletController::class);
+        });
+
+        Route::middleware('throttle:30,1')->group(function (): void {
+            Route::apiResource('transactions', TransactionController::class);
+        });
     });
 
     // Supabase Auth remains the Flutter identity provider. These routes verify
