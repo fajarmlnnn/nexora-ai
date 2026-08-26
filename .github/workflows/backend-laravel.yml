@@ -53,7 +53,19 @@ jobs:
           exit 1
 
       - name: Audit Composer dependencies
-        run: composer audit --locked --no-interaction --format=plain
+        run: |
+          for attempt in 1 2 3 4; do
+            echo "Composer audit attempt ${attempt}/4"
+            if composer audit --locked --no-interaction --format=plain; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 4 ]; then
+              echo "Composer advisory service may be temporarily unreachable; retrying."
+              sleep $((attempt * 20))
+            fi
+          done
+          echo "Composer audit failed after 4 attempts"
+          exit 1
 
       - name: Prepare environment
         run: |
