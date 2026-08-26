@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - codex/supabase-first-hardening
+      - security/deep-financial-hardening
   pull_request:
     branches:
       - main
