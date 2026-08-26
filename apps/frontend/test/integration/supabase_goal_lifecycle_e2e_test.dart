@@ -81,6 +81,8 @@ void main() {
         goalId = createdGoalId;
 
         // Deleting a goal directly is a financial write and must be blocked.
+        // Keep the Future inside expectLater so the exception is asserted rather
+        // than thrown before the matcher gets a chance to observe it.
         await expectLater(
           client.from('goals').delete().eq('id', createdGoalId).eq('user_id', user.id),
           throwsA(isA<PostgrestException>()),
@@ -115,6 +117,45 @@ void main() {
             .single();
         final transactionId = contributionTransaction['id'].toString();
         expect((contributionTransaction['metadata'] as Map)['goal_id'].toString(), createdGoalId);
+
+        // A goal-funded transaction is part of the goal's atomic ledger. The
+        // generic transaction boundary must not be able to mutate its amount
+        // independently of goals.saved_amount.
+        await expectLater(
+          client.rpc(
+            'nexora_update_transaction',
+            params: {
+              'p_transaction_id': transactionId,
+              'p_type': 'expense',
+              'p_amount': 1,
+              'p_category': 'other',
+              'p_description': 'E2E forbidden goal transaction mutation',
+              'p_occurred_at': DateTime.now().toUtc().toIso8601String(),
+              'p_metadata': const <String, dynamic>{},
+              'p_wallet_id': walletId,
+            },
+          ),
+          throwsA(isA<PostgrestException>()),
+        );
+
+        // Likewise, deleting only the transaction would refund the wallet while
+        // leaving goals.saved_amount inflated. It must be rejected; the goal RPC
+        // owns the transaction + contribution + saved_amount state transition.
+        await expectLater(
+          client.rpc(
+            'nexora_delete_transaction',
+            params: {'p_transaction_id': transactionId},
+          ),
+          throwsA(isA<PostgrestException>()),
+        );
+
+        expect((await walletRepository.getWallet(walletId)).balance, 0);
+        final goalBeforeDelete = await client
+            .from('goals')
+            .select('saved_amount')
+            .eq('id', createdGoalId)
+            .single();
+        expect(goalBeforeDelete['saved_amount'], 100000);
 
         await client.rpc('nexora_delete_goal', params: {'p_goal_id': createdGoalId});
         goalId = null;
