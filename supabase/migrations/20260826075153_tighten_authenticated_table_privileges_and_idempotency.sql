@@ -11,10 +11,6 @@ alter table public.goal_contributions
 alter table public.budgets
   add column if not exists category text not null default 'other';
 
-create index if not exists goal_contributions_user_idempotency_idx
-  on public.goal_contributions(user_id, idempotency_key)
-  where idempotency_key is not null;
-
 create unique index if not exists goal_contributions_user_idempotency_key_uidx
   on public.goal_contributions(user_id, idempotency_key)
   where idempotency_key is not null;
@@ -47,13 +43,25 @@ revoke all on public.budgets from anon;
 revoke insert, update, delete on public.goal_contributions from authenticated;
 grant select on public.goal_contributions to authenticated;
 
-revoke update (user_id, created_at, updated_at) on public.budgets from authenticated;
-revoke update (id, created_at, updated_at) on public.profiles from authenticated;
-revoke update (user_id, created_at, updated_at) on public.goals from authenticated;
-revoke insert (balance) on public.wallets from authenticated;
-revoke update (balance, user_id, created_at, updated_at, opening_balance) on public.wallets from authenticated;
+-- Column-level revokes do not override an existing table-level grant. Revoke
+-- table-level mutation first, then explicitly grant only the columns the client
+-- is allowed to control.
+revoke update on public.profiles from authenticated;
+grant update (display_name, currency_code, timezone) on public.profiles to authenticated;
 
--- Keep only one idempotency index per logical key.
+revoke insert, update, delete on public.wallets from authenticated;
+grant insert (id, user_id, name, type, bank_name, account_number, minimum_balance, currency_code, color, is_primary, is_hidden, opening_balance) on public.wallets to authenticated;
+grant update (name, type, bank_name, account_number, minimum_balance, currency_code, color, is_primary, is_hidden) on public.wallets to authenticated;
+grant delete on public.wallets to authenticated;
+
+revoke update on public.budgets from authenticated;
+grant update (id, name, budget_limit, color, category) on public.budgets to authenticated;
+
+revoke update on public.goals from authenticated;
+grant update (name, type, target_amount, deadline, priority, status, category, note) on public.goals to authenticated;
+
+-- Keep only one idempotency index per logical key when the older duplicate
+-- indexes are present in an upgraded database.
 drop index if exists public.goal_contributions_user_idempotency_idx;
 drop index if exists public.transactions_user_idempotency_idx;
 
