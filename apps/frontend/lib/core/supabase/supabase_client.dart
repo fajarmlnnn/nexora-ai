@@ -13,6 +13,10 @@ class NexoraSupabase {
   /// This does NOT mean the user is logged in — use [hasSession] for that.
   static bool get isSdkInitialized => _sdkInitialized;
 
+  /// Backward-compatible alias for callers that still use the older name.
+  /// Prefer [isSdkInitialized] for new code.
+  static bool get isInitialized => isSdkInitialized;
+
   /// True only when the SDK is initialized AND a user session currently
   /// exists. Safe to call even before [initialize]/[initializeIfConfigured]
   /// have run.
