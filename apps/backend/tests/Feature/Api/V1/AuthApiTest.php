@@ -41,6 +41,25 @@ class AuthApiTest extends TestCase
         $this->assertDatabaseCount('personal_access_tokens', 1);
     }
 
+    public function test_registration_is_rate_limited(): void
+    {
+        for ($i = 0; $i < 3; $i++) {
+            $this->postJson('/api/v1/auth/register', [
+                'name' => 'Fajar',
+                'email' => "fajar{$i}@example.com",
+                'password' => 'Password123!',
+                'password_confirmation' => 'Password123!',
+            ])->assertCreated();
+        }
+
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Fajar',
+            'email' => 'fajar-blocked@example.com',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+        ])->assertTooManyRequests();
+    }
+
     public function test_user_can_login_with_valid_credentials(): void
     {
         $user = User::factory()->create([
