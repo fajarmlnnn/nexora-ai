@@ -81,8 +81,10 @@ void main() {
         goalId = createdGoalId;
 
         // Deleting a goal directly is a financial write and must be blocked.
+        // Keep the Future inside expectLater so the exception is asserted rather
+        // than thrown before the matcher gets a chance to observe it.
         await expectLater(
-          await client.from('goals').delete().eq('id', createdGoalId).eq('user_id', user.id),
+          client.from('goals').delete().eq('id', createdGoalId).eq('user_id', user.id),
           throwsA(isA<PostgrestException>()),
         );
 
@@ -120,7 +122,7 @@ void main() {
         // generic transaction boundary must not be able to mutate its amount
         // independently of goals.saved_amount.
         await expectLater(
-          await client.rpc(
+          client.rpc(
             'nexora_update_transaction',
             params: {
               'p_transaction_id': transactionId,
@@ -140,7 +142,7 @@ void main() {
         // leaving goals.saved_amount inflated. It must be rejected; the goal RPC
         // owns the transaction + contribution + saved_amount state transition.
         await expectLater(
-          await client.rpc(
+          client.rpc(
             'nexora_delete_transaction',
             params: {'p_transaction_id': transactionId},
           ),
