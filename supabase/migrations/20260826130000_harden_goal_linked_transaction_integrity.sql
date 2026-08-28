@@ -13,7 +13,7 @@ AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
     IF NEW.goal_contribution_id IS NOT NULL
-       AND current_setting('nexora.goal_write_context', true) <> 'rpc' THEN
+       AND COALESCE(current_setting('nexora.goal_write_context', true), '') <> 'rpc' THEN
       RAISE EXCEPTION 'Goal contribution transaction linkage is server-controlled';
     END IF;
     RETURN NEW;
@@ -21,7 +21,7 @@ BEGIN
 
   IF TG_OP = 'UPDATE' THEN
     IF (OLD.goal_contribution_id IS NOT NULL OR NEW.goal_contribution_id IS NOT NULL)
-       AND current_setting('nexora.goal_write_context', true) <> 'rpc' THEN
+       AND COALESCE(current_setting('nexora.goal_write_context', true), '') <> 'rpc' THEN
       RAISE EXCEPTION 'Goal contribution transactions must be changed through the goal workflow';
     END IF;
     RETURN NEW;
@@ -29,7 +29,7 @@ BEGIN
 
   IF TG_OP = 'DELETE' THEN
     IF OLD.goal_contribution_id IS NOT NULL
-       AND current_setting('nexora.goal_write_context', true) <> 'rpc' THEN
+       AND COALESCE(current_setting('nexora.goal_write_context', true), '') <> 'rpc' THEN
       RAISE EXCEPTION 'Goal contribution transactions must be removed through the goal workflow';
     END IF;
     RETURN OLD;
@@ -194,6 +194,67 @@ REVOKE EXECUTE ON FUNCTION public.nexora_update_transaction(uuid,text,numeric,te
 REVOKE EXECUTE ON FUNCTION public.nexora_delete_transaction(uuid) FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.nexora_update_transaction(uuid,text,numeric,text,text,timestamptz,jsonb,uuid,uuid,uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.nexora_delete_transaction(uuid) TO authenticated;
+
+-- Keep goal deletion as the trusted atomic workflow. The LOCAL context is
+-- visible to triggers fired by this transaction only and is reset at commit.
+CREATE OR REPLACE FUNCTION public.nexora_delete_goal(p_goal_id uuid)
+RETURNS public.goals
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public, pg_temp
+AS $$
+DECLARE
+  v_user uuid := auth.uid();
+  v_goal public.goals;
+  v_has_unlinked_contribution boolean;
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT * INTO v_goal
+  FROM public.goals
+  WHERE id = p_goal_id
+    AND user_id = v_user
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Goal not found';
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.goal_contributions gc
+    WHERE gc.goal_id = v_goal.id
+      AND NOT EXISTS (
+        SELECT 1
+        FROM public.transactions t
+        WHERE t.user_id = v_user
+          AND t.metadata ->> 'goal_contribution_id' = gc.id::text
+      )
+  ) INTO v_has_unlinked_contribution;
+
+  IF v_has_unlinked_contribution THEN
+    RAISE EXCEPTION 'Goal has an unlinked contribution; deletion was blocked to protect wallet history';
+  END IF;
+
+  PERFORM set_config('nexora.goal_write_context', 'rpc', true);
+
+  DELETE FROM public.transactions t
+  WHERE t.user_id = v_user
+    AND t.metadata ->> 'goal_id' = v_goal.id::text
+    AND t.metadata ->> 'kind' IN ('goal_contribution', 'goal_contribution_reconciliation');
+
+  DELETE FROM public.goals
+  WHERE id = v_goal.id
+    AND user_id = v_user;
+
+  RETURN v_goal;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.nexora_delete_goal(uuid) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.nexora_delete_goal(uuid) TO authenticated;
 
 COMMENT ON FUNCTION public.enforce_goal_transaction_linkage() IS
 'Prevents generic transaction APIs from mutating or deleting goal-linked ledger entries outside the atomic goal workflow.';
