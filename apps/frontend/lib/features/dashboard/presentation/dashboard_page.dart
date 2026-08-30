@@ -216,6 +216,7 @@ class _CashflowCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final positive = analytics.netCashflow >= 0;
     final accent = positive ? AppColors.success : AppColors.danger;
+    final savingsRatePercent = analytics.savingsRate * 100;
     return NCard(
       padding: const EdgeInsets.all(14),
       showBorder: true,
@@ -238,7 +239,7 @@ class _CashflowCard extends StatelessWidget {
             Icon(positive ? LucideIcons.trendingUp : LucideIcons.trendingDown, size: 16, color: accent),
             const SizedBox(width: 8),
             Expanded(child: Text('Net cashflow', style: AppTypography.caption.copyWith(color: AppColors.textSecondary))),
-            Text(rupiah(analytics.netCashflow), style: AppTypography.labelMedium.copyWith(color: accent, fontWeight: FontWeight.w900)),
+            Text('${rupiah(analytics.netCashflow)}  ${savingsRatePercent.toStringAsFixed(2)}%', style: AppTypography.labelMedium.copyWith(color: accent, fontWeight: FontWeight.w900)),
           ]),
         ),
       ]),
