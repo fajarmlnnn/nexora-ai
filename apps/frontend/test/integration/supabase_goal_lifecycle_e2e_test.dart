@@ -122,19 +122,21 @@ void main() {
         // generic transaction boundary must not be able to mutate its amount
         // independently of goals.saved_amount.
         await expectLater(
-          client.rpc(
-            'nexora_update_transaction',
-            params: {
-              'p_transaction_id': transactionId,
-              'p_type': 'expense',
-              'p_amount': 1,
-              'p_category': 'other',
-              'p_description': 'E2E forbidden goal transaction mutation',
-              'p_occurred_at': DateTime.now().toUtc().toIso8601String(),
-              'p_metadata': const <String, dynamic>{},
-              'p_wallet_id': walletId,
-            },
-          ),
+          client
+              .rpc(
+                'nexora_update_transaction',
+                params: {
+                  'p_transaction_id': transactionId,
+                  'p_type': 'expense',
+                  'p_amount': 1,
+                  'p_category': 'other',
+                  'p_description': 'E2E forbidden goal transaction mutation',
+                  'p_occurred_at': DateTime.now().toUtc().toIso8601String(),
+                  'p_metadata': const <String, dynamic>{},
+                  'p_wallet_id': walletId,
+                },
+              )
+              .then<void>((_) {}),
           throwsA(isA<PostgrestException>()),
         );
 
@@ -142,10 +144,12 @@ void main() {
         // leaving goals.saved_amount inflated. It must be rejected; the goal RPC
         // owns the transaction + contribution + saved_amount state transition.
         await expectLater(
-          client.rpc(
-            'nexora_delete_transaction',
-            params: {'p_transaction_id': transactionId},
-          ),
+          client
+              .rpc(
+                'nexora_delete_transaction',
+                params: {'p_transaction_id': transactionId},
+              )
+              .then<void>((_) {}),
           throwsA(isA<PostgrestException>()),
         );
 
