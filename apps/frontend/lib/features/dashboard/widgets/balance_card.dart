@@ -127,7 +127,7 @@ class BalanceCard extends ConsumerWidget {
                     child: _FinanceBubble(
                       title: 'Income',
                       value: rupiah(summary.monthlyIncome),
-                      trendText: _formatPercent(monthlyIncomeChange),
+                      trendText: '',
                       trendColor: monthlyIncomeChange >= 0
                           ? AppColors.success
                           : AppColors.danger,
@@ -140,7 +140,7 @@ class BalanceCard extends ConsumerWidget {
                     child: _FinanceBubble(
                       title: 'Expense',
                       value: rupiah(summary.monthlyExpense),
-                      trendText: _formatPercent(monthlyExpenseChange),
+                      trendText: '',
                       trendColor: monthlyExpenseChange >= 0
                           ? AppColors.danger
                           : AppColors.success,
@@ -425,14 +425,16 @@ class _FinanceBubble extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    trendText,
-                    style: AppTypography.caption.copyWith(
-                      color: trendColor,
-                      fontWeight: FontWeight.w700,
+                  if (trendText.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      trendText,
+                      style: AppTypography.caption.copyWith(
+                        color: trendColor,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
