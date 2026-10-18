@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -39,7 +40,7 @@ class NexoraNav extends StatelessWidget {
                 children: [
                   _NavItem(index: 0, currentIndex: currentIndex, icon: LucideIcons.house, label: 'Home', onTap: onTap),
                   _NavItem(index: 1, currentIndex: currentIndex, icon: LucideIcons.arrowLeftRight, label: 'Transactions', onTap: onTap),
-                  Expanded(child: Center(child: _AddButton(onTap: onAdd))),
+                  Expanded(child: Center(child: _AIOrbButton(onAdd: onAdd))),
                   _NavItem(index: 2, currentIndex: currentIndex, icon: LucideIcons.walletMinimal, label: 'Wallet', onTap: onTap),
                   _NavItem(index: 3, currentIndex: currentIndex, icon: LucideIcons.target, label: 'Goals', onTap: onTap),
                 ],
@@ -105,46 +106,114 @@ class _NavItemState extends State<_NavItem> {
   }
 }
 
-class _AddButton extends StatefulWidget {
-  const _AddButton({required this.onTap});
-  final VoidCallback onTap;
+class _AIOrbButton extends StatefulWidget {
+  const _AIOrbButton({required this.onAdd});
+
+  final VoidCallback onAdd;
 
   @override
-  State<_AddButton> createState() => _AddButtonState();
+  State<_AIOrbButton> createState() => _AIOrbButtonState();
 }
 
-class _AddButtonState extends State<_AddButton> {
+class _AIOrbButtonState extends State<_AIOrbButton> {
   bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: 'Tambah transaksi',
-      child: GestureDetector(
-        onTap: widget.onTap,
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapUp: (_) => setState(() => _pressed = false),
-        onTapCancel: () => setState(() => _pressed = false),
-        child: AnimatedScale(
-          scale: _pressed ? AppMotion.pressedScale : 1,
-          duration: AppMotion.fast,
-          curve: AppMotion.standard,
-          child: Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.brandPrimaryBright, AppColors.brandPrimary, AppColors.brandPrimaryDeep]),
-              border: Border.all(color: Colors.white.withValues(alpha: .24)),
-              boxShadow: [
-                ...AppShadows.button,
-                BoxShadow(color: AppColors.brandPrimary.withValues(alpha: .20), blurRadius: 24, spreadRadius: 1),
-              ],
+    return SizedBox(
+      width: 58,
+      height: 58,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          Positioned.fill(
+            child: Semantics(
+              button: true,
+              label: 'Buka Nexora AI',
+              child: GestureDetector(
+                onTap: () => context.push('/ai'),
+                onTapDown: (_) => setState(() => _pressed = true),
+                onTapUp: (_) => setState(() => _pressed = false),
+                onTapCancel: () => setState(() => _pressed = false),
+                child: AnimatedScale(
+                  scale: _pressed ? AppMotion.pressedScale : 1,
+                  duration: AppMotion.fast,
+                  curve: AppMotion.standard,
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF25203A),
+                          Color(0xFF151322),
+                          Color(0xFF080910),
+                        ],
+                      ),
+                      border: Border.all(
+                        color: AppColors.brandPrimaryBright.withValues(alpha: .38),
+                      ),
+                      boxShadow: [
+                        ...AppShadows.button,
+                        BoxShadow(
+                          color: AppColors.brandPrimary.withValues(alpha: .32),
+                          blurRadius: 26,
+                          spreadRadius: 1,
+                        ),
+                        BoxShadow(
+                          color: AppColors.info.withValues(alpha: .12),
+                          blurRadius: 14,
+                          offset: const Offset(3, 4),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(1),
+                    child: SvgPicture.asset(
+                      'assets/mascot/nexora_n_orb.svg',
+                      fit: BoxFit.contain,
+                      semanticsLabel: 'Nexora N Orb',
+                    ),
+                  ),
+                ),
+              ),
             ),
-            child: const Icon(LucideIcons.plus, size: 28, color: Colors.white),
           ),
-        ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: Semantics(
+              button: true,
+              label: 'Tambah transaksi',
+              child: Material(
+                color: AppColors.space800,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: widget.onAdd,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.brandPrimaryBright.withValues(alpha: .7),
+                      ),
+                    ),
+                    child: const Icon(
+                      LucideIcons.plus,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
