@@ -24,6 +24,7 @@ import '../features/notifications/presentation/notifications_page.dart';
 import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/onboarding/presentation/splash_page.dart';
 import '../features/profile/presentation/profile_page.dart';
+import '../features/premium/presentation/premium_page.dart';
 import '../features/report/presentation/report_page.dart';
 import '../features/transaction/presentation/transaction_page_v2.dart';
 import '../features/transfer/presentation/transfer_page.dart';
@@ -59,6 +60,7 @@ final appRouter = GoRouter(
     GoRoute(path: '/financial-overview', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const FinancialOverviewRealtimePage())),
     GoRoute(path: '/profile', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const ProfilePage())),
     GoRoute(path: '/ai', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const AIPageV2())),
+    GoRoute(path: '/premium', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const PremiumPage())),
     GoRoute(path: '/add-income', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const MoneyFormPage(income: true))),
     GoRoute(path: '/add-expense', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const MoneyFormPage(income: false))),
     GoRoute(path: '/transfer', pageBuilder: (context, state) => _buildTransitionPage(state: state, child: const TransferPage())),
