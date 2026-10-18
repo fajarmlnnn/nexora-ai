@@ -10,6 +10,7 @@ import '../../../core/widgets/card/n_card.dart';
 import '../../../core/widgets/premium_widgets.dart';
 import '../../finance/state/financial_transaction_store.dart';
 import '../../wallet/controllers/wallet_controller.dart';
+import '../../premium/presentation/premium_upgrade_card.dart';
 import '../controllers/dashboard_controller.dart';
 import '../widgets/ai_insight_card.dart';
 import '../widgets/balance_card.dart';
@@ -80,6 +81,11 @@ class DashboardPage extends ConsumerWidget {
                     PremiumEntrance(
                       delay: const Duration(milliseconds: 160),
                       child: AIInsightCard(insight: insight),
+                    ),
+                    const SizedBox(height: 12),
+                    PremiumEntrance(
+                      delay: const Duration(milliseconds: 180),
+                      child: const PremiumUpgradeCard(),
                     ),
                     const SizedBox(height: 18),
                     const _SectionHeader(title: 'Quick actions', action: 'Fast & simple'),
