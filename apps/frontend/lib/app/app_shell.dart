@@ -27,19 +27,11 @@ class AppShell extends StatelessWidget {
           onTap: (index) {
             navigationShell.goBranch(index, initialLocation: index == navigationShell.currentIndex);
           },
-          onAdd: () => _showCreateSheet(context),
+          onAdd: () => context.push('/ai'),
         ),
       ),
     );
   }
 
-  void _showCreateSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: .55),
-      isScrollControlled: true,
-      builder: (_) => NexoraCreateSheet(parentContext: context),
-    );
-  }
+
 }
