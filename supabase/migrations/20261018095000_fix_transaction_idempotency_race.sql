@@ -94,6 +94,7 @@ begin
      or v_existing.wallet_id is distinct from p_wallet_id
      or v_existing.source_wallet_id is distinct from p_source_wallet_id
      or v_existing.destination_wallet_id is distinct from p_destination_wallet_id
+     or v_existing.metadata is distinct from coalesce(p_metadata, '{}'::jsonb)
      or abs(extract(epoch from (v_existing.occurred_at - coalesce(p_occurred_at, now())))) > 1
   then
     raise exception 'Idempotency key already belongs to a different transaction';
