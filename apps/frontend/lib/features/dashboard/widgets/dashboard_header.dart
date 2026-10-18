@@ -11,7 +11,7 @@ import '../../../core/theme/app_typography.dart';
 class DashboardHeader extends StatelessWidget {
   const DashboardHeader({super.key});
 
-  static const String greeting = 'Good Morning';
+  static const String greeting = 'Welcome back!';
   static const String name = 'Fajar';
 
   @override
