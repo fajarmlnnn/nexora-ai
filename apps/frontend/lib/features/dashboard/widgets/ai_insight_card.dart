@@ -59,7 +59,7 @@ class AIInsightCard extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(3),
                   child: SvgPicture.asset(
-                    'assets/mascot/nexora_mascot_master.svg',
+                    'assets/mascot/nexora_n_orb.svg',
                     fit: BoxFit.contain,
                   ),
                 ),
