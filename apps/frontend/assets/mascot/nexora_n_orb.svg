@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <radialGradient id="orb" cx="34%" cy="24%" r="78%">
+      <stop offset="0" stop-color="#F8F5FF"/>
+      <stop offset=".28" stop-color="#C7B5FF"/>
+      <stop offset=".58" stop-color="#8B5CF6"/>
+      <stop offset=".82" stop-color="#4C2A8F"/>
+      <stop offset="1" stop-color="#11101D"/>
+    </radialGradient>
+    <linearGradient id="ring" x1="18" y1="18" x2="101" y2="103" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity=".9"/>
+      <stop offset=".5" stop-color="#A78BFA" stop-opacity=".42"/>
+      <stop offset="1" stop-color="#38BDF8" stop-opacity=".9"/>
+    </linearGradient>
+    <linearGradient id="letter" x1="40" y1="38" x2="82" y2="84" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset=".56" stop-color="#F4F0FF"/>
+      <stop offset="1" stop-color="#D7F5FF"/>
+    </linearGradient>
+    <linearGradient id="particle" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#38BDF8"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="47" fill="#7C3AED" fill-opacity=".12"/>
+  <circle cx="60" cy="60" r="39" fill="url(#orb)"/>
+  <circle cx="60" cy="60" r="39" stroke="url(#ring)" stroke-width="1.5"/>
+  <ellipse cx="47" cy="39" rx="17" ry="8" transform="rotate(-34 47 39)" fill="#FFFFFF" fill-opacity=".22"/>
+  <path d="M42 77V43L77 78V44" stroke="url(#letter)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M42 43L77 78" stroke="#FFFFFF" stroke-opacity=".12" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="91" cy="28" r="7" fill="url(#particle)"/>
+  <circle cx="26" cy="46" r="4" fill="#C4B5FD"/>
+  <circle cx="87" cy="86" r="3.5" fill="#38BDF8"/>
+  <circle cx="30" cy="83" r="2.5" fill="#FFFFFF" fill-opacity=".92"/>
+  <path d="M94 54L96.5 59.5L102 62L96.5 64.5L94 70L91.5 64.5L86 62L91.5 59.5L94 54Z" fill="#EDE9FE"/>
+</svg>

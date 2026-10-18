@@ -96,7 +96,7 @@ class BalanceCard extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Total Balance',
+                'Available Balance',
                 style: AppTypography.caption.copyWith(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w600,

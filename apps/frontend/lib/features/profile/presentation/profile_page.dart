@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/supabase/supabase_auth_repository.dart';
@@ -56,6 +57,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final items = const [
       (LucideIcons.userRound, 'Account', 'Personal information'),
       (LucideIcons.slidersHorizontal, 'Preferences', 'Theme, currency, language'),
+      (LucideIcons.crown, 'Nexora Pro', 'AI tools for your financial journey'),
       (LucideIcons.cloudUpload, 'Backup', 'Sync and restore data'),
       (LucideIcons.download, 'Export Data', 'CSV and report export'),
       (LucideIcons.chartPie, 'Reports', 'Income, expense, and cashflow'),
@@ -120,7 +122,13 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 24),
           Text('Personalize', style: AppTypography.heading3.copyWith(fontSize: 18, fontWeight: FontWeight.w800)),
           const SizedBox(height: 10),
-          for (final item in items) _SettingTile(icon: item.$1, title: item.$2, subtitle: item.$3),
+          for (final item in items)
+            _SettingTile(
+              icon: item.$1,
+              title: item.$2,
+              subtitle: item.$3,
+              onTap: item.$2 == 'Nexora Pro' ? () => context.push('/premium') : null,
+            ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: _loggingOut ? null : _logout,
@@ -152,10 +160,80 @@ class _ProfileMetric extends StatelessWidget {
 }
 
 class _SettingTile extends StatelessWidget {
-  const _SettingTile({required this.icon, required this.title, required this.subtitle});
+  const _SettingTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+  });
+
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
+
   @override
-  Widget build(BuildContext context) => Container(margin: const EdgeInsets.only(bottom: 10), padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: AppColors.card.withValues(alpha: .72), borderRadius: AppRadius.radiusXL, border: Border.all(color: AppColors.border.withValues(alpha: .4))), child: Row(children: [Container(width: 43, height: 43, decoration: BoxDecoration(gradient: LinearGradient(colors: [AppColors.primary.withValues(alpha: .22), AppColors.primaryLight.withValues(alpha: .08)]), borderRadius: AppRadius.radiusLG), child: Icon(icon, color: AppColors.primaryLight, size: 20)), AppSpacing.hGapMD, Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)), const SizedBox(height: 2), Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption.copyWith(color: AppColors.textMuted))])), const Icon(LucideIcons.chevronRight, color: AppColors.textMuted, size: 19)]));
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: AppRadius.radiusXL,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: AppRadius.radiusXL,
+          child: Ink(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.card.withValues(alpha: .72),
+              borderRadius: AppRadius.radiusXL,
+              border: Border.all(color: AppColors.border.withValues(alpha: .4)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 43,
+                  height: 43,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary.withValues(alpha: .22),
+                        AppColors.primaryLight.withValues(alpha: .08),
+                      ],
+                    ),
+                    borderRadius: AppRadius.radiusLG,
+                  ),
+                  child: Icon(icon, color: AppColors.primaryLight, size: 20),
+                ),
+                AppSpacing.hGapMD,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  LucideIcons.chevronRight,
+                  color: onTap == null ? AppColors.textMuted : AppColors.primaryLight,
+                  size: 19,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
