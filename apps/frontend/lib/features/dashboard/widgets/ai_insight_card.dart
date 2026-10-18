@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -17,10 +18,11 @@ class AIInsightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final handleTap = onTap ?? () => context.push('/ai');
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: handleTap,
         borderRadius: AppRadius.radiusXL,
         child: Ink(
           width: double.infinity,
@@ -127,7 +129,7 @@ class AIInsightCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     GestureDetector(
-                      onTap: onTap,
+                      onTap: handleTap,
                       child: Text(
                         'Lihat Insight  →',
                         style: AppTypography.caption.copyWith(
