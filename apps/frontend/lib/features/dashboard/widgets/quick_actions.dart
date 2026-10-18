@@ -16,8 +16,7 @@ class QuickActions extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Quick Actions', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 10),
+          const SizedBox(height: 2),
           Row(
             children: [
               Expanded(child: _ActionItem(icon: LucideIcons.arrowDownToLine, label: 'Pemasukan', color: AppColors.success, onTap: () => context.push('/add-income'))),

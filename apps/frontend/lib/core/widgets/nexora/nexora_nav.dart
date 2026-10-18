@@ -120,7 +120,7 @@ class _AddButtonState extends State<_AddButton> {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Tambah transaksi',
+      label: 'Buka Nexora AI',
       child: GestureDetector(
         onTap: widget.onTap,
         onTapDown: (_) => setState(() => _pressed = true),
@@ -142,7 +142,7 @@ class _AddButtonState extends State<_AddButton> {
                 BoxShadow(color: AppColors.brandPrimary.withValues(alpha: .20), blurRadius: 24, spreadRadius: 1),
               ],
             ),
-            child: const Icon(LucideIcons.plus, size: 28, color: Colors.white),
+            child: const Icon(LucideIcons.sparkles, size: 25, color: Colors.white),
           ),
         ),
       ),

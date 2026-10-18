@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -139,11 +140,11 @@ class _AIPageV2State extends ConsumerState<AIPageV2> {
                 controller: _scroll,
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
                 children: [
-                  _hero(),
-                  const SizedBox(height: 20),
-                  if (_messages.length == 1) _starter(),
-                  const SizedBox(height: 12),
                   ..._messages.map(_bubble),
+                  if (_messages.length == 1) ...[
+                    const SizedBox(height: 12),
+                    _starter(),
+                  ],
                   if (_sending) const _Typing(),
                   if (_error != null) _errorCard(),
                   const SizedBox(height: 90),
@@ -202,7 +203,14 @@ class _AIPageV2State extends ConsumerState<AIPageV2> {
               ],
             ),
           ),
-          _circleButton(LucideIcons.rotateCcw, _newChat),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _circleButton(LucideIcons.crown, () => context.push('/plans')),
+              const SizedBox(width: 6),
+              _circleButton(LucideIcons.rotateCcw, _newChat),
+            ],
+          ),
         ],
       ),
     );
@@ -220,51 +228,6 @@ class _AIPageV2State extends ConsumerState<AIPageV2> {
           height: 42,
           child: Icon(icon, color: const Color(0xFFD8D8E5), size: 19),
         ),
-      ),
-    );
-  }
-
-  Widget _hero() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF211044), Color(0xFF0B142D)],
-        ),
-        border: Border.all(color: Color(0x335F45B8)),
-        boxShadow: const [
-          BoxShadow(color: Color(0x291B1244), blurRadius: 30, offset: Offset(0, 12)),
-        ],
-      ),
-      child: const Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Your money, understood.',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    height: 1.1,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Tanya apa pun. Nexora akan menggunakan konteks finansialmu untuk memberi jawaban yang relevan.',
-                  style: TextStyle(color: Color(0xFFC6C2D2), fontSize: 13, height: 1.4),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(width: 10),
-          _AiHeroIcon(),
-        ],
       ),
     );
   }
@@ -437,23 +400,6 @@ class _AIPageV2State extends ConsumerState<AIPageV2> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _AiHeroIcon extends StatelessWidget {
-  const _AiHeroIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 62,
-      height: 62,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: const Color(0xFF8B5CF6).withValues(alpha: .16),
-      ),
-      child: const Icon(LucideIcons.brainCircuit, color: Color(0xFFA78BFA), size: 30),
     );
   }
 }
