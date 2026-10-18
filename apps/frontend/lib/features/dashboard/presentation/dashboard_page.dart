@@ -99,18 +99,6 @@ class DashboardPage extends ConsumerWidget {
                       delay: Duration(milliseconds: 200),
                       child: QuickActions(),
                     ),
-                    const SizedBox(height: 18),
-                    const _SectionHeader(title: 'Budget', action: 'Your limits'),
-                    const SizedBox(height: 8),
-                    PremiumEntrance(
-                      delay: const Duration(milliseconds: 240),
-                      child: budgetAsync.when(
-                        loading: () => const ShimmerSkeleton(height: 180),
-                        error: (_, __) => _InlineError(onRetry: () => ref.invalidate(budgetItemsProvider)),
-                        data: (items) => BudgetSummaryCard(items: items),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
                     _SectionHeader(
                       title: 'Recent transactions',
                       action: 'View all',
@@ -125,6 +113,18 @@ class DashboardPage extends ConsumerWidget {
                         data: (transactions) => RecentTransactionCard(transactions: transactions),
                       ),
                     ),
+                    const SizedBox(height: 18),
+                    const _SectionHeader(title: 'Budget', action: 'Your limits'),
+                    const SizedBox(height: 8),
+                    PremiumEntrance(
+                      delay: const Duration(milliseconds: 240),
+                      child: budgetAsync.when(
+                        loading: () => const ShimmerSkeleton(height: 180),
+                        error: (_, __) => _InlineError(onRetry: () => ref.invalidate(budgetItemsProvider)),
+                        data: (items) => BudgetSummaryCard(items: items),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
                   ]),
                 ),
               ),
