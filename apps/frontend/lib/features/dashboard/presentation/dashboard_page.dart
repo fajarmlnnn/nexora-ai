@@ -125,21 +125,6 @@ class DashboardPage extends ConsumerWidget {
   }
 }
 
-class _SectionEyebrow extends StatelessWidget {
-  const _SectionEyebrow({required this.icon, required this.label});
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Row(
-        children: [
-          Icon(icon, size: 13, color: AppColors.primaryLight),
-          const SizedBox(width: 6),
-          Text(label, style: AppTypography.caption.copyWith(color: AppColors.textMuted, letterSpacing: 1.25, fontWeight: FontWeight.w800)),
-        ],
-      );
-}
-
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.title, required this.action, this.onTap});
   final String title;
