@@ -71,11 +71,7 @@ class AIInsightCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(
-                          LucideIcons.sparkles,
-                          size: 13,
-                          color: AppColors.primaryLight,
-                        ),
+                        const Icon(LucideIcons.sparkles, size: 13, color: AppColors.primaryLight),
                         const SizedBox(width: 5),
                         Text(
                           'Nexora AI',
@@ -86,10 +82,7 @@ class AIInsightCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 1,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: .18),
                             borderRadius: AppRadius.radiusPill,
