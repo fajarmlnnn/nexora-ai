@@ -368,7 +368,7 @@ class _PremiumPageState extends State<PremiumPage> {
               child: FilledButton(
                 onPressed: _showPreviewNotice,
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.zero,
                   backgroundColor: AppColors.brandPrimary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
@@ -394,7 +394,7 @@ class _PremiumPageState extends State<PremiumPage> {
                     ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 1),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Center(
                       child: Text(
                         'Explore Nexora Pro',
