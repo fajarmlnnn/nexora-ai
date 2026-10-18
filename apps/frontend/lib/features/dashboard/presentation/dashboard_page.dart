@@ -40,7 +40,6 @@ class DashboardPage extends ConsumerWidget {
     final insight = ref.watch(aiInsightProvider);
     final analytics = ref.watch(financialAnalyticsProvider);
     final totalAssets = ref.watch(totalWalletBalanceProvider);
-    final walletCount = ref.watch(walletCountProvider);
 
     return PremiumScaffold(
       child: summaryAsync.when(
@@ -65,8 +64,6 @@ class DashboardPage extends ConsumerWidget {
                   delegate: SliverChildListDelegate([
                     const PremiumEntrance(child: DashboardHeader()),
                     const SizedBox(height: 18),
-                    _SectionEyebrow(icon: LucideIcons.sparkles, label: 'FINANCIAL COMMAND CENTER'),
-                    const SizedBox(height: 8),
                     PremiumEntrance(
                       delay: const Duration(milliseconds: 40),
                       child: BalanceCard(
@@ -75,42 +72,27 @@ class DashboardPage extends ConsumerWidget {
                         onTap: () => context.push('/financial-overview'),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    PremiumEntrance(
-                      delay: const Duration(milliseconds: 80),
-                      child: _AssetStrip(walletCount: walletCount, totalAssets: totalAssets, onTap: () => context.go('/wallet')),
-                    ),
-                    const SizedBox(height: 18),
-                    const _SectionEyebrow(icon: LucideIcons.activity, label: 'THIS MONTH'),
-                    const SizedBox(height: 8),
-                    PremiumEntrance(
-                      delay: const Duration(milliseconds: 120),
-                      child: _CashflowCard(analytics: analytics),
+                    const SizedBox(height: 10),
+                    _MonthlyStats(
+                      income: summary.monthlyIncome,
+                      expense: summary.monthlyExpense,
                     ),
                     const SizedBox(height: 18),
                     PremiumEntrance(
-                      delay: const Duration(milliseconds: 160),
-                      child: AIInsightCard(insight: insight),
+                      delay: const Duration(milliseconds: 100),
+                      child: AIInsightCard(
+                        insight: insight,
+                        onTap: () => context.push('/ai'),
+                      ),
                     ),
                     const SizedBox(height: 18),
                     const _SectionHeader(title: 'Quick actions', action: 'Fast & simple'),
                     const SizedBox(height: 8),
                     const PremiumEntrance(
-                      delay: Duration(milliseconds: 200),
+                      delay: Duration(milliseconds: 160),
                       child: QuickActions(),
                     ),
-                    const SizedBox(height: 18),
-                    const _SectionHeader(title: 'Budget', action: 'Your limits'),
-                    const SizedBox(height: 8),
-                    PremiumEntrance(
-                      delay: const Duration(milliseconds: 240),
-                      child: budgetAsync.when(
-                        loading: () => const ShimmerSkeleton(height: 180),
-                        error: (_, __) => _InlineError(onRetry: () => ref.invalidate(budgetItemsProvider)),
-                        data: (items) => BudgetSummaryCard(items: items),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 20),
                     _SectionHeader(
                       title: 'Recent transactions',
                       action: 'View all',
@@ -118,11 +100,29 @@ class DashboardPage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     PremiumEntrance(
-                      delay: const Duration(milliseconds: 280),
+                      delay: const Duration(milliseconds: 220),
                       child: transactionsAsync.when(
                         loading: () => const ShimmerSkeleton(height: 205),
                         error: (_, __) => _InlineError(onRetry: () => ref.invalidate(recentTransactionsProvider)),
                         data: (transactions) => RecentTransactionCard(transactions: transactions),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const _SectionEyebrow(icon: LucideIcons.activity, label: 'THIS MONTH'),
+                    const SizedBox(height: 8),
+                    PremiumEntrance(
+                      delay: const Duration(milliseconds: 260),
+                      child: _CashflowCard(analytics: analytics),
+                    ),
+                    const SizedBox(height: 18),
+                    const _SectionHeader(title: 'Budget', action: 'Your limits'),
+                    const SizedBox(height: 8),
+                    PremiumEntrance(
+                      delay: const Duration(milliseconds: 300),
+                      child: budgetAsync.when(
+                        loading: () => const ShimmerSkeleton(height: 180),
+                        error: (_, __) => _InlineError(onRetry: () => ref.invalidate(budgetItemsProvider)),
+                        data: (items) => BudgetSummaryCard(items: items),
                       ),
                     ),
                   ]),
@@ -176,36 +176,106 @@ class _SectionHeader extends StatelessWidget {
       );
 }
 
-class _AssetStrip extends StatelessWidget {
-  const _AssetStrip({required this.walletCount, required this.totalAssets, required this.onTap});
-  final int walletCount;
-  final double totalAssets;
-  final VoidCallback onTap;
+class _MonthlyStats extends StatelessWidget {
+  const _MonthlyStats({required this.income, required this.expense});
+
+  final double income;
+  final double expense;
 
   @override
-  Widget build(BuildContext context) => NCard(
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-        showBorder: true,
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(shape: BoxShape.circle, gradient: const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFF22D3EE)]), boxShadow: [BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: .18), blurRadius: 16)]),
-              child: const Icon(LucideIcons.walletCards, color: Colors.white, size: 18),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('$walletCount ${walletCount == 1 ? 'wallet' : 'wallets'} aktif', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
-                const SizedBox(height: 2),
-                Text('Total aset ${rupiah(totalAssets)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
-              ]),
-            ),
-            IconButton(onPressed: onTap, tooltip: 'Kelola wallet', icon: const Icon(LucideIcons.chevronRight, size: 18)),
-          ],
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _MonthlyMetric(
+            label: 'Income',
+            value: rupiah(income),
+            icon: LucideIcons.arrowDownLeft,
+            accent: AppColors.success,
+          ),
         ),
-      );
+        const SizedBox(width: 10),
+        Expanded(
+          child: _MonthlyMetric(
+            label: 'Expense',
+            value: rupiah(expense),
+            icon: LucideIcons.arrowUpRight,
+            accent: AppColors.danger,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MonthlyMetric extends StatelessWidget {
+  const _MonthlyMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.accent,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 76),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.space800,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.borderGlass.withValues(alpha: .8)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: .12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 16, color: accent),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: AppTypography.labelLarge.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _CashflowCard extends StatelessWidget {
